@@ -41,3 +41,12 @@ Les données sont locales au navigateur :
 - IndexedDB : photos de progression
 
 Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
+
+
+## V3 Mockup Parity
+
+- Refonte visuelle TODAY / WORKOUT / AI COACH alignée sur la maquette validée.
+- Layout mobile-first 390px.
+- Navigation 5 tabs fixe.
+- Données et moteur V2 conservés.
+- Déploiement GitHub Pages : `npm install && npm run deploy`.

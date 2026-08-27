@@ -1,2 +1,2 @@
 import {defineConfig} from 'vite';import react from '@vitejs/plugin-react';import {VitePWA} from 'vite-plugin-pwa';
-export default defineConfig({base:'./',plugins:[react(),VitePWA({registerType:'autoUpdate',manifest:{name:'BODY OS — AI CUT',short_name:'BODY OS',description:'Coach adaptatif musculation, nutrition, progression et L5-S1.',theme_color:'#050a12',background_color:'#050a12',display:'standalone',start_url:'./'}})]})
+export default defineConfig({base: '/body-os/',plugins:[react(),VitePWA({registerType:'autoUpdate',manifest:{name:'BODY OS — AI CUT',short_name:'BODY OS',description:'Coach adaptatif musculation, nutrition, progression et L5-S1.',theme_color:'#050a12',background_color:'#050a12',display:'standalone',start_url:'./'}})]})
