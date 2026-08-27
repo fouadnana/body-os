@@ -200,7 +200,7 @@ export default function App(){
             <div className="gymBackdrop">
               <img className={`workoutDemoPhoto ${hasExerciseDemo?'':'genericDemo'}`} src={demoAsset} alt={`Démonstration visuelle : ${exercise.name}`}/>
             </div>
-            <button className="play" aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>▶</button>
+            <button className={`play ${exercise.id==='incline-machine'?'goldenPlayHitbox':''}`} aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>{exercise.id==='incline-machine'?'':'▶'}</button>
             {!hasExerciseDemo&&<span className="mediaPending">DÉMO À PRODUIRE</span>}
             {exercise.id!=='incline-machine'&&<div className={`muscleMap ${exercise.media.anatomyView}`} aria-label="Muscles sollicités">
               <img src={todayAnatomy} alt="Carte anatomique"/>

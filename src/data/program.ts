@@ -38,7 +38,7 @@ const inclinePrescription:PrescribedSet[]=[
 
 export const sessions:Session[]=[
 {id:'push',day:'J1',title:'PUSH',subtitle:'Haut des pectoraux • Épaules • Triceps',exercises:[
-e('incline-machine','Développé incliné machine',4,'6–10','2–3',150,'HAUT PEC','Poitrine haute, omoplates stables.',m('/body-os/workout-incline-demo.jpg','front',['upper-chest'],['front-delts','triceps']),'low',inclinePrescription),
+e('incline-machine','Développé incliné machine',4,'6–10','2–3',150,'HAUT PEC','Poitrine haute, omoplates stables.',m('/body-os/workout-incline-demo-golden.jpg','front',['upper-chest'],['front-delts','triceps']),'low',inclinePrescription),
 e('chest-press','Chest press machine',3,'8–12','2',120,'PECTORAUX','Amplitude contrôlée, pas de rebond.',m(undefined,'front',['chest'],['front-delts','triceps'])),
 e('cable-fly','Écartés câble',3,'12–15','2',75,'PECTORAUX','Étirement contrôlé.',m(undefined,'front',['chest'],['front-delts'])),
 e('lat-raise','Élévations latérales câble',4,'12–20','1–2',60,'DELTOÏDES','Monte sans élan.',m(undefined,'front',['side-delts'],['front-delts'])),

@@ -133,3 +133,10 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Pour tous les autres exercices, la carte musculaire dynamique reste active.
 - Aucun changement sur le moteur, les prescriptions, la navigation, le stockage ou le layout.
 - Prochaine étape : remplacer progressivement les démos par des assets propres sans anatomie incrustée, afin de réactiver une carte musculaire unique et indépendante partout.
+
+## V6.7.2 — WORKOUT Golden Lock
+- Le cadrage média du développé incliné reprend exactement la composition visuelle validée.
+- Le pratiquant est désormais adapté aux proportions de la zone média.
+- Une seule anatomie est visible.
+- Le bouton Play est de nouveau visible et reste fonctionnel via une zone tactile superposée.
+- Ce rendu devient la Golden Reference à reproduire pour les autres exercices.
