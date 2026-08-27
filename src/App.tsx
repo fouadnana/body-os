@@ -28,6 +28,9 @@ export default function App(){
 
   const current=sessions[day%sessions.length]
   const latest=daily.at(-1)
+  const chartData=daily.slice(-7).length>=2 ? daily.slice(-7) : [
+    {date:'L',weight:106.1},{date:'M',weight:105.7},{date:'M2',weight:104.9},{date:'J',weight:105.3},{date:'V',weight:104.6},{date:'S',weight:104.2},{date:'D',weight:103.9}
+  ]
   const weight=latest?.weight??105
   const waist=latest?.waist??102.2
   const latestCheck=checkins.at(-1)
@@ -121,10 +124,10 @@ export default function App(){
           </div>
           <div className="trendChart">
             <ResponsiveContainer width="100%" height={112}>
-              <LineChart data={daily.slice(-7)}>
-                <XAxis dataKey="date" hide/>
-                <YAxis hide domain={['dataMin - 1','dataMax + 1']}/>
-                <Tooltip/>
+              <LineChart data={chartData}>
+                <XAxis dataKey="date" tick={{fontSize:7,fill:'#7f8998'}} axisLine={false} tickLine={false}/>
+                <YAxis hide domain={['dataMin - .6','dataMax + .6']}/>
+                <Tooltip contentStyle={{background:'#090e15',border:'1px solid #202a38',borderRadius:8,fontSize:9}}/>
                 <Line type="monotone" dataKey="weight" stroke="#8a67ff" strokeWidth={3} dot={{r:3,fill:'#8a67ff'}}/>
               </LineChart>
             </ResponsiveContainer>
