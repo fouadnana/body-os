@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/components/anatomy.tsx","./src/components/bottomnav.tsx","./src/components/premiumanatomy.tsx","./src/data/program.ts","./src/lib/photodb.ts","./src/lib/storage.ts","./vite.config.ts"],"errors":true,"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/anatomy.tsx","./src/components/bottomnav.tsx","./src/components/premiumanatomy.tsx","./src/data/program.ts","./src/lib/photodb.ts","./src/lib/storage.ts","./vite.config.ts"],"version":"5.9.3"}

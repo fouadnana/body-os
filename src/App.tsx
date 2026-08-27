@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { sessions } from './data/program'
 import { store, type SetLog, type CoachCheckin } from './lib/storage'
-import todayAnatomy from './assets/today-anatomy.jpg'
-import l5Spine from './assets/l5-spine.jpg'
+const todayAnatomy = new URL('./assets/today-anatomy.jpg', import.meta.url).href
+const l5Spine = new URL('./assets/l5-spine.jpg', import.meta.url).href
 
 type Tab = 'today'|'workout'|'nutrition'|'progress'|'coach'
 const target={calories:2800,protein:190,fat:85,carbs:319,steps:8000}
