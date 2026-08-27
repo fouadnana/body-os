@@ -102,3 +102,10 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Header, greeting, PUSH, KPI, L5-S1, trend, AI Coach et bottom nav recalibrés.
 - Le visuel anatomique existant est fondu dans la carte via un masque CSS pour supprimer l'effet de rectangle noir.
 - Aucun changement de logique React, stockage, données, routes ou navigation.
+
+## V6.6 — WORKOUT Fidelity + Interaction
+- WORKOUT recalé sur la vue centrale de la maquette V1 validée.
+- Stepper 1→6, média, consignes, tableau séries, validation, ajout de série, timer et exercice suivant.
+- Le bouton Play ouvre désormais une fiche de démonstration intégrée.
+- Limite volontaire : aucune vidéo d'exercice réelle n'est embarquée dans cette version ; il faut une bibliothèque vidéo/source dédiée pour remplacer la démonstration statique.
+- TODAY V6.5 est préservé.

@@ -28,6 +28,7 @@ export default function App(){
   const [checkins,setCheckins]=useState(store.getCheckins())
   const [activeEx,setActiveEx]=useState(0)
   const [rest,setRest]=useState(0)
+  const [demoOpen,setDemoOpen]=useState(false)
   const timerRef=useRef<number|undefined>(undefined)
 
   const current=sessions[day%sessions.length]
@@ -61,6 +62,14 @@ export default function App(){
     if(timerRef.current)clearInterval(timerRef.current)
     setRest(sec)
     timerRef.current=window.setInterval(()=>setRest(v=>{if(v<=1){if(timerRef.current)clearInterval(timerRef.current);return 0}return v-1}),1000)
+  }
+  function addSet(ex:any){
+    const old=workout[ex.id]??Array.from({length:ex.sets},()=>({weight:'',reps:'',rir:'2',done:false}))
+    const next={...workout,[ex.id]:[...old,{weight:'',reps:'',rir:'2',done:false}]}
+    setWorkout(next);store.setWorkout(next)
+  }
+  function finishExercise(){
+    if(activeEx<current.exercises.length-1)setActiveEx(activeEx+1)
   }
   function addDaily(form:HTMLFormElement){
     const fd=new FormData(form),w=Number(fd.get('weight'));if(!w)return
@@ -147,23 +156,78 @@ export default function App(){
         </section>
       </main>}
 
-      {tab==='workout'&&<main className="screen">
-        <header className="workoutHead"><button onClick={()=>setTab('today')}>‹</button><div><h2>{current.title}</h2><p>{current.subtitle}</p></div><button>⋮</button></header>
-        <div className="stepper">{current.exercises.map((_:any,i:number)=><button onClick={()=>setActiveEx(i)} className={i===activeEx?'active':''} key={i}>{i+1}</button>)}</div>
+      {tab==='workout'&&<main className="screen workoutScreen">
+        <header className="workoutHead">
+          <button aria-label="Retour" onClick={()=>setTab('today')}>‹</button>
+          <div><h2>{current.title}</h2><p>{current.subtitle}</p></div>
+          <button aria-label="Menu">⋮</button>
+        </header>
+
+        <div className="stepper" aria-label="Progression de la séance">
+          {current.exercises.map((_:any,i:number)=><button
+            onClick={()=>setActiveEx(i)}
+            className={`${i===activeEx?'active ':''}${i<activeEx?'complete':''}`}
+            key={i}>{i+1}</button>)}
+        </div>
+
+        <p className="workoutCounter">Exercice {activeEx+1}/{current.exercises.length}</p>
+
         <section className="exercisePanel glass">
-          <p className="sectionLabel noMargin">Exercice {activeEx+1}/{current.exercises.length}</p>
-          <div className="exerciseTitle"><h2>{exercise.name}</h2><span>{exercise.area}</span></div>
-          <div className="exerciseMedia"><img src={todayAnatomy} alt="Démonstration exercice"/><button className="play">▶</button></div>
-          <div className="cue"><small>CONSIGNES</small><p>{exercise.cue}</p></div>
+          <div className="exerciseTitle">
+            <h2>{exercise.name}</h2><span>{exercise.area}</span>
+          </div>
+
+          <div className="exerciseMedia">
+            <div className="gymBackdrop">
+              <div className="demoAthlete">
+                <img src={todayAnatomy} alt="Démonstration visuelle de l’exercice"/>
+              </div>
+            </div>
+            <button className="play" aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>▶</button>
+            <img className="mediaAnatomy" src={todayAnatomy} alt="Zone musculaire sollicitée"/>
+          </div>
+
+          <div className="cue">
+            <small>CONSIGNES</small>
+            <p>{exercise.cue}</p>
+          </div>
+
           <div className="setTable">
-            <div className="setRow header"><span>SÉRIE</span><span>POIDS</span><span>REPS</span><span>RIR</span><span>✓</span></div>
+            <div className="setRow header">
+              <span>SÉRIE</span><span>POIDS (KG)</span><span>RÉPÉTITIONS</span><span>RIR</span><span>VALIDÉ</span>
+            </div>
             {sets.map((s:any,i:number)=><div className="setRow" key={i}>
-              <b>{i+1}</b><input value={s.weight} onChange={e=>updateSet(exercise,i,{weight:e.target.value})}/><input value={s.reps} onChange={e=>updateSet(exercise,i,{reps:e.target.value})}/><input value={s.rir} onChange={e=>updateSet(exercise,i,{rir:e.target.value})}/><button className={s.done?'done':''} onClick={()=>{updateSet(exercise,i,{done:!s.done});if(!s.done)startTimer(exercise.rest)}}>{s.done?'✓':'○'}</button>
+              <b>{i+1}</b>
+              <input inputMode="decimal" aria-label={`Poids série ${i+1}`} value={s.weight} onChange={e=>updateSet(exercise,i,{weight:e.target.value})}/>
+              <input inputMode="numeric" aria-label={`Répétitions série ${i+1}`} value={s.reps} onChange={e=>updateSet(exercise,i,{reps:e.target.value})}/>
+              <input inputMode="numeric" aria-label={`RIR série ${i+1}`} value={s.rir} onChange={e=>updateSet(exercise,i,{rir:e.target.value})}/>
+              <button aria-label={`Valider série ${i+1}`} className={s.done?'done':''} onClick={()=>{updateSet(exercise,i,{done:!s.done});if(!s.done)startTimer(exercise.rest)}}>{s.done?'✓':'○'}</button>
             </div>)}
           </div>
-          <div className="dual"><button className="secondary">AJOUTER SÉRIE</button><button className="primary" onClick={()=>setActiveEx(Math.min(activeEx+1,current.exercises.length-1))}>TERMINER EXERCICE ✓</button></div>
+
+          <div className="dual">
+            <button className="secondary" onClick={()=>addSet(exercise)}>AJOUTER SÉRIE</button>
+            <button className="primary" onClick={finishExercise}>TERMINER EXERCICE ✓</button>
+          </div>
         </section>
+
+        {activeEx<current.exercises.length-1&&<button className="nextExercise glass" onClick={()=>setActiveEx(activeEx+1)}>
+          <div className="nextThumb"><img src={todayAnatomy} alt="Exercice suivant"/></div>
+          <div><small>EXERCICE SUIVANT</small><b>{current.exercises[activeEx+1].name}</b><span>{current.exercises[activeEx+1].sets} séries</span></div>
+          <strong>›</strong>
+        </button>}
+
         {rest>0&&<div className="rest"><small>REPOS</small><b>{Math.floor(rest/60)}:{String(rest%60).padStart(2,'0')}</b><button onClick={()=>setRest(0)}>PASSER</button></div>}
+
+        {demoOpen&&<div className="demoModal" role="dialog" aria-modal="true" aria-label="Démonstration exercice">
+          <button className="demoClose" onClick={()=>setDemoOpen(false)}>×</button>
+          <div className="demoVisual"><img src={todayAnatomy} alt="Démonstration anatomique"/></div>
+          <small>DÉMONSTRATION</small>
+          <h3>{exercise.name}</h3>
+          <p>{exercise.cue}</p>
+          <div className="demoMeta"><span>{exercise.sets} séries</span><span>{exercise.reps} reps</span><span>RIR {exercise.rir}</span><span>{exercise.rest}s repos</span></div>
+          <button className="primary full" onClick={()=>setDemoOpen(false)}>J’AI COMPRIS</button>
+        </div>}
       </main>}
 
       {tab==='nutrition'&&<main className="screen"><header className="pageTitle"><h1>NUTRITION</h1><p>Déficit contrôlé • performance préservée</p></header><div className="macroGrid">{[['CALORIES',2800,'kcal'],['PROTÉINES',190,'g'],['LIPIDES',85,'g'],['GLUCIDES',319,'g']].map(x=><article key={String(x[0])}><small>{x[0]}</small><b>{x[1]}</b><span>{x[2]}</span></article>)}</div></main>}
