@@ -66,3 +66,10 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Largeur app 390 px sur desktop, 100% iPhone.
 - Asset anatomique et L5-S1 dérivés de la maquette validée.
 - Les autres écrans restent fonctionnels mais ne sont pas encore pixel-lockés.
+
+## V6.1 TODAY Finalize
+- Courbe 7 jours toujours visible grâce à un fallback de démonstration.
+- Labels L M M J V S D visibles.
+- Carte poids/taille resserrée.
+- Illustration anatomique mieux fondue dans la carte PUSH.
+- Netteté et densité verticale affinées.

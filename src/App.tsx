@@ -7,6 +7,10 @@ const l5Spine = new URL('./assets/l5-spine.jpg', import.meta.url).href
 
 type Tab = 'today'|'workout'|'nutrition'|'progress'|'coach'
 const target={calories:2800,protein:190,fat:85,carbs:319,steps:8000}
+const fallbackTrendData=[
+  {day:'L',weight:105.6},{day:'M',weight:105.0},{day:'M',weight:104.4},
+  {day:'J',weight:104.9},{day:'V',weight:104.0},{day:'S',weight:103.5},{day:'D',weight:103.1}
+]
 
 const nav:[Tab,string,string][]=[
   ['today','⌂','TODAY'],
@@ -28,12 +32,12 @@ export default function App(){
 
   const current=sessions[day%sessions.length]
   const latest=daily.at(-1)
-  const chartData=daily.slice(-7).length>=2 ? daily.slice(-7) : [
-    {date:'L',weight:106.1},{date:'M',weight:105.7},{date:'M2',weight:104.9},{date:'J',weight:105.3},{date:'V',weight:104.6},{date:'S',weight:104.2},{date:'D',weight:103.9}
-  ]
   const weight=latest?.weight??105
   const waist=latest?.waist??102.2
   const latestCheck=checkins.at(-1)
+  const trendData=daily.length>=2
+    ? daily.slice(-7).map((x:any,i:number)=>({day:['L','M','M','J','V','S','D'][Math.max(0,7-Math.min(7,daily.slice(-7).length)+i)]||'',weight:x.weight}))
+    : fallbackTrendData
 
   const decision=useMemo(()=>{
     if(!latestCheck)return{type:'KEEP',cls:'keep',text:'Tout est sous contrôle. Continue comme ça.'}
@@ -124,11 +128,11 @@ export default function App(){
           </div>
           <div className="trendChart">
             <ResponsiveContainer width="100%" height={112}>
-              <LineChart data={chartData}>
-                <XAxis dataKey="date" tick={{fontSize:7,fill:'#7f8998'}} axisLine={false} tickLine={false}/>
-                <YAxis hide domain={['dataMin - .6','dataMax + .6']}/>
+              <LineChart data={trendData} margin={{top:8,right:6,bottom:2,left:0}}>
+                <XAxis dataKey="day" tick={{fontSize:8,fill:'#7f8998'}} axisLine={false} tickLine={false} interval={0}/>
+                <YAxis hide domain={['dataMin - 1','dataMax + 1']}/>
                 <Tooltip contentStyle={{background:'#090e15',border:'1px solid #202a38',borderRadius:8,fontSize:9}}/>
-                <Line type="monotone" dataKey="weight" stroke="#8a67ff" strokeWidth={3} dot={{r:3,fill:'#8a67ff'}}/>
+                <Line type="monotone" dataKey="weight" stroke="#8a67ff" strokeWidth={3} dot={{r:3,fill:'#a287ff',stroke:'#d6ccff',strokeWidth:1}} activeDot={{r:4}}/>
               </LineChart>
             </ResponsiveContainer>
           </div>

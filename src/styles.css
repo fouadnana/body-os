@@ -14,3 +14,46 @@
 .aiCoachCard{height:105px;padding:12px}.aiCoachCard b{font-size:18px}.aiCoachCard p{font-size:9.5px}.brainGlow{width:53px;height:53px;right:12px;bottom:12px;box-shadow:0 0 28px #19c96a33}
 .bottomNav{height:68px;background:#03070cf5}.bottomNav button span{font-size:16px}.bottomNav button small{font-size:6.5px}
 @media(min-width:431px){.desktopStage{padding:20px 24px 42px}.phoneApp{min-height:874px}}
+
+
+/* V6.1 — TODAY final polish */
+.phoneApp{
+  -webkit-font-smoothing:antialiased;
+  text-rendering:geometricPrecision;
+}
+.todayScreen .missionCard{
+  height:208px;
+}
+.todayScreen .missionVisual img{
+  width:112%;
+  height:106%;
+  object-fit:cover;
+  object-position:center 46%;
+  border-radius:0;
+  mix-blend-mode:screen;
+  filter:contrast(1.13) saturate(1.12) brightness(1.02);
+  mask-image:linear-gradient(90deg,transparent 0%,#000 16%,#000 100%);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 16%,#000 100%);
+}
+.todayScreen .trendCard{
+  height:184px;
+}
+.todayScreen .trendChart{
+  height:122px;
+  margin-top:2px;
+}
+.todayScreen .trendStats b{
+  letter-spacing:-.01em;
+}
+.todayScreen .aiCoachCard{
+  height:94px;
+}
+.todayScreen .sectionLabel{
+  margin-top:14px;
+}
+.todayScreen .kpiGrid article{
+  min-height:78px;
+}
+@media(max-width:430px){
+  .todayScreen .trendCard{height:182px}
+}
