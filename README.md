@@ -1,0 +1,43 @@
+# BODY OS — AI CUT V2
+
+PWA React + TypeScript, conçue à partir des maquettes validées.
+
+## V2 inclut
+- TODAY cockpit
+- WORKOUT set-by-set + timer repos
+- sauvegarde charges / reps / RIR
+- archivage de séance + volume
+- conseil automatique KEEP / PROGRESS par exercice
+- nutrition quotidienne + macros
+- suivi poids / tour de taille / pas
+- photos FACE / PROFIL / DOS stockées localement dans IndexedDB
+- AI CHECK-IN utilisant tendances 7/14 jours
+- décisions KEEP / PROGRESS / ADJUST / RECOVER
+- niveaux L5-S1 1→4
+- blocage prudent des exercices `medium` si check-in dos = orange/rouge
+- PWA installable iPhone
+- workflow GitHub Pages prêt à l'emploi
+
+## Lancer localement
+```bash
+npm install
+npm run dev
+```
+
+## Build
+```bash
+npm run build
+```
+
+## Déploiement GitHub Pages
+1. Créer un repo GitHub.
+2. Mettre ces fichiers sur `main`.
+3. Settings → Pages → Source: GitHub Actions.
+4. Le workflow `.github/workflows/deploy.yml` build et publie automatiquement.
+
+## Données
+Les données sont locales au navigateur :
+- localStorage : séances, mesures, check-ins
+- IndexedDB : photos de progression
+
+Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
