@@ -50,3 +50,12 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Navigation 5 tabs fixe.
 - Données et moteur V2 conservés.
 - Déploiement GitHub Pages : `npm install && npm run deploy`.
+
+
+## V4 Pixel-Parity
+- TODAY responsive mobile/desktop.
+- Premium anatomy component.
+- WORKOUT split layout desktop, compact mobile.
+- AI COACH two-column desktop, single-column mobile.
+- `.gitignore` added to exclude node_modules/dist.
+- Deploy: `npm install && npm run build && npm run deploy`.
