@@ -4,6 +4,7 @@ import { sessions } from './data/program'
 import { store, type SetLog, type CoachCheckin } from './lib/storage'
 const todayAnatomy = '/body-os/today-anatomy-premium.png'
 const l5Spine = '/body-os/l5-spine.svg'
+const workoutInclineDemo = '/body-os/workout-incline-demo.jpg'
 
 type Tab = 'today'|'workout'|'nutrition'|'progress'|'coach'
 const target={calories:2800,protein:190,fat:85,carbs:319,steps:8000}
@@ -11,6 +12,20 @@ const fallbackTrendData=[
   {day:'L',weight:105.6},{day:'M',weight:105.0},{day:'M',weight:104.4},
   {day:'J',weight:104.9},{day:'V',weight:104.0},{day:'S',weight:103.5},{day:'D',weight:103.1}
 ]
+
+function prescribedSets(ex:any){
+  if(ex.id==='incline-machine'){
+    return [
+      {weight:'80',reps:'10',rir:'2',done:true},
+      {weight:'80',reps:'10',rir:'2',done:true},
+      {weight:'80',reps:'9',rir:'2',done:true},
+      {weight:'80',reps:'8',rir:'2',done:false},
+    ]
+  }
+  const targetReps=String(ex.reps||'').match(/\d+/)?.[0]||''
+  const targetRir=String(ex.rir||'2').match(/\d+/)?.[0]||'2'
+  return Array.from({length:ex.sets},()=>({weight:'',reps:targetReps,rir:targetRir,done:false}))
+}
 
 const nav:[Tab,string,string][]=[
   ['today','⌂','TODAY'],
@@ -50,11 +65,11 @@ export default function App(){
 
   const score=latestCheck?Math.round(((6-latestCheck.fatigue)+latestCheck.recovery+(6-latestCheck.hunger)+latestCheck.performance+latestCheck.adherence+latestCheck.back)/30*100):82
   const exercise=current.exercises[activeEx]??current.exercises[0]
-  const sets=exercise?(workout[exercise.id]??Array.from({length:exercise.sets},()=>({weight:'',reps:'',rir:'2',done:false}))):[]
+  const sets=exercise?(workout[exercise.id]??prescribedSets(exercise)):[]
 
   function setDay(n:number){setDayState(n);store.setDay(n)}
   function updateSet(ex:any,i:number,patch:Partial<SetLog>){
-    const old=workout[ex.id]??Array.from({length:ex.sets},()=>({weight:'',reps:'',rir:'2',done:false}))
+    const old=workout[ex.id]??prescribedSets(ex)
     const nextSets=old.map((s:any,idx:number)=>idx===i?{...s,...patch}:s)
     const next={...workout,[ex.id]:nextSets};setWorkout(next);store.setWorkout(next)
   }
@@ -64,7 +79,7 @@ export default function App(){
     timerRef.current=window.setInterval(()=>setRest(v=>{if(v<=1){if(timerRef.current)clearInterval(timerRef.current);return 0}return v-1}),1000)
   }
   function addSet(ex:any){
-    const old=workout[ex.id]??Array.from({length:ex.sets},()=>({weight:'',reps:'',rir:'2',done:false}))
+    const old=workout[ex.id]??prescribedSets(ex)
     const next={...workout,[ex.id]:[...old,{weight:'',reps:'',rir:'2',done:false}]}
     setWorkout(next);store.setWorkout(next)
   }
@@ -179,9 +194,7 @@ export default function App(){
 
           <div className="exerciseMedia">
             <div className="gymBackdrop">
-              <div className="demoAthlete">
-                <img src={todayAnatomy} alt="Démonstration visuelle de l’exercice"/>
-              </div>
+              <img className="workoutDemoPhoto" src={exercise.id==='incline-machine'?workoutInclineDemo:todayAnatomy} alt={`Démonstration visuelle : ${exercise.name}`}/>
             </div>
             <button className="play" aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>▶</button>
             <img className="mediaAnatomy" src={todayAnatomy} alt="Zone musculaire sollicitée"/>
@@ -221,7 +234,7 @@ export default function App(){
 
         {demoOpen&&<div className="demoModal" role="dialog" aria-modal="true" aria-label="Démonstration exercice">
           <button className="demoClose" onClick={()=>setDemoOpen(false)}>×</button>
-          <div className="demoVisual"><img src={todayAnatomy} alt="Démonstration anatomique"/></div>
+          <div className="demoVisual"><img src={exercise.id==='incline-machine'?workoutInclineDemo:todayAnatomy} alt={`Démonstration : ${exercise.name}`}/></div>
           <small>DÉMONSTRATION</small>
           <h3>{exercise.name}</h3>
           <p>{exercise.cue}</p>

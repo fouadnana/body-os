@@ -109,3 +109,11 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Le bouton Play ouvre désormais une fiche de démonstration intégrée.
 - Limite volontaire : aucune vidéo d'exercice réelle n'est embarquée dans cette version ; il faut une bibliothèque vidéo/source dédiée pour remplacer la démonstration statique.
 - TODAY V6.5 est préservé.
+
+## V6.6.1 — WORKOUT iPhone Fidelity Lock
+- La grande zone média reprend désormais la démonstration visuelle du développé incliné issue de la maquette de référence validée.
+- L'anatomie reste uniquement en vignette secondaire, comme dans la maquette.
+- Premier exercice PUSH prérempli à 80/10/2, 80/10/2, 80/9/2, 80/8/2 pour reproduire l'expérience cible.
+- Les données restent modifiables et persistantes via le stockage existant.
+- Compaction iPhone du header, stepper, média, consignes, tableau et actions afin de faire remonter la carte Exercice suivant.
+- Le bouton Play ouvre toujours la démonstration intégrée.
