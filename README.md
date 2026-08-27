@@ -73,3 +73,9 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Carte poids/taille resserrée.
 - Illustration anatomique mieux fondue dans la carte PUSH.
 - Netteté et densité verticale affinées.
+
+## V6.2 Retina Sharp
+- Remplacement des petits JPG par des SVG vectoriels.
+- Suppression des compositings/masks pouvant dégrader le rendu.
+- Aucun transform/scale sur le viewport applicatif.
+- Typographies légèrement remontées pour la netteté Retina.
