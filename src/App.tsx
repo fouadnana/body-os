@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { sessions } from './data/program'
 import { store, type SetLog, type CoachCheckin } from './lib/storage'
-const todayAnatomy = '/body-os/today-anatomy.svg'
+const todayAnatomy = '/body-os/today-anatomy-premium.png'
 const l5Spine = '/body-os/l5-spine.svg'
 
 type Tab = 'today'|'workout'|'nutrition'|'progress'|'coach'

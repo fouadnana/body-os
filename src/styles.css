@@ -111,3 +111,48 @@ html,body,#root,.desktopStage,.phoneApp{
 .todayScreen .l5Card img{
   object-fit:contain;
 }
+
+/* V6.3 — TODAY final visual lock */
+.todayScreen .missionCard{
+  height:214px;
+  background:
+    radial-gradient(circle at 80% 42%,rgba(28,62,132,.46),rgba(7,11,16,0) 45%),
+    linear-gradient(145deg,#0b1119,#070b10);
+}
+.todayScreen .missionVisual{
+  position:relative;
+  align-self:stretch;
+  overflow:hidden;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+}
+.todayScreen .missionVisual::before{
+  content:"";
+  position:absolute;
+  inset:12% -4% 0;
+  background:radial-gradient(ellipse at 50% 45%,rgba(40,96,255,.22),rgba(0,0,0,0) 67%);
+  pointer-events:none;
+}
+.todayScreen .missionVisual img{
+  position:relative;
+  z-index:1;
+  width:126px;
+  height:auto;
+  max-height:198px;
+  object-fit:contain;
+  object-position:center bottom;
+  filter:none;
+  border-radius:0;
+}
+.phoneApp{
+  width:390px;
+  transform:none!important;
+  zoom:1!important;
+}
+@media(max-width:430px){
+  .phoneApp{width:100%}
+  .todayScreen .missionVisual img{
+    width:min(126px,34vw);
+  }
+}

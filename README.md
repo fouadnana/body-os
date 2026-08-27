@@ -84,3 +84,9 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Assets Retina servis depuis public/ avec chemins GitHub Pages explicites.
 - Correction de la déclaration CSS invalide `-webkit-`.
 - Aucun changement fonctionnel ou de layout hors rendu des illustrations.
+
+## V6.3 TODAY Final Visual
+- Retour au visuel anatomique premium de la maquette validée.
+- Asset PNG lossless préparé en haute résolution, sans JPEG 8 kB.
+- Rendu à taille contrôlée pour éviter l'agrandissement flou.
+- Structure, courbe, L5-S1 et moteur V6.2.1 conservés.
