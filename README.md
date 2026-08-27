@@ -59,3 +59,10 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - AI COACH two-column desktop, single-column mobile.
 - `.gitignore` added to exclude node_modules/dist.
 - Deploy: `npm install && npm run build && npm run deploy`.
+
+
+## V5 TODAY Pixel Lock
+- TODAY verrouillé sur la maquette validée.
+- Largeur app 390 px sur desktop, 100% iPhone.
+- Asset anatomique et L5-S1 dérivés de la maquette validée.
+- Les autres écrans restent fonctionnels mais ne sont pas encore pixel-lockés.
