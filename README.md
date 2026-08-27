@@ -79,3 +79,8 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Suppression des compositings/masks pouvant dégrader le rendu.
 - Aucun transform/scale sur le viewport applicatif.
 - Typographies légèrement remontées pour la netteté Retina.
+
+## V6.2.1 Asset Hotfix
+- Assets Retina servis depuis public/ avec chemins GitHub Pages explicites.
+- Correction de la déclaration CSS invalide `-webkit-`.
+- Aucun changement fonctionnel ou de layout hors rendu des illustrations.
