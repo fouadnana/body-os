@@ -126,3 +126,10 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Démo inclinée validée conservée.
 - Slots média explicites pour les autres exercices, sans fausse démonstration.
 - Voir `WORKOUT-ENGINE.md`.
+
+## V6.7.1 — No Image Duplicates
+- Correction ciblée du doublon anatomique sur `incline-machine`.
+- L'asset de démonstration actuel contient déjà son mannequin anatomique : la carte dynamique supplémentaire est donc masquée uniquement pour cet exercice.
+- Pour tous les autres exercices, la carte musculaire dynamique reste active.
+- Aucun changement sur le moteur, les prescriptions, la navigation, le stockage ou le layout.
+- Prochaine étape : remplacer progressivement les démos par des assets propres sans anatomie incrustée, afin de réactiver une carte musculaire unique et indépendante partout.

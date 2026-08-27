@@ -202,12 +202,12 @@ export default function App(){
             </div>
             <button className="play" aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>▶</button>
             {!hasExerciseDemo&&<span className="mediaPending">DÉMO À PRODUIRE</span>}
-            <div className={`muscleMap ${exercise.media.anatomyView}`} aria-label="Muscles sollicités">
+            {exercise.id!=='incline-machine'&&<div className={`muscleMap ${exercise.media.anatomyView}`} aria-label="Muscles sollicités">
               <img src={todayAnatomy} alt="Carte anatomique"/>
               <div className="muscleMapLegend">
                 {primaryMuscles.slice(0,2).map(m=><span className="primaryMuscle" key={m}>{muscleLabels[m]}</span>)}
               </div>
-            </div>
+            </div>}
           </div>
 
           <div className="cue">
