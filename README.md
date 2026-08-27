@@ -117,3 +117,12 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Les données restent modifiables et persistantes via le stockage existant.
 - Compaction iPhone du header, stepper, média, consignes, tableau et actions afin de faire remonter la carte Exercice suivant.
 - Le bouton Play ouvre toujours la démonstration intégrée.
+
+## V6.7 — Workout Exercise Engine
+- Écran WORKOUT unique et data-driven.
+- 5 séances structurées.
+- Muscle mapping principal/secondaire par exercice.
+- Prescriptions dynamiques.
+- Démo inclinée validée conservée.
+- Slots média explicites pour les autres exercices, sans fausse démonstration.
+- Voir `WORKOUT-ENGINE.md`.

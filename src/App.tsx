@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { sessions } from './data/program'
+import { sessions, muscleLabels, type Exercise } from './data/program'
 import { store, type SetLog, type CoachCheckin } from './lib/storage'
 const todayAnatomy = '/body-os/today-anatomy-premium.png'
 const l5Spine = '/body-os/l5-spine.svg'
@@ -13,14 +13,14 @@ const fallbackTrendData=[
   {day:'J',weight:104.9},{day:'V',weight:104.0},{day:'S',weight:103.5},{day:'D',weight:103.1}
 ]
 
-function prescribedSets(ex:any){
-  if(ex.id==='incline-machine'){
-    return [
-      {weight:'80',reps:'10',rir:'2',done:true},
-      {weight:'80',reps:'10',rir:'2',done:true},
-      {weight:'80',reps:'9',rir:'2',done:true},
-      {weight:'80',reps:'8',rir:'2',done:false},
-    ]
+function prescribedSets(ex:Exercise){
+  if(ex.prescription?.length){
+    return ex.prescription.map((s,i)=>({
+      weight:s.weight??'',
+      reps:s.reps,
+      rir:s.rir,
+      done:ex.id==='incline-machine' && i<3
+    }))
   }
   const targetReps=String(ex.reps||'').match(/\d+/)?.[0]||''
   const targetRir=String(ex.rir||'2').match(/\d+/)?.[0]||'2'
@@ -66,6 +66,10 @@ export default function App(){
   const score=latestCheck?Math.round(((6-latestCheck.fatigue)+latestCheck.recovery+(6-latestCheck.hunger)+latestCheck.performance+latestCheck.adherence+latestCheck.back)/30*100):82
   const exercise=current.exercises[activeEx]??current.exercises[0]
   const sets=exercise?(workout[exercise.id]??prescribedSets(exercise)):[]
+  const demoAsset=exercise?.media.demoAsset || todayAnatomy
+  const hasExerciseDemo=Boolean(exercise?.media.demoAsset)
+  const primaryMuscles=exercise?.media.primaryMuscles??[]
+  const secondaryMuscles=exercise?.media.secondaryMuscles??[]
 
   function setDay(n:number){setDayState(n);store.setDay(n)}
   function updateSet(ex:any,i:number,patch:Partial<SetLog>){
@@ -194,10 +198,16 @@ export default function App(){
 
           <div className="exerciseMedia">
             <div className="gymBackdrop">
-              <img className="workoutDemoPhoto" src={exercise.id==='incline-machine'?workoutInclineDemo:todayAnatomy} alt={`Démonstration visuelle : ${exercise.name}`}/>
+              <img className={`workoutDemoPhoto ${hasExerciseDemo?'':'genericDemo'}`} src={demoAsset} alt={`Démonstration visuelle : ${exercise.name}`}/>
             </div>
             <button className="play" aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>▶</button>
-            <img className="mediaAnatomy" src={todayAnatomy} alt="Zone musculaire sollicitée"/>
+            {!hasExerciseDemo&&<span className="mediaPending">DÉMO À PRODUIRE</span>}
+            <div className={`muscleMap ${exercise.media.anatomyView}`} aria-label="Muscles sollicités">
+              <img src={todayAnatomy} alt="Carte anatomique"/>
+              <div className="muscleMapLegend">
+                {primaryMuscles.slice(0,2).map(m=><span className="primaryMuscle" key={m}>{muscleLabels[m]}</span>)}
+              </div>
+            </div>
           </div>
 
           <div className="cue">
@@ -234,11 +244,15 @@ export default function App(){
 
         {demoOpen&&<div className="demoModal" role="dialog" aria-modal="true" aria-label="Démonstration exercice">
           <button className="demoClose" onClick={()=>setDemoOpen(false)}>×</button>
-          <div className="demoVisual"><img src={exercise.id==='incline-machine'?workoutInclineDemo:todayAnatomy} alt={`Démonstration : ${exercise.name}`}/></div>
+          <div className="demoVisual"><img src={demoAsset} alt={`Démonstration : ${exercise.name}`}/></div>
           <small>DÉMONSTRATION</small>
           <h3>{exercise.name}</h3>
           <p>{exercise.cue}</p>
           <div className="demoMeta"><span>{exercise.sets} séries</span><span>{exercise.reps} reps</span><span>RIR {exercise.rir}</span><span>{exercise.rest}s repos</span></div>
+          <div className="muscleTags">
+            {primaryMuscles.map(m=><span className="primaryMuscle" key={m}>{muscleLabels[m]}</span>)}
+            {secondaryMuscles.map(m=><span className="secondaryMuscle" key={m}>{muscleLabels[m]}</span>)}
+          </div>
           <button className="primary full" onClick={()=>setDemoOpen(false)}>J’AI COMPRIS</button>
         </div>}
       </main>}
