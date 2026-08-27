@@ -90,3 +90,8 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Asset PNG lossless préparé en haute résolution, sans JPEG 8 kB.
 - Rendu à taille contrôlée pour éviter l'agrandissement flou.
 - Structure, courbe, L5-S1 et moteur V6.2.1 conservés.
+
+## V6.4 — Mockup Fidelity Lock
+- TODAY recalé sur la maquette V1 validée : proportions, densité, cartes, typographie et navigation.
+- Aucun changement de logique React, stockage, données ou navigation.
+- Asset V6.3 conservé : cette passe vise l'interface, pas une nouvelle direction graphique.

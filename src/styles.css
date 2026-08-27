@@ -156,3 +156,210 @@ html,body,#root,.desktopStage,.phoneApp{
     width:min(126px,34vw);
   }
 }
+
+
+/* =========================================================
+   V6.4 — VALIDATED MOCKUP FIDELITY LOCK / TODAY
+   Golden reference: BODY OS Maquettes V1 — TODAY
+   ========================================================= */
+:root{
+  --v64-line:#25303d;
+  --v64-panel:#0b1118;
+  --v64-panel2:#0d141d;
+  --v64-muted:#9aa4b3;
+  --v64-purple:#8a57ff;
+  --v64-blue:#2aa8ff;
+  --v64-green:#57df79;
+}
+.desktopStage{
+  align-items:flex-start;
+  padding-top:22px;
+}
+.phoneApp{
+  width:390px !important;
+  min-height:844px !important;
+  border:1px solid #28313d;
+  border-radius:34px;
+  overflow:hidden;
+  background:#020407;
+  box-shadow:0 30px 90px rgba(0,0,0,.75);
+}
+.screen.todayScreen{
+  padding:14px 18px 88px;
+}
+.appHeader{
+  height:56px;
+  padding:0 7px;
+}
+.brand{
+  font-size:18px;
+  line-height:.9;
+  letter-spacing:.10em;
+}
+.brand span{
+  margin-top:5px;
+  font-size:9px;
+  letter-spacing:.14em;
+}
+.appHeader button{
+  font-size:18px;
+}
+.helloCard{
+  min-height:67px;
+  padding:9px 12px;
+  border-radius:9px;
+}
+.helloCard h3{
+  font-size:13px;
+  margin-bottom:5px;
+}
+.helloCard h3 span{
+  font-size:9px;
+}
+.helloCard p{
+  font-size:9px;
+}
+.scoreRing{
+  width:52px;
+  height:52px;
+}
+.scoreRing b{font-size:14px}
+.scoreRing small{font-size:5px}
+.sectionLabel,
+.todayScreen .sectionLabel{
+  margin:13px 3px 7px;
+  font-size:9px;
+  letter-spacing:.02em;
+  color:#a5adba;
+}
+.todayScreen .missionCard{
+  height:183px;
+  padding:11px 12px;
+  grid-template-columns:48% 52%;
+  border-radius:9px;
+  background:
+    radial-gradient(circle at 82% 45%,rgba(25,58,126,.48),rgba(5,9,14,0) 47%),
+    linear-gradient(145deg,#0a1017,#060a0f);
+}
+.missionCopy{
+  align-self:center;
+}
+.missionCopy h1{
+  font-size:24px;
+  line-height:1;
+  margin:0 0 14px;
+}
+.todayScreen .missionCopy p{
+  font-size:11px;
+  line-height:1.45;
+  margin:0 0 16px;
+}
+.primary{
+  min-height:38px;
+  padding:9px 12px;
+  border-radius:7px;
+  font-size:9px;
+  letter-spacing:.01em;
+}
+.todayScreen .missionVisual{
+  margin:0;
+  align-self:stretch;
+}
+.todayScreen .missionVisual::before{
+  inset:3% -10% -4%;
+  background:radial-gradient(ellipse at 50% 48%,rgba(43,92,255,.25),transparent 66%);
+}
+.todayScreen .missionVisual img{
+  width:145px;
+  max-height:174px;
+  height:auto;
+  object-fit:contain;
+  object-position:center bottom;
+}
+.kpiGrid{
+  gap:7px;
+}
+.todayScreen .kpiGrid article{
+  min-height:76px;
+  padding:9px 10px;
+  border-radius:8px;
+}
+.kpiGrid article>span{font-size:14px}
+.todayScreen .kpiGrid small{font-size:6px;margin:3px 0}
+.todayScreen .kpiGrid b{font-size:16px}
+.todayScreen .kpiGrid em{font-size:7px;margin-top:4px}
+.todayScreen .l5Card{
+  height:69px;
+  margin-top:8px;
+  padding:7px 10px;
+  grid-template-columns:50px 1fr auto;
+  border-radius:8px;
+}
+.todayScreen .l5Card img{
+  width:43px;
+  height:50px;
+  background:transparent;
+}
+.todayScreen .l5Content b{font-size:13px}
+.todayScreen .l5Content small{font-size:7px;margin:4px 0}
+.todayScreen .l5Card>span{font-size:7px}
+.todayScreen .trendCard{
+  height:181px;
+  padding:10px 11px 6px;
+  border-radius:8px;
+}
+.trendStats{
+  gap:18px;
+}
+.todayScreen .trendStats small{font-size:6px}
+.todayScreen .trendStats b{font-size:14px;margin:4px 0}
+.todayScreen .trendStats em{font-size:7px}
+.todayScreen .trendChart{
+  height:116px;
+  margin-top:1px;
+}
+.todayScreen .aiCoachCard{
+  height:87px;
+  padding:10px 11px;
+  border-radius:8px;
+}
+.todayScreen .aiCoachCard small{font-size:7px}
+.todayScreen .aiCoachCard b{
+  font-size:16px;
+  margin:5px 0;
+}
+.todayScreen .aiCoachCard p{
+  font-size:9px;
+  line-height:1.35;
+}
+.brainGlow{
+  width:45px;
+  height:45px;
+  right:10px;
+  bottom:10px;
+}
+.bottomNav{
+  height:64px;
+  padding:0 5px;
+}
+.bottomNav button{
+  gap:4px;
+}
+.bottomNav button span{font-size:15px}
+.bottomNav button small{font-size:6px}
+@media(min-width:431px){
+  .desktopStage{
+    padding:22px 24px 42px;
+  }
+}
+@media(max-width:430px){
+  .desktopStage{padding:0}
+  .phoneApp{
+    width:100% !important;
+    min-height:100vh !important;
+    border:0;
+    border-radius:0;
+  }
+  .screen.todayScreen{padding-left:18px;padding-right:18px}
+  .todayScreen .missionVisual img{width:min(145px,38vw)}
+}
