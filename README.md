@@ -95,3 +95,10 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - TODAY recalé sur la maquette V1 validée : proportions, densité, cartes, typographie et navigation.
 - Aucun changement de logique React, stockage, données ou navigation.
 - Asset V6.3 conservé : cette passe vise l'interface, pas une nouvelle direction graphique.
+
+
+## V6.5 — iPhone Fidelity Lock
+- TODAY compressé spécifiquement pour iPhone 375/390 px afin de retrouver la densité de la maquette validée.
+- Header, greeting, PUSH, KPI, L5-S1, trend, AI Coach et bottom nav recalibrés.
+- Le visuel anatomique existant est fondu dans la carte via un masque CSS pour supprimer l'effet de rectangle noir.
+- Aucun changement de logique React, stockage, données, routes ou navigation.
