@@ -1,0 +1,24 @@
+{
+  "version": "6.21",
+  "name": "Nutrition UI Lock",
+  "changes": [
+    "Validated Nutrition mockup translated to production Journal UI",
+    "Reactive workout-family selector shared with WORKOUT state",
+    "PUSH/PULL/LEGS/UPPER/LOWER switching from Nutrition",
+    "Session-specific deterministic menu offset so session changes visibly change meals",
+    "Menu variant state reloaded when session family changes",
+    "Calories ring + macro progress bars",
+    "Journal meal timeline",
+    "Planned vs actual vs delta on logged programme meals",
+    "Adaptation opportunity card",
+    "Compact hydration + Nutrition Score",
+    "Recipe inspiration retained",
+    "V6.20 journal logging and bundle split retained"
+  ],
+  "known_limitations": [
+    "Full ingredient-level adaptive redistribution is not yet applied to future food quantities; adaptation card currently exposes the detected kcal delta and marks the next functional layer.",
+    "Workout-family profiles still share the same base food pools; session offsets ensure visible menu differences, but dedicated per-session food pools remain a V6.22 data-quality upgrade.",
+    "Food imagery is still semantic emoji/thumb UI, not final photography."
+  ],
+  "deployment": "NOT DEPLOYED"
+}

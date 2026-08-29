@@ -1526,3 +1526,80 @@ html,body,#root{background:#050b12!important}
 .recipeCards b{font-size:8px;line-height:1.2}
 .recipeCards span{font-size:6px;color:#92a7bb}
 .recipeCards button{margin-top:auto;border:1px solid #4b6681;background:#142b40;color:#d7e5f2;border-radius:7px;padding:6px 3px;font-size:5.8px;font-weight:800}
+
+/* =========================================================
+   V6.21 — NUTRITION GOLDEN UI LOCK
+   ========================================================= */
+.nutritionSessionSwitch{
+  display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;align-items:center;
+  margin:10px 0;padding:9px 10px
+}
+.nutritionSessionSwitch>div:first-child{display:flex;flex-direction:column;gap:2px}
+.nutritionSessionSwitch>div:first-child small{font-size:6px;letter-spacing:.12em;color:#91a4b8}
+.nutritionSessionSwitch>div:first-child b{font-size:11px;color:#fff}
+.nutritionSessionChoices{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.nutritionSessionChoices::-webkit-scrollbar{display:none}
+.nutritionSessionChoices button{
+  flex:0 0 auto;border:1px solid #46627c;background:#11263a;color:#8397ab;
+  border-radius:8px;padding:7px 8px;font-size:6px;font-weight:850
+}
+.nutritionSessionChoices button.active{
+  color:#fff;border-color:#8b63ff;background:linear-gradient(135deg,#342b72,#183457);
+  box-shadow:0 0 16px rgba(121,78,255,.2)
+}
+.journalCockpit{
+  display:grid;grid-template-columns:102px minmax(0,1fr);gap:12px;padding:14px;margin-top:10px
+}
+.journalCalorieRing{
+  --journal-pct:0deg;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(#8b5cff var(--journal-pct),#1b3347 0);
+  box-shadow:0 0 24px rgba(126,82,255,.12)
+}
+.journalCalorieRing:before{
+  content:"";position:absolute;width:75px;height:75px;border-radius:50%;background:#102438;border:1px solid #405c77
+}
+.journalCalorieRing{position:relative}
+.journalCalorieRing>div{position:relative;z-index:1;text-align:center;display:flex;flex-direction:column;line-height:1.05}
+.journalCalorieRing strong{font-size:17px}.journalCalorieRing span{font-size:8px;color:#c8d5e2}.journalCalorieRing small{font-size:6px;color:#8397aa}
+.journalCalorieCopy{display:flex;flex-direction:column;justify-content:center;gap:5px}
+.journalCalorieCopy small{font-size:7px;letter-spacing:.12em;color:#a8b9cb}
+.journalCalorieCopy b,.journalCalorieCopy strong{font-size:13px}.journalCalorieCopy b span,.journalCalorieCopy strong span{font-size:8px;font-weight:500}
+.journalCalorieCopy strong{color:#53e987}
+.journalMacroBars{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-top:10px;border-top:1px solid #39546d}
+.journalMacroBars>div{display:flex;flex-direction:column;gap:5px}
+.journalMacroBars small{font-size:6px;color:#a8b7c7}.journalMacroBars b{font-size:7px}.journalMacroBars em{font-style:normal;float:right;color:#aab8c7;font-size:6px}
+.journalMacroBars i{height:5px;border-radius:999px;background:#294158;overflow:hidden}.journalMacroBars i span{display:block;height:100%;border-radius:999px}
+.journalTodayLabel{font-size:7px;color:#9aaec2;letter-spacing:.12em;margin:12px 0 8px}
+.journalTimeline{position:relative}.journalTimeline:before{content:"";position:absolute;left:31px;top:29px;bottom:20px;width:1px;background:#405a73}
+.journalTimelineRow{display:grid;grid-template-columns:54px minmax(0,1fr);gap:7px;margin-bottom:9px;position:relative}
+.journalTimeRail{display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1}
+.journalTimeRail span{font-size:8px;color:#b3c4d6}.journalTimeRail i{font-style:normal;font-size:17px;background:#0a1724;padding:3px}
+.journalMealCard{padding:10px}
+.journalMealCard>header{display:flex;justify-content:space-between;gap:8px;padding-bottom:7px;border-bottom:1px solid #3a5269}
+.journalMealCard>header>div{display:flex;flex-direction:column;gap:3px}.journalMealCard>header b{font-size:10px}.journalMealCard>header small{font-size:6px;color:#8295a8}.journalMealCard>header>span{font-size:9px}
+.journalMealCard .journalStatus{margin:7px 0}
+.journalStatus.planned{border-color:#3d79a5;color:#7ac9ff;background:#102d42}
+.plannedActualGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.plannedActualGrid>div{display:flex;flex-direction:column;gap:4px;padding-right:6px;border-right:1px solid #334b62}
+.plannedActualGrid>div:last-child{border-right:0}.plannedActualGrid small{font-size:6px}.plannedActualGrid b{font-size:8px}.plannedActualGrid span{font-size:7px;color:#cad5df}
+.plannedActualGrid .positiveDelta b,.plannedActualGrid .positiveDelta span{color:#ff8a69}
+.plannedActualGrid .negativeDelta b,.plannedActualGrid .negativeDelta span{color:#5ce59c}
+.plannedMealPreview{display:flex;gap:5px;overflow-x:auto;padding-top:8px;scrollbar-width:none}
+.plannedMealPreview span{flex:0 0 49px;height:43px;border:1px solid #45617a;border-radius:8px;background:#17324a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.plannedMealPreview i{font-style:normal;font-size:17px}.plannedMealPreview b{font-size:4.8px;max-width:44px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.journalFoodThumbs{display:flex;gap:5px;margin-top:8px;overflow-x:auto}.journalFoodThumbs span{width:47px;height:43px;border:1px solid #4a6781;background:#173249;border-radius:8px;display:grid;place-items:center;position:relative}.journalFoodThumbs i{font-style:normal;font-size:19px}.journalFoodThumbs small{position:absolute;bottom:2px;right:3px;background:#081420b8;padding:1px 2px;border-radius:3px;font-size:4.8px}
+.nutritionAdaptation{display:grid;grid-template-columns:minmax(0,1fr) 122px;gap:10px;padding:11px;margin-top:10px;align-items:center;border-color:#5f5a83!important}
+.nutritionAdaptation>div{display:flex;flex-direction:column;gap:4px}.nutritionAdaptation small{font-size:7px;color:#ffd456!important;font-weight:900}.nutritionAdaptation b{font-size:8px}.nutritionAdaptation span{font-size:6.5px;color:#a5b6c6;line-height:1.4}
+.nutritionAdaptation button{border:1px solid #715ce5;background:linear-gradient(135deg,#43308e,#253a6e);color:white;border-radius:9px;padding:9px 7px;font-size:6px;font-weight:900;line-height:1.3}
+.journalBottomGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.compactHydration{margin:0!important;padding:10px!important}.compactHydration b{font-size:14px!important}.compactHydration .waterActions{gap:4px!important}.compactHydration .waterActions button{font-size:6px!important;padding:7px 3px!important}
+.nutritionScoreCard{padding:10px;display:grid;grid-template-columns:58px 1fr;gap:8px;align-items:center}
+.nutritionScoreRing{--score-pct:0deg;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#55eb83 var(--score-pct),#20364a 0);position:relative}
+.nutritionScoreRing:before{content:"";position:absolute;width:44px;height:44px;border-radius:50%;background:#102539}.nutritionScoreRing b{position:relative;z-index:1;font-size:13px}
+.nutritionScoreCard>div:last-child{display:flex;flex-direction:column;gap:2px}.nutritionScoreCard>div:last-child>small{font-size:6px;color:#b0c0cf}.nutritionScoreCard>div:last-child span{display:grid;grid-template-columns:5px 1fr auto;gap:4px;align-items:center;font-size:5.5px}.nutritionScoreCard>div:last-child i{width:4px;height:4px;border-radius:50%;background:#6eaaff}.nutritionScoreCard>div:last-child span:nth-of-type(2) i{background:#f8b24b}.nutritionScoreCard>div:last-child span:nth-of-type(3) i{background:#93a4b6}.nutritionScoreCard>div:last-child span:nth-of-type(4) i{background:#ead65b}.nutritionScoreCard>div:last-child span:nth-of-type(5) i{background:#ef7b48}
+
+@media(max-width:380px){
+  .nutritionSessionSwitch{grid-template-columns:80px minmax(0,1fr)}
+  .journalCockpit{grid-template-columns:88px minmax(0,1fr)}
+  .journalCalorieRing{width:82px;height:82px}.journalCalorieRing:before{width:66px;height:66px}
+}

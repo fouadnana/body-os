@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { sessions, muscleLabels, type Exercise } from './data/program'
 import { store, type SetLog, type CoachCheckin } from './lib/storage'
@@ -178,11 +178,13 @@ function buildWeeklyProtocol(sessionKey:string,weekSeed:number){
   const profile=weeklyMenuProfiles[sessionKey]||weeklyMenuProfiles.PUSH
   const times=['07:00','12:30','16:30','20:00']
   const slots:['breakfast','lunch','snack','dinner']=['breakfast','lunch','snack','dinner']
-  const meals=slots.map((slot,i)=>({time:times[i],...seededPick(profile.pools[slot],weekSeed,i+sessionKey.length)}))
+  const sessionOffsets:Record<string,number>={PUSH:0,PULL:1,LEGS:2,UPPER:2,LOWER:1,RECOVERY:0}
+  const familyOffset=sessionOffsets[sessionKey]??0
+  const meals=slots.map((slot,i)=>({time:times[i],...seededPick(profile.pools[slot],weekSeed+familyOffset,i+familyOffset)}))
   return {day:'WEEKLY',mode:profile.mode,session:profile.session,kcal:profile.kcal,protein:profile.protein,carbs:profile.carbs,fat:profile.fat,score:86,meals,why:profile.why}
 }
 
-function NutritionScreen({activeDay}:{activeDay:number}){
+function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSessionChange:(day:number)=>void}){
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   const weekSeed=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/(86400000*7))
@@ -210,6 +212,10 @@ function NutritionScreen({activeDay}:{activeDay:number}){
   const [editorOpen,setEditorOpen]=useState(false)
   const [editingId,setEditingId]=useState<string|null>(null)
   const [adjustingMeal,setAdjustingMeal]=useState<DailyMeal|null>(null)
+
+  useEffect(()=>{
+    setRegen(Number(localStorage.getItem(overrideKey)||0))
+  },[overrideKey])
 
   const protocolRaw=buildWeeklyProtocol(sessionKey,weekSeed+regen)
   const protocol:NutritionProtocol={
@@ -280,10 +286,30 @@ function NutritionScreen({activeDay}:{activeDay:number}){
     localStorage.setItem(`bodyos:nutrition:closed:${dayKey}`,'1');setDayClosed(true)
   }
   const statusLabel=(s?:NutritionEntry['status'])=>s==='consumed'?'CONSOMMÉ':s==='partial'?'AJUSTÉ':s==='skipped'?'NON CONSOMMÉ':'SAISIE MANUELLE'
+  const pct=(value:number,max:number)=>Math.max(0,Math.min(100,Math.round(value/max*100)))
+  const plannedLoggedKcal=entries.filter(e=>e.source==='programme').reduce((sum,e)=>{
+    const planned=protocol.meals.find(m=>m.time===e.time)
+    return sum+(planned?.kcal||0)
+  },0)
+  const programmeActualKcal=entries.filter(e=>e.source==='programme').reduce((sum,e)=>sum+e.kcal,0)
+  const kcalDelta=Math.round(programmeActualKcal-plannedLoggedKcal)
+  const calorieScore=Math.max(0,100-Math.round(Math.abs(targets.kcal-totals.kcal)/targets.kcal*100))
+  const proteinScore=pct(totals.protein,targets.protein)
+  const hydrationScore=pct(water,targets.water)
+  const adherenceScore=Math.round(resolvedCount/protocol.meals.length*100)
+  const timingScore=resolvedCount?Math.min(100,78+resolvedCount*5):0
+  const nutritionScore=Math.round(calorieScore*.3+proteinScore*.3+timingScore*.15+hydrationScore*.1+adherenceScore*.15)
+  const sessionChoices=sessions.map((session,i)=>({i,label:session.title.replace(' A','').replace(' + BRAS','')}))
 
   return <main className="screen nutritionScreen adaptiveNutrition">
     <header className="nutritionTopbar"><button aria-label="Menu">☰</button><div><h1>NUTRITION</h1><p>Adaptive Nutrition Engine</p></div><button aria-label="Réglages">☷</button></header>
     <div className="nutritionTabs"><button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button><button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button></div>
+    <section className="nutritionSessionSwitch glass">
+      <div><small>SÉANCE DU JOUR</small><b>{protocol.session}</b></div>
+      <div className="nutritionSessionChoices">
+        {sessionChoices.map(choice=><button key={choice.i} className={choice.i===activeDay%sessions.length?'active':''} onClick={()=>onSessionChange(choice.i)}>{choice.label}</button>)}
+      </div>
+    </section>
 
     {nutritionView==='program'&&<>
       <section className="protocolHero glass">
@@ -324,16 +350,54 @@ function NutritionScreen({activeDay}:{activeDay:number}){
     </>}
 
     {nutritionView==='journal'&&<>
-      <section className="journalSummary glass"><div><small>CONSOMMÉ</small><strong>{Math.round(totals.kcal)} kcal</strong></div><div><small>RESTANT</small><strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))} kcal</strong></div></section>
+      <section className="journalCockpit glass">
+        <div className="journalCalorieRing" style={{'--journal-pct':`${pct(totals.kcal,targets.kcal)*3.6}deg`} as React.CSSProperties}>
+          <div><strong>{Math.round(totals.kcal)}</strong><span>/ {targets.kcal}</span><small>kcal</small></div>
+        </div>
+        <div className="journalCalorieCopy"><small>CALORIES</small><b>{Math.round(totals.kcal)} <span>kcal consommées</span></b><strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))} <span>kcal restantes</span></strong></div>
+        <div className="journalMacroBars">
+          {[
+            ['PROTÉINES',totals.protein,targets.protein,'#9a75ff'],
+            ['GLUCIDES',totals.carbs,targets.carbs,'#46a8ff'],
+            ['LIPIDES',totals.fat,targets.fat,'#f5ad43']
+          ].map(([label,value,max,color])=><div key={String(label)}><small>{label}</small><b>{Math.round(Number(value))} / {max} g <em>{pct(Number(value),Number(max))}%</em></b><i><span style={{width:`${pct(Number(value),Number(max))}%`,background:String(color)}}/></i></div>)}
+        </div>
+      </section>
+
       <button className="nutritionAddPrimary" onClick={()=>{setEditingId(null);setEditorOpen(true)}}>＋ SAISIR UN REPAS / ALIMENT</button>
-      <section className="macroProgressGrid glass"><div><b>{Math.round(totals.protein)} / {targets.protein} g</b><small>PROTÉINES</small></div><div><b>{Math.round(totals.carbs)} / {targets.carbs} g</b><small>GLUCIDES</small></div><div><b>{Math.round(totals.fat)} / {targets.fat} g</b><small>LIPIDES</small></div></section>
-      <section className="nutritionEntries">{entries.length===0?<div className="glass emptyNutrition">Aucun repas enregistré aujourd’hui.</div>:entries.map(e=><article className={`glass nutritionEntry ${e.status||'manual'}`} key={e.id} onClick={()=>{if(e.source==='manual'){setEditingId(e.id);setEditorOpen(true)}}}>
-        <div className="journalEntryMain"><div><b>{e.title}</b><small>{e.meal} • {e.time}</small></div><span>{e.kcal} kcal</span></div>
-        <div className="journalStatus">{statusLabel(e.status)}</div>
-        {e.foods&&<div className="journalFoods">{e.foods.map(f=><div key={f.name}><span>{f.name}</span><b>{f.actualQty}</b>{f.actualQty!==f.plannedQty&&<small> prévu {f.plannedQty}</small>}</div>)}</div>}
-        <footer>P {e.protein}g • G {e.carbs}g • L {e.fat}g</footer>
-      </article>)}</section>
-      <section className="glass hydrationCard"><div><small>HYDRATATION</small><b>{water.toFixed(2)} L / {targets.water.toFixed(1)} L</b></div><div className="waterActions"><button onClick={()=>changeWater(-.25)}>−250</button><button onClick={()=>changeWater(.25)}>+250</button></div></section>
+
+      <section className="journalTimeline">
+        <div className="journalTodayLabel">✦ AUJOURD'HUI</div>
+        {protocol.meals.map((meal,i)=>{
+          const entry=entries.find(e=>e.source==='programme'&&e.time===meal.time)
+          const moment=mealMoment(meal.time)
+          const actual=entry?.kcal
+          const delta=entry?Math.round(entry.kcal-meal.kcal):0
+          return <article className={`journalTimelineRow ${entry?.status||'planned'}`} key={meal.time}>
+            <div className="journalTimeRail"><span>{meal.time}</span><i>{moment.icon}</i></div>
+            <div className="journalMealCard glass">
+              <header><div><b>{meal.title} • {protocol.session}</b><small>{entry?`${meal.time} • enregistré`:`Planifié • ≈ ${meal.kcal} kcal`}</small></div><span>{entry?`${actual} kcal`:'— kcal'}</span></header>
+              <div className={`journalStatus ${entry?.status||'planned'}`}>{entry?statusLabel(entry.status):'À RENSEIGNER'}</div>
+              {entry?<div className="plannedActualGrid">
+                <div><small>PRÉVU</small><b>{meal.kcal} kcal</b><span>P {meal.p} g</span><span>G {meal.c} g</span><span>L {meal.f} g</span></div>
+                <div><small>RÉEL</small><b>{entry.kcal} kcal</b><span>P {entry.protein} g</span><span>G {entry.carbs} g</span><span>L {entry.fat} g</span></div>
+                <div className={delta>0?'positiveDelta':delta<0?'negativeDelta':''}><small>ÉCART</small><b>{delta>0?'+':''}{delta} kcal</b><span>{entry.protein-meal.p>=0?'+':''}{Math.round(entry.protein-meal.p)} g P</span><span>{entry.carbs-meal.c>=0?'+':''}{Math.round(entry.carbs-meal.c)} g G</span><span>{entry.fat-meal.f>=0?'+':''}{Math.round(entry.fat-meal.f)} g L</span></div>
+              </div>:<div className="plannedMealPreview">{meal.foods.map(food=><span key={food.name}><i>{food.icon}</i><b>{food.name}</b></span>)}</div>}
+              {entry?.foods&&<div className="journalFoodThumbs">{entry.foods.map(food=><span key={food.name}><i>{foodIcon(food.name)}</i><small>{food.actualQty}</small></span>)}</div>}
+            </div>
+          </article>
+        })}
+      </section>
+
+      {kcalDelta!==0&&<section className="nutritionAdaptation glass">
+        <div><small>ADAPTATION DISPONIBLE</small><b>{kcalDelta>0?`+${kcalDelta}`:kcalDelta} kcal vs protocole enregistré</b><span>BODY OS peut tenir compte de cet écart pour le reste de la journée sans modifier les repas déjà consommés.</span></div>
+        <button onClick={()=>alert(`Écart actuel : ${kcalDelta>0?'+':''}${kcalDelta} kcal. Le moteur d'adaptation alimentaire complet arrive dans la prochaine couche fonctionnelle.`)}>ADAPTER LE RESTE DE MA JOURNÉE ›</button>
+      </section>}
+
+      <section className="journalBottomGrid">
+        <section className="glass hydrationCard compactHydration"><div><small>HYDRATATION</small><b>{water.toFixed(2)} L / {targets.water.toFixed(1)} L</b></div><div className="waterActions"><button onClick={()=>changeWater(-.25)}>− 250 ml</button><button onClick={()=>changeWater(.25)}>+ 250 ml</button></div></section>
+        <section className="glass nutritionScoreCard"><div className="nutritionScoreRing" style={{'--score-pct':`${nutritionScore*3.6}deg`} as React.CSSProperties}><b>{nutritionScore}</b></div><div><small>NUTRITION SCORE</small><span><i/>Calories <b>{calorieScore}</b></span><span><i/>Protéines <b>{proteinScore}</b></span><span><i/>Timing <b>{timingScore}</b></span><span><i/>Hydratation <b>{hydrationScore}</b></span><span><i/>Adhérence <b>{adherenceScore}</b></span></div></section>
+      </section>
     </>}
 
     {adjustingMeal&&<div className="nutritionEditorBackdrop"><form className="nutritionEditor glass adjustMealEditor" onSubmit={e=>{e.preventDefault();saveAdjustedMeal(e.currentTarget)}}>
@@ -632,7 +696,7 @@ export default function App(){
         </div>}
       </main>}
 
-      {tab==='nutrition'&&<NutritionScreen activeDay={day}/>}
+      {tab==='nutrition'&&<NutritionScreen activeDay={day} onSessionChange={setDay}/>}
 
       {tab==='progress'&&<main className="screen progressScreen">
         <header className="moduleHeader">
