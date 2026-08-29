@@ -1,0 +1,26 @@
+{
+  "version": "6.10",
+  "screens": [
+    "TODAY",
+    "WORKOUT",
+    "NUTRITION",
+    "PROGRESS",
+    "AI COACH"
+  ],
+  "sessions": 5,
+  "exercise_count": 32,
+  "dedicated_mockup_demo_files": 30,
+  "dedicated_anatomy_files": 31,
+  "golden_reference": "incline-machine",
+  "deployment": "NOT DEPLOYED",
+  "predeploy_checks": [
+    "npm install",
+    "npm run build",
+    "review 5 main tabs",
+    "review all 31 exercises",
+    "verify Play modal",
+    "verify set validation + rest timer",
+    "verify mobile/iPhone layout",
+    "then deploy once"
+  ]
+}

@@ -1031,3 +1031,157 @@ html,body,#root,.desktopStage,.phoneApp{
     height:198px !important;
   }
 }
+
+/* =========================================================
+   V6.8 — COMPLETE MOCKUP BRICKS
+   Restores Nutrition, enriches Progress and locks AI Coach.
+   TODAY + WORKOUT golden layouts remain preserved.
+   ========================================================= */
+.moduleHeader{min-height:72px;display:flex;justify-content:space-between;align-items:center;padding:5px 2px 10px;border-bottom:1px solid #151d28}
+.moduleHeader small,.goldenCoachHero>div>small{font-size:6px;letter-spacing:.13em;color:#68798f}
+.moduleHeader h1,.goldenCoachHero h1{margin:4px 0 3px;font-size:20px;letter-spacing:.035em}
+.moduleHeader p,.goldenCoachHero p{margin:0;font-size:8px;color:#8591a2}
+.miniScore{width:48px;height:48px;border-radius:50%;display:grid;place-content:center;text-align:center;background:radial-gradient(circle,#15233b 0,#09111d 64%,#05080d 65%);border:1px solid #2a3c56;box-shadow:0 0 20px #318cff18}
+.miniScore b{font-size:11px}.miniScore span{font-size:5px;color:#7990aa;margin-top:2px}
+
+.nutritionScreen,.progressScreen,.coachScreen{padding:10px 14px 82px}
+.nutritionHero{margin-top:12px;min-height:126px;padding:12px;display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:center;background:radial-gradient(circle at 25% 50%,#14294a99,transparent 40%),linear-gradient(145deg,#0b1119,#070b10)}
+.calorieRing{width:94px;height:94px;border-radius:50%;background:conic-gradient(#399cff var(--nutrition),#172130 0);display:grid;place-items:center;position:relative}
+.calorieRing:after{content:"";position:absolute;inset:8px;background:#080d14;border-radius:50%}
+.calorieRing>div{position:relative;z-index:1;text-align:center}.calorieRing b{display:block;font-size:18px}.calorieRing small{font-size:6px;color:#8d9bad}
+.nutritionHeroCopy small{font-size:6px;color:#7e8da2}.nutritionHeroCopy b{display:block;font-size:20px;margin:6px 0;color:#54dc83}.nutritionHeroCopy p{font-size:8px;line-height:1.45;color:#a8b1be;margin:0}
+.macroProgress{padding:10px 11px}.macroLine{margin:8px 0 11px}.macroLine:first-child{margin-top:2px}.macroLine:last-child{margin-bottom:2px}.macroLine>div:first-child{display:flex;justify-content:space-between;align-items:center}.macroLine b{font-size:7px}.macroLine span{font-size:7px;color:#8b98aa}.macroTrack{height:6px;background:#161e2a;border-radius:8px;overflow:hidden;margin-top:6px}.macroTrack i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#31d678,#65e89b)}.macroTrack i.carbs{background:linear-gradient(90deg,#3a9cff,#6f7dff)}.macroTrack i.fat{background:linear-gradient(90deg,#ffad37,#ffcf58)}
+.mealList{display:grid;gap:6px}.mealCard{min-height:58px;padding:8px 10px;display:grid;grid-template-columns:35px 1fr 15px;gap:9px;align-items:center}.mealIcon{width:31px;height:31px;border-radius:8px;display:grid;place-items:center;background:#0c2318;border:1px solid #1d5834;color:#58e587;font-weight:900;font-size:11px}.mealCard b{display:block;font-size:8px}.mealCard span{display:block;margin-top:4px;font-size:7px;color:#8794a6}.mealCard strong{font-size:17px;color:#a6b0bd}
+.nutritionFooterGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.nutritionFooterGrid article{padding:10px}.nutritionFooterGrid small{display:block;font-size:6px;color:#7d8b9e}.nutritionFooterGrid b{display:block;font-size:14px;margin:4px 0}.nutritionFooterGrid span{font-size:6px;color:#8793a4}.tinyTrack{height:4px;background:#17202c;border-radius:4px;margin-top:7px}.tinyTrack i{display:block;height:100%;background:#3c9fff;border-radius:4px}.tinyTrack.purple i{background:#8b5cff}
+
+.progressKpis{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.progressKpis article{padding:10px}.progressKpis small{font-size:6px;color:#7d8b9e}.progressKpis b{display:block;font-size:16px;margin:6px 0}.progressKpis span{font-size:7px;color:#55dd7c}
+.progressChartCard{height:214px;padding:10px}.chartHeadline{display:flex;justify-content:space-between;align-items:center}.chartHeadline small{font-size:6px;color:#7d8b9e}.chartHeadline b{display:block;font-size:14px;margin-top:3px}.chartHeadline>span{font-size:7px;color:#55dd7c}.progressChart{height:160px;margin-top:4px}
+.photoStrip{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.photoSlot{height:105px;padding:7px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center}.silhouette{font-size:29px;color:#314056;filter:drop-shadow(0 0 14px #527aff44)}.photoSlot b{font-size:7px;margin:5px 0 3px}.photoSlot span{font-size:5px;color:#75849a}
+.logDetails{margin-top:11px;padding:0 10px}.logDetails summary{list-style:none;min-height:42px;display:flex;justify-content:space-between;align-items:center;font-size:7px;font-weight:800;cursor:pointer}.logDetails summary::-webkit-details-marker{display:none}.logDetails summary span{font-size:15px}.progressForm{padding:0 0 10px}.twoCols{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+
+.goldenCoachHero{min-height:95px;border-bottom:1px solid #151d28}.goldenCoachHero .orb{width:70px;height:70px;position:relative;background:radial-gradient(circle at 42% 40%,#835fff 0,#294dff55 28%,#091222 65%,#03060a 70%);box-shadow:0 0 32px #6152ff2c}.goldenCoachHero .orb:before,.goldenCoachHero .orb:after{content:"";position:absolute;border:1px solid #715dff55;border-radius:50%;inset:-6px}.goldenCoachHero .orb:after{inset:7px;border-color:#45b8ff44}.goldenCoachHero .orb span{font-size:10px;z-index:2}
+.checkinProgress{margin:11px 0 12px;padding:10px;display:grid;grid-template-columns:1fr auto;gap:7px}.checkinProgress small{font-size:6px;color:#7c899d}.checkinProgress b{display:block;font-size:9px;margin-top:4px}.checkinProgress>span{font-size:11px;color:#8a6bff}.checkTrack{grid-column:1/-1;height:4px;background:#17202b;border-radius:5px}.checkTrack i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#3ca8ff,#8d5bff)}
+.goldenCoachForm .sectionLabel{margin-bottom:6px}.coachSlider{padding:8px 9px;margin:5px 0}.coachSlider>div{font-size:7px}.coachSlider>div span{color:#8a67ff;font-weight:800}.coachSlider input{height:16px;margin:5px 0 1px;accent-color:#765cff}.coachSlider>small{display:flex;justify-content:space-between;font-size:5px;color:#6f7c8f}.coachNote textarea{height:58px;font-size:8px}.coachSubmit{min-height:38px}.coachDecision{min-height:88px;padding:10px;display:grid;grid-template-columns:44px 1fr 14px;gap:10px;align-items:center}.decisionPulse{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#2dcf7655,#0c2217 65%,transparent 72%);color:#6aff9b;font-size:8px;font-weight:900}.coachDecision small{font-size:5px;color:#78869a}.coachDecision b{display:block;font-size:15px;margin:3px 0;color:#55df75}.coachDecision.progress b{color:#4ca7ff}.coachDecision.adjust b{color:#ffae37}.coachDecision.recover b{color:#ff5c54}.coachDecision p{font-size:7px;line-height:1.35;color:#9ca8b8;margin:0}.coachDecision>span{font-size:18px;color:#8794a6}
+
+/* Play stays fully inside the validated media frame. */
+.workoutScreen .goldenPlayHitbox{left:18px !important;bottom:11px !important}
+
+@media(max-width:430px){
+  .nutritionScreen,.progressScreen,.coachScreen{padding:8px 14px 76px}
+  .moduleHeader{min-height:66px}.moduleHeader h1,.goldenCoachHero h1{font-size:19px}
+  .nutritionHero{min-height:116px;grid-template-columns:94px 1fr}.calorieRing{width:86px;height:86px}.calorieRing b{font-size:16px}
+  .mealCard{min-height:53px}.progressChartCard{height:196px}.progressChart{height:145px}.photoSlot{height:96px}
+  .goldenCoachHero{min-height:84px}.goldenCoachHero .orb{width:61px;height:61px}
+  .coachSlider{margin:4px 0;padding:7px 8px}.coachNote textarea{height:50px}
+}
+
+/* V6.9 — FULL EXERCISE MOCKUPS */
+.sessionRail{display:flex;gap:5px;overflow-x:auto;padding:0 1px 8px;scrollbar-width:none}
+.sessionRail::-webkit-scrollbar{display:none}
+.sessionRail button{flex:0 0 65px;min-height:38px;border:1px solid #1c2837;background:#07101a;border-radius:10px;color:#708096;padding:5px 7px;text-align:left}
+.sessionRail button small{display:block;font-size:7px;letter-spacing:.08em}
+.sessionRail button b{display:block;font-size:9px;margin-top:2px;white-space:nowrap}
+.sessionRail button.active{border-color:#5844ff;background:linear-gradient(135deg,#101a2c,#15102d);color:#f5f7ff;box-shadow:0 0 18px rgba(99,70,255,.16)}
+.workoutScreen .exerciseMedia .muscleMap img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;transform:none!important}
+.workoutScreen .exerciseMedia .genericDemo{object-fit:cover!important;object-position:center!important;opacity:1!important;filter:none!important}
+.mockupCatalog{margin-top:8px;overflow:hidden}
+.mockupCatalog summary{min-height:38px;padding:0 11px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:#8997a9;font-size:8px;letter-spacing:.08em}
+.mockupCatalog summary b{color:#8b72ff;font-size:9px}
+.mockupGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 8px 8px}
+.mockupGrid button{display:flex;align-items:center;gap:7px;min-width:0;border:1px solid #1c2837;background:#07101a;border-radius:9px;padding:5px;color:#dce5f0;text-align:left}
+.mockupGrid button.active{border-color:#654cff;background:#0d1421}
+.mockupGrid img{width:44px;height:34px;object-fit:cover;border-radius:6px;background:#050910}
+.mockupGrid span{min-width:0}
+.mockupGrid small{display:block;color:#617188;font-size:6px;text-transform:uppercase}
+.mockupGrid b{display:block;font-size:7px;line-height:1.2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+
+/* =========================================================
+   V6.10 — PREDEPLOY COMPLETE
+   Golden WORKOUT polish + exercise information layer
+   ========================================================= */
+.workoutScreen .goldenPlayHitbox{
+  left:20px !important;
+  bottom:14px !important;
+  width:46px !important;
+  height:46px !important;
+}
+
+/* Exercise metadata: same decision density for every exercise. */
+.exerciseMetaStrip{
+  display:grid;
+  grid-template-columns:1.35fr .85fr .85fr;
+  gap:6px;
+  margin:7px 0 8px;
+}
+.exerciseMetaStrip article{
+  min-width:0;
+  min-height:42px;
+  border:1px solid #1b2838;
+  background:#07101a;
+  border-radius:9px;
+  padding:7px 8px;
+}
+.exerciseMetaStrip small{
+  display:block;
+  color:#64758a;
+  font-size:6px;
+  letter-spacing:.08em;
+}
+.exerciseMetaStrip b{
+  display:block;
+  color:#eaf2fb;
+  font-size:8px;
+  margin-top:3px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.exerciseMetaStrip .risk-low b{color:#37df78}
+.exerciseMetaStrip .risk-medium b{color:#ffad43}
+.exerciseMetaStrip .risk-high b{color:#ff5b64}
+
+.exerciseProgress{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin:-2px 0 7px;
+}
+.exerciseProgress span{
+  height:3px;
+  flex:1;
+  border-radius:999px;
+  background:#172131;
+  overflow:hidden;
+}
+.exerciseProgress span i{
+  display:block;
+  height:100%;
+  background:linear-gradient(90deg,#3ca2ff,#8d50ff);
+}
+.exerciseProgress small{
+  flex:0 0 auto;
+  color:#65758b;
+  font-size:7px;
+}
+
+@media(max-width:430px){
+  .exerciseMetaStrip{
+    grid-template-columns:1.25fr .8fr .8fr;
+  }
+}
+
+.demoVisual{position:relative}
+.demoVisual .demoAnatomy{
+  position:absolute;
+  right:10px;
+  bottom:10px;
+  width:82px;
+  height:108px;
+  object-fit:contain;
+  background:rgba(4,8,13,.86);
+  border:1px solid #27384b;
+  border-radius:12px;
+  padding:4px;
+  box-shadow:0 10px 25px rgba(0,0,0,.35);
+}

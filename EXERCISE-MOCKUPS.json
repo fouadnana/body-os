@@ -1,0 +1,16 @@
+{
+  "version": "6.9",
+  "sessions": 5,
+  "exercise_mockups": 31,
+  "dedicated_demo_mockups": 30,
+  "golden_demo": 1,
+  "dedicated_anatomy_maps": 31,
+  "coverage": {
+    "PUSH": 6,
+    "PULL": 6,
+    "LEGS A": 6,
+    "UPPER": 6,
+    "LOWER + BRAS": 7
+  },
+  "note": "Les 30 nouvelles démos sont des maquettes UX dédiées, pas les médias finaux."
+}

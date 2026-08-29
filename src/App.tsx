@@ -64,14 +64,18 @@ export default function App(){
   },[latestCheck])
 
   const score=latestCheck?Math.round(((6-latestCheck.fatigue)+latestCheck.recovery+(6-latestCheck.hunger)+latestCheck.performance+latestCheck.adherence+latestCheck.back)/30*100):82
+  const consumed={calories:latest?.calories??2180,protein:latest?.protein??152,fat:68,carbs:241}
+  const remaining={calories:Math.max(0,target.calories-consumed.calories),protein:Math.max(0,target.protein-consumed.protein),fat:Math.max(0,target.fat-consumed.fat),carbs:Math.max(0,target.carbs-consumed.carbs)}
+  const nutritionScore=Math.round(((Math.min(consumed.protein/target.protein,1)*.45)+(Math.min(consumed.calories/target.calories,1)*.35)+.20)*100)
   const exercise=current.exercises[activeEx]??current.exercises[0]
   const sets=exercise?(workout[exercise.id]??prescribedSets(exercise)):[]
   const demoAsset=exercise?.media.demoAsset || todayAnatomy
   const hasExerciseDemo=Boolean(exercise?.media.demoAsset)
+  const anatomyAsset=exercise?.media.anatomyAsset || todayAnatomy
   const primaryMuscles=exercise?.media.primaryMuscles??[]
   const secondaryMuscles=exercise?.media.secondaryMuscles??[]
 
-  function setDay(n:number){setDayState(n);store.setDay(n)}
+  function setDay(n:number){setDayState(n);store.setDay(n);setActiveEx(0)}
   function updateSet(ex:any,i:number,patch:Partial<SetLog>){
     const old=workout[ex.id]??prescribedSets(ex)
     const nextSets=old.map((s:any,idx:number)=>idx===i?{...s,...patch}:s)
@@ -182,6 +186,12 @@ export default function App(){
           <button aria-label="Menu">⋮</button>
         </header>
 
+        <div className="sessionRail" aria-label="Choisir une séance">
+          {sessions.map((s,i)=><button key={s.id} className={i===day%sessions.length?'active':''} onClick={()=>setDay(i)}>
+            <small>{s.day}</small><b>{s.title}</b>
+          </button>)}
+        </div>
+
         <div className="stepper" aria-label="Progression de la séance">
           {current.exercises.map((_:any,i:number)=><button
             onClick={()=>setActiveEx(i)}
@@ -203,11 +213,31 @@ export default function App(){
             <button className={`play ${exercise.id==='incline-machine'?'goldenPlayHitbox':''}`} aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>{exercise.id==='incline-machine'?'':'▶'}</button>
             {!hasExerciseDemo&&<span className="mediaPending">DÉMO À PRODUIRE</span>}
             {exercise.id!=='incline-machine'&&<div className={`muscleMap ${exercise.media.anatomyView}`} aria-label="Muscles sollicités">
-              <img src={todayAnatomy} alt="Carte anatomique"/>
+              <img src={anatomyAsset} alt={`Carte anatomique : ${exercise.area}`}/>
               <div className="muscleMapLegend">
                 {primaryMuscles.slice(0,2).map(m=><span className="primaryMuscle" key={m}>{muscleLabels[m]}</span>)}
               </div>
             </div>}
+          </div>
+
+          <div className="exerciseMetaStrip">
+            <article>
+              <small>MUSCLES CIBLES</small>
+              <b>{primaryMuscles.map(m=>muscleLabels[m]).join(' • ')}</b>
+            </article>
+            <article className={`risk-${exercise.backRisk||'low'}`}>
+              <small>RISQUE DOS</small>
+              <b>{exercise.backRisk==='high'?'ÉLEVÉ':exercise.backRisk==='medium'?'MODÉRÉ':'FAIBLE'}</b>
+            </article>
+            <article>
+              <small>REPOS</small>
+              <b>{exercise.rest}s</b>
+            </article>
+          </div>
+
+          <div className="exerciseProgress">
+            <span><i style={{width:`${Math.round(((activeEx+1)/current.exercises.length)*100)}%`}}/></span>
+            <small>{activeEx+1}/{current.exercises.length}</small>
           </div>
 
           <div className="cue">
@@ -235,16 +265,30 @@ export default function App(){
         </section>
 
         {activeEx<current.exercises.length-1&&<button className="nextExercise glass" onClick={()=>setActiveEx(activeEx+1)}>
-          <div className="nextThumb"><img src={todayAnatomy} alt="Exercice suivant"/></div>
+          <div className="nextThumb"><img src={current.exercises[activeEx+1].media.demoAsset || todayAnatomy} alt="Exercice suivant"/></div>
           <div><small>EXERCICE SUIVANT</small><b>{current.exercises[activeEx+1].name}</b><span>{current.exercises[activeEx+1].sets} séries</span></div>
           <strong>›</strong>
         </button>}
+
+
+        <details className="mockupCatalog glass">
+          <summary><span>MAQUETTES DE LA SÉANCE</span><b>{current.exercises.length}/{current.exercises.length}</b></summary>
+          <div className="mockupGrid">
+            {current.exercises.map((ex,i)=><button key={ex.id} className={i===activeEx?'active':''} onClick={()=>setActiveEx(i)}>
+              <img src={ex.media.demoAsset || todayAnatomy} alt=""/>
+              <span><small>{i+1}. {ex.area}</small><b>{ex.name}</b></span>
+            </button>)}
+          </div>
+        </details>
 
         {rest>0&&<div className="rest"><small>REPOS</small><b>{Math.floor(rest/60)}:{String(rest%60).padStart(2,'0')}</b><button onClick={()=>setRest(0)}>PASSER</button></div>}
 
         {demoOpen&&<div className="demoModal" role="dialog" aria-modal="true" aria-label="Démonstration exercice">
           <button className="demoClose" onClick={()=>setDemoOpen(false)}>×</button>
-          <div className="demoVisual"><img src={demoAsset} alt={`Démonstration : ${exercise.name}`}/></div>
+          <div className="demoVisual">
+            <img src={demoAsset} alt={`Démonstration : ${exercise.name}`}/>
+            {exercise.id!=='incline-machine'&&<img className="demoAnatomy" src={anatomyAsset} alt={`Anatomie : ${exercise.area}`}/>}
+          </div>
           <small>DÉMONSTRATION</small>
           <h3>{exercise.name}</h3>
           <p>{exercise.cue}</p>
@@ -257,18 +301,135 @@ export default function App(){
         </div>}
       </main>}
 
-      {tab==='nutrition'&&<main className="screen"><header className="pageTitle"><h1>NUTRITION</h1><p>Déficit contrôlé • performance préservée</p></header><div className="macroGrid">{[['CALORIES',2800,'kcal'],['PROTÉINES',190,'g'],['LIPIDES',85,'g'],['GLUCIDES',319,'g']].map(x=><article key={String(x[0])}><small>{x[0]}</small><b>{x[1]}</b><span>{x[2]}</span></article>)}</div></main>}
+      {tab==='nutrition'&&<main className="screen nutritionScreen">
+        <header className="moduleHeader">
+          <div><small>BODY OS / AI CUT</small><h1>NUTRITION</h1><p>Déficit contrôlé • performance préservée</p></div>
+          <div className="miniScore"><b>{nutritionScore}%</b><span>JOUR</span></div>
+        </header>
 
-      {tab==='progress'&&<main className="screen"><header className="pageTitle"><h1>PROGRESS</h1><p>Poids • taille • photos • performances</p></header><form className="panel glass form" onSubmit={e=>{e.preventDefault();addDaily(e.currentTarget)}}><input name="weight" type="number" step=".1" placeholder="Poids kg"/><input name="waist" type="number" step=".1" placeholder="Tour de taille cm"/><input name="steps" type="number" placeholder="Pas"/><input name="calories" type="number" placeholder="Calories"/><input name="protein" type="number" placeholder="Protéines"/><button className="primary">ENREGISTRER</button></form></main>}
+        <section className="nutritionHero glass">
+          <div className="calorieRing" style={{'--nutrition':`${Math.min(consumed.calories/target.calories,1)*360}deg`} as React.CSSProperties}>
+            <div><b>{consumed.calories}</b><small>/ {target.calories} kcal</small></div>
+          </div>
+          <div className="nutritionHeroCopy">
+            <small>RESTANT AUJOURD’HUI</small>
+            <b>{remaining.calories} kcal</b>
+            <p>Priorité : atteindre les protéines sans dépasser la cible calorique.</p>
+          </div>
+        </section>
 
-      {tab==='coach'&&<main className="screen">
-        <header className="coachHero"><div><h1>AI COACH</h1><p>Ton coach intelligent</p></div><div className="orb">AI</div></header>
-        <form className="coachForm" onSubmit={e=>{e.preventDefault();addCheck(e.currentTarget)}}>
-          {[['fatigue','FATIGUE GÉNÉRALE',3],['recovery','RÉCUPÉRATION / SOMMEIL',5],['hunger','Faim / Appétit',3],['performance','PERFORMANCES À L’ENTRAÎNEMENT',5],['adherence','ADHÉRENCE NUTRITION',5],['back','ÉTAT DU DOS (L5-S1)',5]].map(([name,label,val])=><label className="sliderCard" key={String(name)}><div><b>{label}</b><span>{val}/5</span></div><input name={String(name)} type="range" min="1" max="5" defaultValue={Number(val)}/></label>)}
-          <label className="note"><span>COMMENTAIRES</span><textarea name="note" defaultValue="Bonne énergie cette semaine. Sommeil correct. Motivé."/></label><button className="primary full">ENVOYER LE CHECK-IN</button>
-        </form>
+        <p className="sectionLabel">MACROS DU JOUR</p>
+        <section className="macroProgress glass">
+          {[
+            ['PROTÉINES',consumed.protein,target.protein,'g','protein'],
+            ['GLUCIDES',consumed.carbs,target.carbs,'g','carbs'],
+            ['LIPIDES',consumed.fat,target.fat,'g','fat']
+          ].map(([label,value,goal,unit,cls])=><div className="macroLine" key={String(label)}>
+            <div><b>{label}</b><span>{value} / {goal} {unit}</span></div>
+            <div className="macroTrack"><i className={String(cls)} style={{width:`${Math.min(Number(value)/Number(goal),1)*100}%`}}/></div>
+          </div>)}
+        </section>
+
+        <p className="sectionLabel">REPAS</p>
+        <section className="mealList">
+          {[
+            ['PETIT-DÉJEUNER','520 kcal','38 g prot.','✓'],
+            ['DÉJEUNER','760 kcal','56 g prot.','✓'],
+            ['COLLATION','310 kcal','28 g prot.','✓'],
+            ['DÎNER','590 kcal','30 g prot.','+']
+          ].map(([name,kcal,prot,status])=><article className="mealCard glass" key={name}>
+            <div className="mealIcon">{status==='✓'?'✓':'+'}</div>
+            <div><b>{name}</b><span>{kcal} • {prot}</span></div>
+            <strong>›</strong>
+          </article>)}
+        </section>
+
+        <section className="nutritionFooterGrid">
+          <article className="glass"><small>EAU</small><b>2,1 L</b><span>/ 3,0 L</span><div className="tinyTrack"><i style={{width:'70%'}}/></div></article>
+          <article className="glass"><small>ADHÉRENCE</small><b>5 / 7</b><span>jours dans la cible</span><div className="tinyTrack purple"><i style={{width:'71%'}}/></div></article>
+        </section>
       </main>}
 
+      {tab==='progress'&&<main className="screen progressScreen">
+        <header className="moduleHeader">
+          <div><small>BODY OS / AI CUT</small><h1>PROGRESS</h1><p>Poids • taille • photos • performances</p></div>
+          <div className="trendBadge">↘ <b>-2,5 kg</b><span>30 J</span></div>
+        </header>
+
+        <section className="progressKpis">
+          <article className="glass"><small>POIDS</small><b>{weight.toFixed(1)} kg</b><span>Objectif 100 kg</span></article>
+          <article className="glass"><small>TOUR DE TAILLE</small><b>{waist.toFixed(1)} cm</b><span>↘ -1,1 cm</span></article>
+        </section>
+
+        <p className="sectionLabel">ÉVOLUTION 7 JOURS</p>
+        <section className="progressChartCard glass">
+          <div className="chartHeadline"><div><small>TENDANCE</small><b>-0,6 kg</b></div><span>Bonne trajectoire</span></div>
+          <div className="progressChart">
+            <ResponsiveContainer width="100%" height={150}>
+              <LineChart data={trendData} margin={{top:10,right:10,bottom:4,left:0}}>
+                <XAxis dataKey="day" tick={{fontSize:8,fill:'#7f8998'}} axisLine={false} tickLine={false}/>
+                <YAxis hide domain={['dataMin - .7','dataMax + .7']}/>
+                <Tooltip contentStyle={{background:'#090e15',border:'1px solid #202a38',borderRadius:8,fontSize:9}}/>
+                <Line type="monotone" dataKey="weight" stroke="#8a67ff" strokeWidth={3} dot={{r:3,fill:'#a287ff',stroke:'#d6ccff',strokeWidth:1}}/>
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <p className="sectionLabel">PHOTOS DE PROGRESSION</p>
+        <section className="photoStrip">
+          {['FACE','PROFIL','DOS'].map((x,i)=><article className="photoSlot glass" key={x}><div className="silhouette">{i===1?'◐':'◉'}</div><b>{x}</b><span>AJOUTER PHOTO</span></article>)}
+        </section>
+
+        <details className="logDetails glass">
+          <summary>ENREGISTRER LES MESURES <span>+</span></summary>
+          <form className="form progressForm" onSubmit={e=>{e.preventDefault();addDaily(e.currentTarget)}}>
+            <div className="twoCols"><input name="weight" type="number" step=".1" placeholder="Poids kg"/><input name="waist" type="number" step=".1" placeholder="Tour de taille cm"/></div>
+            <div className="twoCols"><input name="steps" type="number" placeholder="Pas"/><input name="calories" type="number" placeholder="Calories"/></div>
+            <input name="protein" type="number" placeholder="Protéines g"/>
+            <button className="primary">ENREGISTRER</button>
+          </form>
+        </details>
+      </main>}
+
+      {tab==='coach'&&<main className="screen coachScreen">
+        <header className="coachHero goldenCoachHero">
+          <div><small>BODY OS / AI CUT</small><h1>AI COACH</h1><p>Décision hebdomadaire guidée par tes données</p></div>
+          <div className="orb"><span>AI</span></div>
+        </header>
+
+        <section className="checkinProgress glass">
+          <div><small>CHECK-IN HEBDOMADAIRE</small><b>4 / 7 données complètes</b></div>
+          <span>57%</span>
+          <div className="checkTrack"><i style={{width:'57%'}}/></div>
+        </section>
+
+        <form className="coachForm goldenCoachForm" onSubmit={e=>{e.preventDefault();addCheck(e.currentTarget)}}>
+          <p className="sectionLabel noMargin">ÉTAT DE LA SEMAINE</p>
+          {[
+            ['fatigue','FATIGUE GÉNÉRALE',3,'Faible','Élevée'],
+            ['recovery','RÉCUPÉRATION / SOMMEIL',4,'Faible','Excellente'],
+            ['hunger','FAIM / APPÉTIT',3,'Faible','Élevée'],
+            ['performance','PERFORMANCES',4,'En baisse','En hausse'],
+            ['adherence','ADHÉRENCE NUTRITION',5,'Faible','Parfaite'],
+            ['back','ÉTAT DU DOS L5-S1',4,'Sensible','Très bon']
+          ].map(([name,label,val,left,right])=><label className="sliderCard coachSlider" key={String(name)}>
+            <div><b>{label}</b><span>{val}/5</span></div>
+            <input name={String(name)} type="range" min="1" max="5" defaultValue={Number(val)}/>
+            <small><span>{left}</span><span>{right}</span></small>
+          </label>)}
+
+          <label className="note coachNote"><span>NOTE LIBRE</span><textarea name="note" defaultValue="Bonne énergie cette semaine. Sommeil correct. Motivé."/></label>
+          <button className="primary full coachSubmit">ANALYSER MON CHECK-IN</button>
+        </form>
+
+        <p className="sectionLabel">DÉCISION AI COACH</p>
+        <section className={`coachDecision glass ${decision.cls}`}>
+          <div className="decisionPulse">AI</div>
+          <div><small>RECOMMANDATION</small><b>{decision.type}</b><p>{decision.text}</p></div>
+          <span>›</span>
+        </section>
+      </main>}
       <nav className="bottomNav">
         {nav.map(([id,icon,label])=><button key={id} onClick={()=>setTab(id)} className={tab===id?'active':''}><span>{icon}</span><small>{label}</small></button>)}
       </nav>

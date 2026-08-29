@@ -140,3 +140,19 @@ Aucune donnée santé n'est envoyée vers un serveur dans cette V2.
 - Une seule anatomie est visible.
 - Le bouton Play est de nouveau visible et reste fonctionnel via une zone tactile superposée.
 - Ce rendu devient la Golden Reference à reproduire pour les autres exercices.
+
+## V6.9 — FULL EXERCISE MOCKUPS
+
+Couverture complète des 5 séances et 31 exercices.
+Chaque exercice est maintenant inspectable depuis WORKOUT avec :
+- sa maquette de démonstration dédiée ;
+- sa carte anatomique dédiée ;
+- ses muscles primaires / secondaires ;
+- séries, répétitions, RIR, repos et consigne ;
+- modal Play ;
+- navigation exercice précédent/suivant via le stepper ;
+- sélecteur PUSH / PULL / LEGS A / UPPER / LOWER + BRAS ;
+- catalogue de maquettes de la séance.
+
+Le développé incliné conserve la Golden Reference validée.
+Les 30 autres visuels sont des maquettes UX de développement destinées à valider l'ensemble avant production des médias photo/vidéo finaux.
