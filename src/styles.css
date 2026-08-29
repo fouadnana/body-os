@@ -1298,3 +1298,27 @@ html,body,#root,.desktopStage,.phoneApp{
  .sessionRail button{padding-left:5px!important;padding-right:5px!important}
  .exerciseAnatomy{width:68px!important;height:98px!important}
 }
+
+/* V6.15 PROGRAM COMPLETE */
+.nutritionTabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}
+.nutritionTabs button{padding:12px;border:1px solid #27374a;border-radius:11px;background:#07101a;color:#76869a;font-weight:850;font-size:11px;letter-spacing:.08em}
+.nutritionTabs button.active{color:#fff;border-color:#744aff;background:linear-gradient(135deg,#1a1234,#0a1220)}
+.nutritionProgram{display:grid;gap:10px}
+.programHero,.programMeal,.programRule{padding:15px;border-radius:14px}
+.programHero{background:linear-gradient(145deg,#17102d,#07101a)}
+.programHero small{font-size:9px;color:#8190a4;letter-spacing:.1em}
+.programHero h2{font-size:29px;margin:5px 0;color:#fff}.programHero p{margin:0;color:#b4becc}
+.programMeal{display:grid;gap:7px}.programMeal>div{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.programMeal b{font-size:11px}.programMeal span{font-size:9px;color:#8f72ff;text-align:right}
+.programMeal p,.programRule p{margin:0;color:#aab5c3;font-size:11px;line-height:1.5}
+.programRule b{display:block;margin-bottom:6px;color:#43df7c;font-size:10px;letter-spacing:.08em}
+.cardioFinisher{margin:14px 0;padding:15px;border-radius:15px;border:1px solid #29405b;background:linear-gradient(145deg,#071520,#090c17)}
+.cardioFinisher.done{border-color:#2f8d62}.cardioHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.cardioHead small{font-size:8px;color:#74869a;letter-spacing:.12em}.cardioHead h3{margin:5px 0 0;font-size:16px}
+.cardioHead span{padding:7px 9px;border:1px solid #6847eb;border-radius:9px;color:#aa91ff;font-size:10px;font-weight:800}
+.cardioGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:12px 0}
+.cardioGrid article{padding:9px;border:1px solid #203247;border-radius:10px;background:#07101a}
+.cardioGrid small{display:block;font-size:7px;color:#708299;margin-bottom:5px}.cardioGrid b{display:block;font-size:9px;line-height:1.3}
+.cardioFinisher>p{font-size:10px;line-height:1.45;color:#8b99aa}
+.cardioFinisher>button{width:100%;border:0;border-radius:10px;padding:12px;color:#fff;font-weight:850;background:linear-gradient(90deg,#2c9cff,#824cff)}
+.cardioFinisher.done>button{background:#113b2a;color:#58ec91}

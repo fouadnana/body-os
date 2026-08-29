@@ -50,6 +50,7 @@ type NutritionEntry = {
 }
 
 function NutritionScreen(){
+  const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
   const targets = { kcal:2800, protein:190, fat:85, carbs:319, water:3.0 }
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
@@ -135,6 +136,25 @@ function NutritionScreen(){
       <span className="adherencePill">{adherence}% ADHÉRENCE</span>
     </header>
 
+    <div className="nutritionTabs" role="tablist" aria-label="Nutrition">
+      <button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button>
+      <button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button>
+    </div>
+
+    {nutritionView==='program'&&<section className="nutritionProgram">
+      <article className="programHero glass">
+        <small>OBJECTIF CUT • JOURNÉE TYPE</small>
+        <h2>2 800 KCAL</h2>
+        <p>190 g protéines • 319 g glucides • 85 g lipides</p>
+      </article>
+      <article className="programMeal glass"><div><b>01 • PETIT-DÉJEUNER</b><span>≈ 650 kcal • 45P • 75G • 18L</span></div><p>Œufs + flocons d’avoine + skyr/fromage blanc + fruit.</p></article>
+      <article className="programMeal glass"><div><b>02 • DÉJEUNER</b><span>≈ 800 kcal • 55P • 95G • 22L</span></div><p>Protéine maigre + féculent + légumes + matière grasse mesurée.</p></article>
+      <article className="programMeal glass"><div><b>03 • COLLATION</b><span>≈ 450 kcal • 35P • 50G • 12L</span></div><p>Skyr/fromage blanc ou équivalent + fruit + oléagineux mesurés.</p></article>
+      <article className="programMeal glass"><div><b>04 • DÎNER</b><span>≈ 900 kcal • 55P • 99G • 33L</span></div><p>Protéines + féculent + légumes. Ajuster les quantités avec le JOURNAL.</p></article>
+      <article className="programRule glass"><b>RÈGLE D’AJUSTEMENT</b><p>On ajuste sur la tendance poids/tour de taille, la faim, la récupération et la performance — pas sur une seule pesée.</p></article>
+    </section>}
+
+    {nutritionView==='journal'&&<>
     <section className="nutritionHero glass">
       <div className="kcalRing" style={{'--p':`${pct(totals.kcal,targets.kcal)}%`} as React.CSSProperties}>
         <div><b>{Math.round(totals.kcal)}</b><small>/ {targets.kcal} kcal</small></div>
@@ -256,6 +276,7 @@ function NutritionScreen(){
         </div>
       </section>
     </div>}
+    </>}
   </main>
 }
 
@@ -269,6 +290,7 @@ export default function App(){
   const [activeEx,setActiveEx]=useState(0)
   const [rest,setRest]=useState(0)
   const [demoOpen,setDemoOpen]=useState(false)
+  const [cardioDone,setCardioDone]=useState(false)
   const timerRef=useRef<number|undefined>(undefined)
 
   const current=sessions[day%sessions.length]
@@ -300,7 +322,7 @@ export default function App(){
   const primaryMuscles=exercise?.media.primaryMuscles??[]
   const secondaryMuscles=exercise?.media.secondaryMuscles??[]
 
-  function setDay(n:number){setDayState(n);store.setDay(n);setActiveEx(0)}
+  function setDay(n:number){setDayState(n);store.setDay(n);setActiveEx(0);setCardioDone(false)}
   function updateSet(ex:any,i:number,patch:Partial<SetLog>){
     const old=workout[ex.id]??prescribedSets(ex)
     const nextSets=old.map((s:any,idx:number)=>idx===i?{...s,...patch}:s)
@@ -438,7 +460,7 @@ export default function App(){
             <button className={`play ${exercise.id==='incline-machine'?'goldenPlayHitbox':''}`} aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>{exercise.id==='incline-machine'?'':'▶'}</button>
             
             {exercise.id!=='incline-machine'&&<div className={`muscleMap ${exercise.media.anatomyView}`} aria-label="Muscles sollicités">
-              <img src={anatomyAsset} alt={`Carte anatomique : ${exercise.area}`}/>
+              <img src={anatomyAsset} alt={`Carte anatomique : ${exercise.area}`} onError={e=>{e.currentTarget.style.display="none"}}/>
               <div className="muscleMapLegend">
                 {primaryMuscles.slice(0,2).map(m=><span className="primaryMuscle" key={m}>{muscleLabels[m]}</span>)}
               </div>
@@ -489,6 +511,17 @@ export default function App(){
           </div>
         </section>
 
+        <section className={`cardioFinisher glass ${cardioDone?'done':''}`}>
+          <div className="cardioHead"><div><small>FIN DE SÉANCE</small><h3>CARDIO • ZONE 2</h3></div><span>25–30 MIN</span></div>
+          <div className="cardioGrid">
+            <article><small>MODALITÉ</small><b>Vélo / marche inclinée</b></article>
+            <article><small>INTENSITÉ</small><b>RPE 4–5 / 10</b></article>
+            <article><small>REPÈRE</small><b>Conversation possible</b></article>
+          </div>
+          <p>Augmenter la dépense sans dégrader la récupération ni la qualité de la musculation.</p>
+          <button onClick={()=>setCardioDone(v=>!v)}>{cardioDone?'CARDIO VALIDÉ ✓':'VALIDER LE CARDIO'}</button>
+        </section>
+
         {activeEx<current.exercises.length-1&&<button className="nextExercise glass" onClick={()=>setActiveEx(activeEx+1)}>
           <div className="nextThumb"><img src={current.exercises[activeEx+1].media.demoAsset || todayAnatomy} alt="Exercice suivant"/></div>
           <div><small>EXERCICE SUIVANT</small><b>{current.exercises[activeEx+1].name}</b><span>{current.exercises[activeEx+1].sets} séries</span></div>
@@ -512,7 +545,7 @@ export default function App(){
           <button className="demoClose" onClick={()=>setDemoOpen(false)}>×</button>
           <div className="demoVisual">
             <img src={demoAsset} alt={`Démonstration : ${exercise.name}`}/>
-            {exercise.id!=='incline-machine'&&<img className="demoAnatomy" src={anatomyAsset} alt={`Anatomie : ${exercise.area}`}/>}
+            {exercise.id!=='incline-machine'&&<img className="demoAnatomy" src={anatomyAsset} alt={`Anatomie : ${exercise.area}`} onError={e=>{e.currentTarget.style.display="none"}}/>}
           </div>
           <small>DÉMONSTRATION</small>
           <h3>{exercise.name}</h3>

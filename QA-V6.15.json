@@ -1,0 +1,12 @@
+{
+  "version": "6.15",
+  "implemented": [
+    "Nutrition tabs PROGRAMME/JOURNAL",
+    "4-meal cut program at 2800 kcal / 190P / 319C / 85F",
+    "Zone 2 cardio finisher 25-30 min",
+    "Cardio validation state",
+    "Broken anatomy images hidden"
+  ],
+  "not_complete": "Realistic media migration for all 31 exercises remains open; SVG placeholders still exist outside approved assets.",
+  "deployment": "NOT DEPLOYED"
+}
