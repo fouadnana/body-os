@@ -182,14 +182,19 @@ function buildWeeklyProtocol(sessionKey:string,weekSeed:number){
   return {day:'WEEKLY',mode:profile.mode,session:profile.session,kcal:profile.kcal,protein:profile.protein,carbs:profile.carbs,fat:profile.fat,score:86,meals,why:profile.why}
 }
 
-function NutritionScreen(){
+function NutritionScreen({activeDay}:{activeDay:number}){
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   const weekSeed=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/(86400000*7))
   const weekKey=`${now.getFullYear()}-W${String(weekSeed%52+1).padStart(2,'0')}`
-  const currentSession=sessions[store.getDay()%sessions.length]
+  const currentSession=sessions[activeDay%sessions.length]
   const rawSession=(currentSession?.title||'PUSH').toUpperCase()
-  const sessionKey=rawSession.includes('PULL')?'PULL':rawSession.includes('LEG')?'LEGS':rawSession.includes('UPPER')?'UPPER':rawSession.includes('LOWER')?'LOWER':rawSession.includes('REPOS')||rawSession.includes('REST')?'RECOVERY':'PUSH'
+  const sessionId=(currentSession?.id||'push').toUpperCase()
+  const sessionKey=sessionId.includes('PULL')||rawSession.includes('PULL')?'PULL'
+    :sessionId.includes('LEG')||rawSession.includes('LEG')?'LEGS'
+    :sessionId.includes('UPPER')||rawSession.includes('UPPER')?'UPPER'
+    :sessionId.includes('LOWER')||rawSession.includes('LOWER')?'LOWER'
+    :rawSession.includes('REPOS')||rawSession.includes('REST')?'RECOVERY':'PUSH'
 
   const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
   const consumedKey=`bodyos:nutrition:consumed:${dayKey}`
@@ -307,7 +312,15 @@ function NutritionScreen(){
         <button disabled={dayClosed} onClick={closeDay}>{dayClosed?'ARCHIVÉE ✓':'CLÔTURER LA JOURNÉE'}</button>
       </section>
       <section className="whyPlan glass"><header><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><span>AI RATIONALE</span></header><div>{protocol.why.map((w,i)=><article key={w}>{i===0?'🏋️':i===1?'📈':'🧠'} <b>{i===0?`Séance ${protocol.session}`:i===1?'Objectif cut':'Rotation'}</b><small>{w}</small></article>)}</div></section>
-      <div className="nutritionActions"><button onClick={regenerate}>↻ NOUVEAU MENU</button><button onClick={()=>setNutritionView('journal')}>✓ OUVRIR LE JOURNAL</button></div>
+      <section className="recipeIdeas glass">
+        <header><div><small>✦ INSPIRATION DU JOUR</small><b>RECETTES PROTÉINÉES</b></div><button>VOIR TOUT</button></header>
+        <div className="recipeCards">
+          <article><div className="recipeVisual">🥞</div><small>PETIT-DÉJEUNER</small><b>Pancakes protéinés</b><span>≈ 520 kcal • P 42 g</span><button>VOIR LA RECETTE</button></article>
+          <article><div className="recipeVisual">🍲</div><small>PLAT</small><b>Chicken bowl</b><span>≈ 690 kcal • P 55 g</span><button>VOIR LA RECETTE</button></article>
+          <article><div className="recipeVisual">🍰</div><small>DESSERT</small><b>Cheesecake skyr</b><span>≈ 280 kcal • P 26 g</span><button>VOIR LA RECETTE</button></article>
+        </div>
+      </section>
+      <div className="nutritionActions"><button onClick={regenerate}>↻ AUTRE MENU POUR {protocol.session}</button><button onClick={()=>setNutritionView('journal')}>✓ OUVRIR LE JOURNAL</button></div>
     </>}
 
     {nutritionView==='journal'&&<>
@@ -619,7 +632,7 @@ export default function App(){
         </div>}
       </main>}
 
-      {tab==='nutrition'&&<NutritionScreen/>}
+      {tab==='nutrition'&&<NutritionScreen activeDay={day}/>}
 
       {tab==='progress'&&<main className="screen progressScreen">
         <header className="moduleHeader">

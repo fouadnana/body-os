@@ -1511,3 +1511,18 @@ html,body,#root{background:#050b12!important}
 .journalFoods small{color:#72879c;font-size:7px}
 .nutritionEntry footer{margin-top:8px;color:#9d83ff;font-size:8px}
 .sectionLabel,.todayScreen .sectionLabel,.glass small,.panel small{color:#9eafc1}
+
+/* V6.20.1 — approved Nutrition direction + recipe inspiration */
+.recipeIdeas{padding:12px;margin-top:10px}
+.recipeIdeas>header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.recipeIdeas>header>div{display:flex;flex-direction:column;gap:3px}
+.recipeIdeas>header small{color:#9b7cff;font-size:7px;font-weight:800}
+.recipeIdeas>header b{font-size:11px;letter-spacing:.06em}
+.recipeIdeas>header button{border:1px solid #526d89;background:#183047;color:#aebed0;border-radius:8px;padding:7px 9px;font-size:7px}
+.recipeCards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.recipeCards article{min-width:0;padding:7px;border:1px solid #46627e;border-radius:10px;background:linear-gradient(145deg,#1b354c,#10263a);display:flex;flex-direction:column;gap:4px}
+.recipeVisual{height:52px;border-radius:8px;display:grid;place-items:center;font-size:27px;background:radial-gradient(circle at 50% 30%,#365979,#152b40 72%)}
+.recipeCards small{font-size:6px;color:#9b7cff;font-weight:800}
+.recipeCards b{font-size:8px;line-height:1.2}
+.recipeCards span{font-size:6px;color:#92a7bb}
+.recipeCards button{margin-top:auto;border:1px solid #4b6681;background:#142b40;color:#d7e5f2;border-radius:7px;padding:6px 3px;font-size:5.8px;font-weight:800}

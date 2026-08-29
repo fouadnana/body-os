@@ -1,0 +1,12 @@
+{
+  "version": "6.20.1",
+  "build_scope": [
+    "Fix Nutrition session sync by passing App activeDay reactively",
+    "Robust session mapping from session id/title",
+    "AUTRE MENU POUR <session> CTA",
+    "Recipe inspiration preview: protein breakfast, main dish, dessert",
+    "Preserve V6.20 journal logging and bundle splitting"
+  ],
+  "recipe_engine_status": "UI preview only in V6.20.1; full substitution/recipe engine remains V6.21",
+  "deployment": "NOT DEPLOYED"
+}
