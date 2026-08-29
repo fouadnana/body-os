@@ -1,0 +1,15 @@
+{
+  "version": "6.16",
+  "feature": "Adaptive Nutrition Engine",
+  "daily_change": "deterministic calendar-day variant + manual regenerate persisted per day",
+  "variants": [
+    "PUSH",
+    "PULL",
+    "LEGS",
+    "RECOVERY"
+  ],
+  "exact_food_weights": true,
+  "journal_preserved": true,
+  "note": "This is rule-based adaptation V1, not yet an AI/backend model using live recovery/progress telemetry.",
+  "deployment": "NOT DEPLOYED"
+}

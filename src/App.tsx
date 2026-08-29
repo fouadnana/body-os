@@ -49,237 +49,119 @@ type NutritionEntry = {
   fat:number
 }
 
+type DailyFood={name:string;qty:string}
+type DailyMeal={time:string;title:string;kcal:number;p:number;c:number;f:number;foods:DailyFood[]}
+type NutritionProtocol={day:string;mode:string;session:string;kcal:number;protein:number;carbs:number;fat:number;score:number;meals:DailyMeal[];why:string[]}
+
+const nutritionVariants=[
+  {
+    mode:'TRAINING DAY', session:'PUSH',
+    meals:[
+      ['07:00','PETIT-DÉJEUNER',650,45,75,18,[['Flocons d’avoine','80 g'],['Skyr 0%','250 g'],['Œufs entiers','2 pièces (100 g)'],['Banane','120 g'],['Amandes','15 g']]],
+      ['12:30','DÉJEUNER',800,55,95,22,[['Blanc de poulet','180 g'],['Riz basmati (cru)','90 g'],['Légumes verts','200 g'],['Huile d’olive','10 g']]],
+      ['16:30','COLLATION',450,35,50,12,[['Skyr 0%','200 g'],['Myrtilles','100 g'],['Beurre de cacahuète','15 g'],['Miel','10 g']]],
+      ['20:00','DÎNER',900,55,99,33,[['Saumon','180 g'],['Patate douce','250 g'],['Brocolis','200 g'],['Huile d’olive','10 g'],['Avocat','70 g']]]
+    ]
+  },
+  {
+    mode:'TRAINING DAY', session:'PULL',
+    meals:[
+      ['07:30','PETIT-DÉJEUNER',640,45,70,19,[['Pain complet','100 g'],['Œufs entiers','3 pièces'],['Skyr 0%','200 g'],['Kiwi','2 pièces']]],
+      ['12:30','DÉJEUNER',810,55,100,20,[['Steak haché 5%','180 g'],['Pommes de terre','400 g'],['Haricots verts','200 g'],['Huile d’olive','10 g']]],
+      ['16:30','COLLATION',440,35,54,10,[['Fromage blanc 0%','250 g'],['Banane','120 g'],['Flocons d’avoine','40 g']]],
+      ['20:30','DÎNER',910,55,95,36,[['Cabillaud','220 g'],['Riz basmati (cru)','90 g'],['Légumes','250 g'],['Avocat','80 g'],['Huile d’olive','10 g']]]
+    ]
+  },
+  {
+    mode:'TRAINING DAY', session:'LEGS',
+    meals:[
+      ['07:00','PETIT-DÉJEUNER',680,45,85,18,[['Flocons d’avoine','90 g'],['Skyr 0%','250 g'],['Banane','150 g'],['Œufs','2 pièces']]],
+      ['12:00','DÉJEUNER',840,55,110,20,[['Poulet','180 g'],['Riz basmati (cru)','105 g'],['Légumes','200 g'],['Huile d’olive','10 g']]],
+      ['16:00','PRE-WORKOUT',480,35,65,9,[['Skyr 0%','200 g'],['Banane','120 g'],['Galettes de riz','4 pièces'],['Miel','15 g']]],
+      ['20:30','DÎNER',800,55,59,38,[['Saumon','200 g'],['Pommes de terre','300 g'],['Brocolis','200 g'],['Avocat','70 g']]]
+    ]
+  },
+  {
+    mode:'RECOVERY DAY', session:'REPOS',
+    meals:[
+      ['08:00','PETIT-DÉJEUNER',620,48,55,22,[['Œufs','3 pièces'],['Skyr 0%','250 g'],['Flocons d’avoine','60 g'],['Fruits rouges','100 g']]],
+      ['12:30','DÉJEUNER',790,55,80,27,[['Poulet','200 g'],['Quinoa (cru)','80 g'],['Légumes','250 g'],['Huile d’olive','15 g']]],
+      ['16:30','COLLATION',420,35,40,14,[['Fromage blanc','250 g'],['Pomme','1 pièce'],['Amandes','20 g']]],
+      ['20:00','DÎNER',970,52,94,22,[['Poisson blanc','220 g'],['Patate douce','300 g'],['Légumes','250 g'],['Avocat','80 g']]]
+    ]
+  }
+]
+
 function NutritionScreen(){
-  const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
-  const targets = { kcal:2800, protein:190, fat:85, carbs:319, water:3.0 }
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-  const entriesKey=`bodyos:nutrition:${dayKey}`
-  const waterKey=`bodyos:water:${dayKey}`
-
-  const [entries,setEntries]=useState<NutritionEntry[]>(()=>{
-    try{
-      const raw=localStorage.getItem(entriesKey)
-      return raw?JSON.parse(raw):[]
-    }catch{return []}
-  })
-  const [water,setWater]=useState<number>(()=>{
-    try{return Number(localStorage.getItem(waterKey))||0}catch{return 0}
-  })
+  const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
+  const [regen,setRegen]=useState(()=>Number(localStorage.getItem(`bodyos:nutrition:variant:${dayKey}`)||0))
+  const targets={kcal:2800,protein:190,fat:85,carbs:319,water:3.0}
+  const [entries,setEntries]=useState<NutritionEntry[]>(()=>{try{return JSON.parse(localStorage.getItem(`bodyos:nutrition:${dayKey}`)||'[]')}catch{return[]}})
+  const [water,setWater]=useState(()=>Number(localStorage.getItem(`bodyos:water:${dayKey}`)||0))
   const [editorOpen,setEditorOpen]=useState(false)
   const [editingId,setEditingId]=useState<string|null>(null)
 
-  const totals=entries.reduce((a,e)=>({
-    kcal:a.kcal+e.kcal,
-    protein:a.protein+e.protein,
-    carbs:a.carbs+e.carbs,
-    fat:a.fat+e.fat
-  }),{kcal:0,protein:0,carbs:0,fat:0})
+  // Deterministic daily protocol: changes with calendar day, not on every render.
+  const baseIndex=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/86400000)%nutritionVariants.length
+  const variant=nutritionVariants[(baseIndex+regen)%nutritionVariants.length]
+  const meals:DailyMeal[]=variant.meals.map((m:any)=>({time:m[0],title:m[1],kcal:m[2],p:m[3],c:m[4],f:m[5],foods:m[6].map((x:any)=>({name:x[0],qty:x[1]}))}))
+  const protocol:NutritionProtocol={day:dayKey,mode:variant.mode,session:variant.session,kcal:targets.kcal,protein:targets.protein,carbs:targets.carbs,fat:targets.fat,score:86,meals,why:[`Journée ${variant.session}`,'Cible cut maintenue','Répartition adaptée à la séance']}
 
-  const pct=(v:number,t:number)=>Math.min(100,Math.round((v/t)*100))
-  const remaining=(v:number,t:number)=>Math.max(0,Math.round((t-v)*10)/10)
-  const adherence=Math.max(0,Math.min(100,Math.round(
-    Math.min(totals.protein/targets.protein,1)*45+
-    (1-Math.min(Math.abs(totals.kcal-targets.kcal)/targets.kcal,1))*35+
-    Math.min(water/targets.water,1)*20
-  )))
-  const editing=entries.find(e=>e.id===editingId)
-
-  function persist(next:NutritionEntry[]){
-    setEntries(next)
-    localStorage.setItem(entriesKey,JSON.stringify(next))
+  const totals=entries.reduce((a,e)=>({kcal:a.kcal+e.kcal,protein:a.protein+e.protein,carbs:a.carbs+e.carbs,fat:a.fat+e.fat}),{kcal:0,protein:0,carbs:0,fat:0})
+  const saveEntry=(form:HTMLFormElement)=>{
+    const fd=new FormData(form); const n=(k:string)=>Number(fd.get(k)||0)
+    const entry:NutritionEntry={id:editingId||crypto.randomUUID(),meal:String(fd.get('meal')||'Repas'),title:String(fd.get('title')||'Aliment'),time:String(fd.get('time')||''),kcal:n('kcal'),protein:n('protein'),carbs:n('carbs'),fat:n('fat')}
+    const next=editingId?entries.map(e=>e.id===editingId?entry:e):[...entries,entry]
+    setEntries(next);localStorage.setItem(`bodyos:nutrition:${dayKey}`,JSON.stringify(next));setEditorOpen(false);setEditingId(null)
   }
+  const removeEntry=(id:string)=>{const next=entries.filter(e=>e.id!==id);setEntries(next);localStorage.setItem(`bodyos:nutrition:${dayKey}`,JSON.stringify(next))}
+  const changeWater=(d:number)=>{const n=Math.max(0,water+d);setWater(n);localStorage.setItem(`bodyos:water:${dayKey}`,String(n))}
+  const regenerate=()=>{const n=(regen+1)%nutritionVariants.length;setRegen(n);localStorage.setItem(`bodyos:nutrition:variant:${dayKey}`,String(n))}
 
-  function saveEntry(form:HTMLFormElement){
-    const fd=new FormData(form)
-    const item:NutritionEntry={
-      id:editingId||String(Date.now()),
-      meal:String(fd.get('meal')||'AUTRE'),
-      title:String(fd.get('title')||'Aliment / repas'),
-      time:String(fd.get('time')||new Date().toTimeString().slice(0,5)),
-      kcal:Number(fd.get('kcal'))||0,
-      protein:Number(fd.get('protein'))||0,
-      carbs:Number(fd.get('carbs'))||0,
-      fat:Number(fd.get('fat'))||0,
-    }
-    persist(editingId?entries.map(e=>e.id===editingId?item:e):[...entries,item])
-    setEditingId(null)
-    setEditorOpen(false)
-  }
+  return <main className="screen nutritionScreen adaptiveNutrition">
+    <header className="sectionHead"><div><h1>NUTRITION</h1><p>Adaptive Nutrition Engine</p></div></header>
+    <div className="nutritionTabs"><button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button><button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button></div>
 
-  function removeEntry(id:string){
-    persist(entries.filter(e=>e.id!==id))
-    setEditingId(null)
-    setEditorOpen(false)
-  }
-
-  function changeWater(delta:number){
-    const next=Math.max(0,Math.round((water+delta)*100)/100)
-    setWater(next)
-    localStorage.setItem(waterKey,String(next))
-  }
-
-  function resetDay(){
-    if(!confirm('Réinitialiser les saisies nutritionnelles du jour ?'))return
-    persist([])
-    setWater(0)
-    localStorage.setItem(waterKey,'0')
-  }
-
-  return <main className="screen nutritionScreen">
-    <header className="sectionHeader">
-      <div>
-        <small className="eyebrow">BODY OS / AI CUT</small>
-        <h1>NUTRITION</h1>
-        <p>Saisie réelle • calories & macros</p>
-      </div>
-      <span className="adherencePill">{adherence}% ADHÉRENCE</span>
-    </header>
-
-    <div className="nutritionTabs" role="tablist" aria-label="Nutrition">
-      <button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button>
-      <button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button>
-    </div>
-
-    {nutritionView==='program'&&<section className="nutritionProgram">
-      <article className="programHero glass">
-        <small>OBJECTIF CUT • JOURNÉE TYPE</small>
-        <h2>2 800 KCAL</h2>
-        <p>190 g protéines • 319 g glucides • 85 g lipides</p>
-      </article>
-      <article className="programMeal glass"><div><b>01 • PETIT-DÉJEUNER</b><span>≈ 650 kcal • 45P • 75G • 18L</span></div><p>Œufs + flocons d’avoine + skyr/fromage blanc + fruit.</p></article>
-      <article className="programMeal glass"><div><b>02 • DÉJEUNER</b><span>≈ 800 kcal • 55P • 95G • 22L</span></div><p>Protéine maigre + féculent + légumes + matière grasse mesurée.</p></article>
-      <article className="programMeal glass"><div><b>03 • COLLATION</b><span>≈ 450 kcal • 35P • 50G • 12L</span></div><p>Skyr/fromage blanc ou équivalent + fruit + oléagineux mesurés.</p></article>
-      <article className="programMeal glass"><div><b>04 • DÎNER</b><span>≈ 900 kcal • 55P • 99G • 33L</span></div><p>Protéines + féculent + légumes. Ajuster les quantités avec le JOURNAL.</p></article>
-      <article className="programRule glass"><b>RÈGLE D’AJUSTEMENT</b><p>On ajuste sur la tendance poids/tour de taille, la faim, la récupération et la performance — pas sur une seule pesée.</p></article>
-    </section>}
+    {nutritionView==='program'&&<>
+      <section className="protocolHero glass">
+        <div><small>✦ TODAY'S NUTRITION PROTOCOL</small><strong>2 800 <em>KCAL</em></strong><b>{protocol.mode} • {protocol.session}</b><span>Generated for {dayKey}</span></div>
+        <div className="adaptScore"><i>{protocol.score}</i><small>OPTIMAL</small></div>
+      </section>
+      <section className="macroStrip glass">
+        <div><b>2 800</b><small>KCAL</small></div><div><b>190 g</b><small>PROTÉINES</small></div><div><b>319 g</b><small>GLUCIDES</small></div><div><b>85 g</b><small>LIPIDES</small></div>
+      </section>
+      <section className="mealTimeline">
+        {protocol.meals.map((m,i)=><article className="adaptiveMeal glass" key={m.time}>
+          <div className="mealTime">{m.time}</div>
+          <div className="mealBody"><header><b>0{i+1} • {m.title}</b><span>≈ {m.kcal} kcal</span></header>
+          {m.foods.map(f=><div className="foodRow" key={f.name}><span>{f.name}</span><b>{f.qty}</b></div>)}
+          <footer><span>P <b>{m.p}g</b></span><span>G <b>{m.c}g</b></span><span>L <b>{m.f}g</b></span></footer></div>
+        </article>)}
+      </section>
+      <section className="whyPlan glass"><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><div>{protocol.why.map(x=><span key={x}>✓ {x}</span>)}</div></section>
+      <div className="nutritionActions"><button onClick={regenerate}>↻ REGENERATE DAY</button><button onClick={()=>setNutritionView('journal')}>✓ LOG MEAL</button></div>
+    </>}
 
     {nutritionView==='journal'&&<>
-    <section className="nutritionHero glass">
-      <div className="kcalRing" style={{'--p':`${pct(totals.kcal,targets.kcal)}%`} as React.CSSProperties}>
-        <div><b>{Math.round(totals.kcal)}</b><small>/ {targets.kcal} kcal</small></div>
-      </div>
-      <div className="nutritionHeroCopy">
-        <small>RESTANT AUJOURD'HUI</small>
-        <strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))} kcal</strong>
-        <p>{entries.length===0?'Commence par saisir ton premier repas.':totals.protein<targets.protein?'Priorité : compléter les protéines sans dépasser les calories.':'Objectif protéines atteint. Garde une fin de journée maîtrisée.'}</p>
-      </div>
-    </section>
-
-    <button className="nutritionAddPrimary" onClick={()=>{setEditingId(null);setEditorOpen(true)}}>＋ SAISIR UN REPAS / ALIMENT</button>
-
-    <section className="macroProgressGrid">
-      {[
-        ['PROTÉINES',totals.protein,targets.protein,'g'],
-        ['GLUCIDES',totals.carbs,targets.carbs,'g'],
-        ['LIPIDES',totals.fat,targets.fat,'g'],
-      ].map(([label,val,tgt,unit])=><article className="macroProgress glass" key={label as string}>
-        <div><small>{label}</small><b>{Math.round(Number(val))}<span> / {tgt as number} {unit}</span></b></div>
-        <div className="progressTrack"><i style={{width:`${pct(Number(val),Number(tgt))}%`}}/></div>
-        <em>{Math.round(remaining(Number(val),Number(tgt)))} {unit} restants</em>
-      </article>)}
-    </section>
-
-    <section className="nutritionSection">
-      <div className="sectionTitleRow">
-        <h2>SAISIES DU JOUR</h2>
-        <button onClick={()=>{setEditingId(null);setEditorOpen(true)}}>+ AJOUTER</button>
-      </div>
-      {entries.length===0?<div className="emptyNutrition glass">
-        <b>Aucune saisie aujourd'hui</b>
-        <p>Ajoute un aliment ou un repas avec ses kcal, protéines, glucides et lipides.</p>
-      </div>:<div className="mealList">
-        {[...entries].sort((a,b)=>a.time.localeCompare(b.time)).map(e=><article className="mealCard glass editable" key={e.id} onClick={()=>{setEditingId(e.id);setEditorOpen(true)}}>
-          <time>{e.time}</time>
-          <div>
-            <small>{e.meal}</small>
-            <b>{e.title}</b>
-            <span>{e.kcal} kcal • P {e.protein}g • G {e.carbs}g • L {e.fat}g</span>
-          </div>
-          <strong>›</strong>
-        </article>)}
-      </div>}
-    </section>
-
-    <section className="nutritionSplit">
-      <article className="glass hydrationCard">
-        <small>HYDRATATION</small>
-        <b>{water.toFixed(2)} <span>/ {targets.water.toFixed(1)} L</span></b>
-        <div className="progressTrack"><i style={{width:`${pct(water,targets.water)}%`}}/></div>
-        <div className="waterActions">
-          <button onClick={()=>changeWater(-.25)}>− 250</button>
-          <button onClick={()=>changeWater(.25)}>+ 250 ML</button>
-        </div>
-      </article>
-      <article className="glass nutritionCoachCard">
-        <small>AI NUTRITION</small>
-        <b>{adherence>=80?'ON TRACK':adherence>=60?'À AJUSTER':'PRIORITÉ'}</b>
-        <p>{totals.protein<targets.protein?`Il reste ${Math.max(0,Math.round(targets.protein-totals.protein))} g de protéines à couvrir.`:'Protéines sécurisées. Surveille surtout le total calorique.'}</p>
-      </article>
-    </section>
-
-    <section className="nutritionTargets glass">
-      <div><small>CALORIES</small><b>{targets.kcal}</b><span>kcal</span></div>
-      <div><small>PROTÉINES</small><b>{targets.protein}</b><span>g</span></div>
-      <div><small>LIPIDES</small><b>{targets.fat}</b><span>g</span></div>
-      <div><small>GLUCIDES</small><b>{targets.carbs}</b><span>g</span></div>
-    </section>
-
-    <button className="nutritionReset" onClick={resetDay}>Réinitialiser la journée</button>
-
-    {editorOpen&&<div className="nutritionModalBackdrop" onClick={()=>setEditorOpen(false)}>
-      <section className="nutritionEditor glass" onClick={e=>e.stopPropagation()}>
-        <div className="nutritionEditorHead">
-          <div><small>JOURNAL NUTRITION</small><h2>{editing?'MODIFIER':'NOUVELLE SAISIE'}</h2></div>
-          <button type="button" onClick={()=>setEditorOpen(false)}>×</button>
-        </div>
-
-        <form onSubmit={e=>{e.preventDefault();saveEntry(e.currentTarget)}}>
-          <label>Moment
-            <select name="meal" defaultValue={editing?.meal||'DÉJEUNER'}>
-              <option>PETIT-DÉJEUNER</option><option>DÉJEUNER</option><option>COLLATION</option><option>DÎNER</option><option>AUTRE</option>
-            </select>
-          </label>
-
-          <label>Aliment / repas
-            <input required name="title" defaultValue={editing?.title||''} placeholder="Ex. poulet + riz"/>
-          </label>
-
-          <label>Heure
-            <input required name="time" type="time" defaultValue={editing?.time||new Date().toTimeString().slice(0,5)}/>
-          </label>
-
-          <div className="nutritionNumbers">
-            <label>Calories
-              <input required min="0" step="1" name="kcal" type="number" defaultValue={editing?.kcal||''} placeholder="kcal"/>
-            </label>
-            <label>Protéines
-              <input required min="0" step="0.1" name="protein" type="number" defaultValue={editing?.protein||''} placeholder="g"/>
-            </label>
-            <label>Glucides
-              <input required min="0" step="0.1" name="carbs" type="number" defaultValue={editing?.carbs||''} placeholder="g"/>
-            </label>
-            <label>Lipides
-              <input required min="0" step="0.1" name="fat" type="number" defaultValue={editing?.fat||''} placeholder="g"/>
-            </label>
-          </div>
-
-          <div className="nutritionEditorActions">
-            {editing&&<button className="danger" type="button" onClick={()=>removeEntry(editing.id)}>SUPPRIMER</button>}
-            <button className="save" type="submit">ENREGISTRER ✓</button>
-          </div>
-        </form>
-
-        <div className="photoNutritionPreview">
-          <div>📷</div>
-          <span><small>PROCHAINE VERSION</small><b>Analyse nutritionnelle par photo</b><p>Estimation kcal + protéines + glucides + lipides, avec niveau de confiance et correction manuelle.</p></span>
-        </div>
-      </section>
-    </div>}
+      <section className="journalSummary glass"><div><small>CONSOMMÉ</small><strong>{Math.round(totals.kcal)} kcal</strong></div><div><small>RESTANT</small><strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))} kcal</strong></div></section>
+      <button className="nutritionAddPrimary" onClick={()=>{setEditingId(null);setEditorOpen(true)}}>＋ SAISIR UN REPAS / ALIMENT</button>
+      <section className="macroProgressGrid glass"><div><b>{Math.round(totals.protein)} / {targets.protein} g</b><small>PROTÉINES</small></div><div><b>{Math.round(totals.carbs)} / {targets.carbs} g</b><small>GLUCIDES</small></div><div><b>{Math.round(totals.fat)} / {targets.fat} g</b><small>LIPIDES</small></div></section>
+      <section className="nutritionEntries">{entries.length===0?<div className="glass emptyNutrition">Aucun repas saisi aujourd’hui.</div>:entries.map(e=><article className="glass nutritionEntry" key={e.id} onClick={()=>{setEditingId(e.id);setEditorOpen(true)}}><div><b>{e.title}</b><small>{e.meal} • {e.time}</small></div><span>{e.kcal} kcal</span></article>)}</section>
+      <section className="glass hydrationCard"><div><small>HYDRATATION</small><b>{water.toFixed(2)} L / {targets.water.toFixed(1)} L</b></div><div className="waterActions"><button onClick={()=>changeWater(-.25)}>−250</button><button onClick={()=>changeWater(.25)}>+250</button></div></section>
     </>}
+
+    {editorOpen&&<div className="nutritionEditorBackdrop"><form className="nutritionEditor glass" onSubmit={e=>{e.preventDefault();saveEntry(e.currentTarget)}}>
+      <header><b>{editingId?'MODIFIER':'AJOUTER'} LE REPAS</b><button type="button" onClick={()=>setEditorOpen(false)}>×</button></header>
+      <label>Repas<input name="meal" defaultValue={editingId?entries.find(e=>e.id===editingId)?.meal:'Déjeuner'}/></label>
+      <label>Aliment / repas<input name="title" required defaultValue={editingId?entries.find(e=>e.id===editingId)?.title:''}/></label>
+      <label>Heure<input name="time" type="time" defaultValue={editingId?entries.find(e=>e.id===editingId)?.time:'12:30'}/></label>
+      <div className="nutritionEditorGrid"><label>Kcal<input name="kcal" type="number" min="0" required defaultValue={editingId?entries.find(e=>e.id===editingId)?.kcal:''}/></label><label>Protéines<input name="protein" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.protein:''}/></label><label>Glucides<input name="carbs" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.carbs:''}/></label><label>Lipides<input name="fat" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.fat:''}/></label></div>
+      <div className="nutritionEditorActions">{editingId&&<button type="button" className="danger" onClick={()=>{removeEntry(editingId);setEditorOpen(false)}}>SUPPRIMER</button>}<button type="submit" className="primary">ENREGISTRER</button></div>
+    </form></div>}
   </main>
 }
-
 
 export default function App(){
   const [tab,setTab]=useState<Tab>('today')
