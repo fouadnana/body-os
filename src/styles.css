@@ -1371,3 +1371,36 @@ html,body,#root,.desktopStage,.phoneApp{
 .dailyMemory>div{display:flex;flex-direction:column;gap:3px}.dailyMemory small{font-size:7px;color:#9277ff;letter-spacing:.12em}.dailyMemory b{font-size:11px}.dailyMemory span{font-size:8px;color:#7f91a5}
 .dailyMemory button{border:1px solid #7255e9;border-radius:9px;background:linear-gradient(135deg,#322365,#15294a);color:#fff;padding:9px;font-size:8px;font-weight:850}.dailyMemory button:disabled{border-color:#2d7753;background:#103124;color:#55e78c}
 .nutritionTopbar button,.nutritionTabs button,.nutritionActions button{background:linear-gradient(145deg,#101c2a,#08111c)!important}
+
+/* V6.19 — Brighter Dark Premium */
+.adaptiveNutrition{
+  background:
+    radial-gradient(circle at 12% 5%,rgba(112,78,255,.18),transparent 28%),
+    radial-gradient(circle at 88% 22%,rgba(24,160,255,.15),transparent 28%),
+    linear-gradient(180deg,#07111b 0%,#081522 48%,#050b12 100%)!important;
+}
+.adaptiveNutrition .glass{
+  background:linear-gradient(145deg,rgba(24,43,62,.98),rgba(12,27,42,.98))!important;
+  border-color:#3d5874!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 14px 34px rgba(0,0,0,.16)!important
+}
+.protocolHero{
+  background:
+    radial-gradient(circle at 15% 18%,rgba(141,92,255,.30),transparent 40%),
+    radial-gradient(circle at 82% 18%,rgba(49,184,255,.22),transparent 38%),
+    linear-gradient(145deg,#182942,#0d2032)!important;
+}
+.adaptiveMeal{
+  background:linear-gradient(145deg,#13283a,#0d1d2c)!important;
+  border-color:#46627f!important;
+}
+.mealMoment{background:linear-gradient(180deg,#153049,#0d2133)!important}
+.foodThumb{background:linear-gradient(145deg,#203a52,#12283d)!important;border-color:#54708c!important}
+.dailyMemory{background:linear-gradient(135deg,#202b57,#123149)!important}
+.whyPlan{background:linear-gradient(145deg,#16283b,#0e2132)!important}
+.nutritionActions button{background:linear-gradient(145deg,#172b3f,#102237)!important;border-color:#496984!important}
+.mealStateBar{display:flex;gap:5px;margin:7px 0 5px;flex-wrap:wrap}
+.mealStateBar button{border:1px solid #49637e;border-radius:7px;background:#102234;color:#91a7bd;padding:5px 7px;font-size:6.8px;font-weight:850;letter-spacing:.035em}
+.mealStateBar .consumed{border-color:#35b674;background:#123928;color:#67ef9f}
+.mealStateBar .partial{border-color:#d39a39;background:#3a2b14;color:#ffc96a}
+.mealStateBar .skipped{border-color:#b14b62;background:#371821;color:#ff8199}

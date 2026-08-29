@@ -124,13 +124,69 @@ const nutritionVariants=[
   }
 ]
 
+
+type WeeklyMealTemplate={
+  title:string; slot:'breakfast'|'lunch'|'snack'|'dinner'; kcal:number;p:number;c:number;f:number;
+  foods:{name:string;qty:string}[]
+}
+type WeeklyMenuProfile={
+  session:string; mode:string; kcal:number;protein:number;carbs:number;fat:number; why:string[];
+  pools:Record<'breakfast'|'lunch'|'snack'|'dinner',WeeklyMealTemplate[]>
+}
+
+const weeklyMenuProfiles:Record<string,WeeklyMenuProfile>={
+  PUSH:{
+    session:'PUSH',mode:'TRAINING DAY',kcal:2800,protein:190,carbs:319,fat:85,
+    why:["Glucides répartis autour du PUSH.","Protéines élevées pour préserver la masse musculaire.","Rotation hebdomadaire anti-répétition."],
+    pools:{
+      breakfast:[
+        {slot:'breakfast',title:'PETIT-DÉJEUNER',kcal:650,p:45,c:75,f:18,foods:[{name:"Flocons d’avoine",qty:"80 g"},{name:"Skyr 0%",qty:"250 g"},{name:"Banane",qty:"120 g"},{name:"Œufs",qty:"2 pièces"},{name:"Amandes",qty:"15 g"}]},
+        {slot:'breakfast',title:'PETIT-DÉJEUNER',kcal:640,p:44,c:72,f:18,foods:[{name:"Pain complet",qty:"110 g"},{name:"Fromage blanc 0%",qty:"300 g"},{name:"Kiwi",qty:"150 g"},{name:"Œufs",qty:"2 pièces"},{name:"Beurre de cacahuète",qty:"12 g"}]},
+        {slot:'breakfast',title:'PETIT-DÉJEUNER',kcal:660,p:46,c:78,f:17,foods:[{name:"Muesli sans sucre",qty:"85 g"},{name:"Skyr 0%",qty:"250 g"},{name:"Myrtilles",qty:"120 g"},{name:"Œufs",qty:"2 pièces"}]},
+      ],
+      lunch:[
+        {slot:'lunch',title:'DÉJEUNER',kcal:800,p:55,c:95,f:22,foods:[{name:"Poulet",qty:"180 g"},{name:"Riz basmati (cru)",qty:"90 g"},{name:"Légumes",qty:"200 g"},{name:"Huile d’olive",qty:"10 g"}]},
+        {slot:'lunch',title:'DÉJEUNER',kcal:810,p:56,c:94,f:23,foods:[{name:"Dinde",qty:"190 g"},{name:"Semoule (crue)",qty:"95 g"},{name:"Courgettes",qty:"220 g"},{name:"Huile d’olive",qty:"10 g"}]},
+        {slot:'lunch',title:'DÉJEUNER',kcal:790,p:54,c:92,f:21,foods:[{name:"Steak 5%",qty:"170 g"},{name:"Pommes de terre",qty:"360 g"},{name:"Haricots verts",qty:"220 g"},{name:"Huile d’olive",qty:"8 g"}]},
+      ],
+      snack:[
+        {slot:'snack',title:'PRE-WORKOUT',kcal:450,p:35,c:50,f:12,foods:[{name:"Skyr 0%",qty:"200 g"},{name:"Myrtilles",qty:"100 g"},{name:"Beurre de cacahuète",qty:"15 g"},{name:"Miel",qty:"10 g"}]},
+        {slot:'snack',title:'PRE-WORKOUT',kcal:460,p:34,c:56,f:10,foods:[{name:"Fromage blanc 0%",qty:"250 g"},{name:"Banane",qty:"120 g"},{name:"Galettes de riz",qty:"4 pièces"},{name:"Miel",qty:"12 g"}]},
+        {slot:'snack',title:'PRE-WORKOUT',kcal:440,p:35,c:48,f:11,foods:[{name:"Skyr 0%",qty:"220 g"},{name:"Pomme",qty:"180 g"},{name:"Pain complet",qty:"60 g"},{name:"Purée d’amandes",qty:"12 g"}]},
+      ],
+      dinner:[
+        {slot:'dinner',title:'DÎNER',kcal:900,p:55,c:99,f:33,foods:[{name:"Saumon",qty:"180 g"},{name:"Patate douce",qty:"250 g"},{name:"Brocolis",qty:"200 g"},{name:"Huile d’olive",qty:"10 g"},{name:"Avocat",qty:"70 g"}]},
+        {slot:'dinner',title:'DÎNER',kcal:890,p:56,c:96,f:31,foods:[{name:"Cabillaud",qty:"220 g"},{name:"Riz basmati (cru)",qty:"95 g"},{name:"Brocolis",qty:"200 g"},{name:"Avocat",qty:"80 g"},{name:"Huile d’olive",qty:"10 g"}]},
+        {slot:'dinner',title:'DÎNER',kcal:910,p:55,c:101,f:32,foods:[{name:"Bœuf 5%",qty:"180 g"},{name:"Pâtes complètes (crues)",qty:"100 g"},{name:"Épinards",qty:"200 g"},{name:"Huile d’olive",qty:"10 g"}]},
+      ]
+    }
+  }
+}
+weeklyMenuProfiles.PULL={...weeklyMenuProfiles.PUSH,session:'PULL',why:["Glucides réguliers pour soutenir le volume de tirage.","Protéines élevées pour récupération dos/biceps.","Menu renouvelé chaque semaine."]}
+weeklyMenuProfiles.LEGS={...weeklyMenuProfiles.PUSH,session:'LEGS',why:["Plus de glucides autour de la séance jambes.","Répartition énergétique pensée pour l’effort le plus coûteux.","Menu renouvelé chaque semaine."]}
+weeklyMenuProfiles.UPPER={...weeklyMenuProfiles.PUSH,session:'UPPER',why:["Apport équilibré pour séance haut du corps.","Protéines stables sur la journée.","Menu renouvelé chaque semaine."]}
+weeklyMenuProfiles.LOWER={...weeklyMenuProfiles.PUSH,session:'LOWER + BRAS',why:["Glucides ciblés autour du lower.","Protéines stables pour jambes et bras.","Menu renouvelé chaque semaine."]}
+weeklyMenuProfiles.RECOVERY={...weeklyMenuProfiles.PUSH,session:'REPOS',mode:'RECOVERY DAY',why:["Énergie contrôlée le jour de repos.","Protéines maintenues pour la récupération.","Menu renouvelé chaque semaine."]}
+
+function seededPick<T>(arr:T[],seed:number,offset:number){
+  return arr[Math.abs((seed*9301+offset*49297+233280)%233280)%arr.length]
+}
+function buildWeeklyProtocol(sessionKey:string,weekSeed:number){
+  const profile=weeklyMenuProfiles[sessionKey]||weeklyMenuProfiles.PUSH
+  const times=['07:00','12:30','16:30','20:00']
+  const slots:['breakfast','lunch','snack','dinner']=['breakfast','lunch','snack','dinner']
+  const meals=slots.map((slot,i)=>({time:times[i],...seededPick(profile.pools[slot],weekSeed,i+sessionKey.length)}))
+  return {day:'WEEKLY',mode:profile.mode,session:profile.session,kcal:profile.kcal,protein:profile.protein,carbs:profile.carbs,fat:profile.fat,score:86,meals,why:profile.why}
+}
+
 function NutritionScreen(){
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
   const weekSeed=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/(86400000*7))
   const consumedKey=`bodyos:nutrition:consumed:${dayKey}`
-  const [consumedMeals,setConsumedMeals]=useState<Record<string,boolean>>(()=>{try{return JSON.parse(localStorage.getItem(consumedKey)||'{}')}catch{return{}}})
+  type MealState='planned'|'consumed'|'partial'|'skipped'
+  const [consumedMeals,setConsumedMeals]=useState<Record<string,MealState>>(()=>{try{return JSON.parse(localStorage.getItem(consumedKey)||'{}')}catch{return{}}})
   const [dayClosed,setDayClosed]=useState(()=>localStorage.getItem(`bodyos:nutrition:closed:${dayKey}`)==='1')
   const [regen,setRegen]=useState(()=>Number(localStorage.getItem(`bodyos:nutrition:variant:${dayKey}`)||0))
   const targets={kcal:2800,protein:190,fat:85,carbs:319,water:3.0}
@@ -156,13 +212,16 @@ function NutritionScreen(){
   const changeWater=(d:number)=>{const n=Math.max(0,water+d);setWater(n);localStorage.setItem(`bodyos:water:${dayKey}`,String(n))}
   const regenerate=()=>{const n=(regen+1)%nutritionVariants.length;setRegen(n);localStorage.setItem(`bodyos:nutrition:variant:${dayKey}`,String(n))}
 
-  const toggleConsumed=(time:string)=>{
-    const next={...consumedMeals,[time]:!consumedMeals[time]}
+  const setMealState=(time:string,state:MealState)=>{
+    const next={...consumedMeals,[time]:state}
     setConsumedMeals(next);localStorage.setItem(consumedKey,JSON.stringify(next))
   }
-  const consumedCount=protocol.meals.filter(m=>consumedMeals[m.time]).length
+  const resolvedCount=protocol.meals.filter(m=>consumedMeals[m.time]&&consumedMeals[m.time]!=='planned').length
+  const consumedCount=protocol.meals.filter(m=>consumedMeals[m.time]==='consumed').length
   const closeDay=()=>{
-    if(consumedCount<protocol.meals.length&&!confirm(`${consumedCount}/${protocol.meals.length} repas sont renseignés. Clôturer quand même ?`)) return
+    if(resolvedCount<protocol.meals.length){
+      alert(`Renseigne les ${protocol.meals.length-resolvedCount} repas restants avant de clôturer la journée.`); return
+    }
     localStorage.setItem(`bodyos:nutrition:closed:${dayKey}`,'1');setDayClosed(true)
   }
 
@@ -182,18 +241,22 @@ function NutritionScreen(){
         {protocol.meals.map((m,i)=>{const moment=mealMoment(m.time);return <article className={`adaptiveMeal glass ${moment.tone}`} key={m.time}>
           <div className="mealMoment"><strong>{m.time}</strong><i>{moment.icon}</i><small>{moment.label}</small></div>
           <div className="mealBody"><header><b>0{i+1} • {m.title}</b><span>≈ {m.kcal} kcal</span></header>
-          <button className={`mealConsumed ${consumedMeals[m.time]?'yes':''}`} onClick={()=>toggleConsumed(m.time)}>{consumedMeals[m.time]?'✓ CONSOMMÉ':'MARQUER CONSOMMÉ'}</button>
+          <div className="mealStateBar">
+            <button className={consumedMeals[m.time]==='consumed'?'active consumed':''} onClick={()=>setMealState(m.time,'consumed')}>✓ CONSOMMÉ</button>
+            <button className={consumedMeals[m.time]==='partial'?'active partial':''} onClick={()=>setMealState(m.time,'partial')}>½ PARTIEL</button>
+            <button className={consumedMeals[m.time]==='skipped'?'active skipped':''} onClick={()=>setMealState(m.time,'skipped')}>× NON CONSOMMÉ</button>
+          </div>
           <div className="mealContent"><div className="foodList">{m.foods.map(f=><div className="foodRow" key={f.name}><span className="foodThumb">{f.icon}</span><span className="foodName">{f.name}</span><b>{f.qty}</b></div>)}</div>
           <div className="mealMacroViz"><div className="macroDonut"></div><span>P <b>{m.p}g</b></span><span>G <b>{m.c}g</b></span><span>L <b>{m.f}g</b></span></div></div>
           </div>
         </article>})}
       </section>
       <section className="dailyMemory glass">
-        <div><small>DAILY MEMORY</small><b>{consumedCount}/{protocol.meals.length} repas enregistrés</b><span>{dayClosed?'Journée clôturée ✓':'À clôturer avant archivage'}</span></div>
+        <div><small>DAILY MEMORY</small><b>{resolvedCount}/{protocol.meals.length} repas renseignés</b><span>{dayClosed?'Journée clôturée ✓':'Tous les repas doivent être qualifiés'}</span></div>
         <button disabled={dayClosed} onClick={closeDay}>{dayClosed?'ARCHIVÉE ✓':'CLÔTURER LA JOURNÉE'}</button>
       </section>
       <section className="whyPlan glass"><header><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><span>AI RATIONALE</span></header><div><article>🏋️ <b>Séance {protocol.session}</b><small>Glucides répartis autour de l'entraînement.</small></article><article>📈 <b>Objectif cut</b><small>Énergie maintenue à 2 800 kcal aujourd'hui.</small></article><article>🧠 <b>Adaptation</b><small>Plan journalier stable, réévaluable demain.</small></article></div></section>
-      <div className="nutritionActions"><button onClick={regenerate}>↻ REGENERATE DAY</button><button onClick={()=>setNutritionView('journal')}>✓ LOG MEAL</button></div>
+      <div className="nutritionActions"><button onClick={regenerate}>↻ NOUVEAU MENU</button><button onClick={()=>setNutritionView('journal')}>✓ LOG MEAL</button></div>
     </>}
 
     {nutritionView==='journal'&&<>

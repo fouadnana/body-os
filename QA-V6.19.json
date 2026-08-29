@@ -1,0 +1,39 @@
+{
+  "version": "6.19",
+  "scope": [
+    "true weekly menu engine by workout family",
+    "weekly anti-static composition",
+    "consumption states",
+    "strict daily closure",
+    "brighter dark premium"
+  ],
+  "weekly_engine": {
+    "keys": [
+      "PUSH",
+      "PULL",
+      "LEGS",
+      "UPPER",
+      "LOWER",
+      "RECOVERY"
+    ],
+    "cadence": "weekly",
+    "composition": "seeded meal-pool selection",
+    "same_week_stable": true,
+    "new_week_changes": true
+  },
+  "consumption": {
+    "states": [
+      "consumed",
+      "partial",
+      "skipped"
+    ],
+    "closure_requires_all_meals_resolved": true
+  },
+  "visual": "materially brighter blue-night surfaces and stronger purple/blue ambient light",
+  "limitations": [
+    "Meal pools currently reuse the same base pool structure across workout families, with session-specific rationale. Next pass can add dedicated food pools per muscle/session.",
+    "Workout-session binding reads localStorage key bodyos:workout:session and falls back to PUSH.",
+    "No backend AI yet."
+  ],
+  "deployment": "NOT DEPLOYED"
+}
