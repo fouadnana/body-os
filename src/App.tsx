@@ -51,7 +51,8 @@ type NutritionEntry = {
 
 function NutritionScreen(){
   const targets = { kcal:2800, protein:190, fat:85, carbs:319, water:3.0 }
-  const dayKey=new Date().toISOString().slice(0,10)
+  const now=new Date()
+  const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   const entriesKey=`bodyos:nutrition:${dayKey}`
   const waterKey=`bodyos:water:${dayKey}`
 
@@ -525,54 +526,7 @@ export default function App(){
         </div>}
       </main>}
 
-      {tab==='nutrition'&&<main className="screen nutritionScreen">
-        <header className="moduleHeader">
-          <div><small>BODY OS / AI CUT</small><h1>NUTRITION</h1><p>Déficit contrôlé • performance préservée</p></div>
-          <div className="miniScore"><b>{nutritionScore}%</b><span>JOUR</span></div>
-        </header>
-
-        <section className="nutritionHero glass">
-          <div className="calorieRing" style={{'--nutrition':`${Math.min(consumed.calories/target.calories,1)*360}deg`} as React.CSSProperties}>
-            <div><b>{consumed.calories}</b><small>/ {target.calories} kcal</small></div>
-          </div>
-          <div className="nutritionHeroCopy">
-            <small>RESTANT AUJOURD’HUI</small>
-            <b>{remaining.calories} kcal</b>
-            <p>Priorité : atteindre les protéines sans dépasser la cible calorique.</p>
-          </div>
-        </section>
-
-        <p className="sectionLabel">MACROS DU JOUR</p>
-        <section className="macroProgress glass">
-          {[
-            ['PROTÉINES',consumed.protein,target.protein,'g','protein'],
-            ['GLUCIDES',consumed.carbs,target.carbs,'g','carbs'],
-            ['LIPIDES',consumed.fat,target.fat,'g','fat']
-          ].map(([label,value,goal,unit,cls])=><div className="macroLine" key={String(label)}>
-            <div><b>{label}</b><span>{value} / {goal} {unit}</span></div>
-            <div className="macroTrack"><i className={String(cls)} style={{width:`${Math.min(Number(value)/Number(goal),1)*100}%`}}/></div>
-          </div>)}
-        </section>
-
-        <p className="sectionLabel">REPAS</p>
-        <section className="mealList">
-          {[
-            ['PETIT-DÉJEUNER','520 kcal','38 g prot.','✓'],
-            ['DÉJEUNER','760 kcal','56 g prot.','✓'],
-            ['COLLATION','310 kcal','28 g prot.','✓'],
-            ['DÎNER','590 kcal','30 g prot.','+']
-          ].map(([name,kcal,prot,status])=><article className="mealCard glass" key={name}>
-            <div className="mealIcon">{status==='✓'?'✓':'+'}</div>
-            <div><b>{name}</b><span>{kcal} • {prot}</span></div>
-            <strong>›</strong>
-          </article>)}
-        </section>
-
-        <section className="nutritionFooterGrid">
-          <article className="glass"><small>EAU</small><b>2,1 L</b><span>/ 3,0 L</span><div className="tinyTrack"><i style={{width:'70%'}}/></div></article>
-          <article className="glass"><small>ADHÉRENCE</small><b>5 / 7</b><span>jours dans la cible</span><div className="tinyTrack purple"><i style={{width:'71%'}}/></div></article>
-        </section>
-      </main>}
+      {tab==='nutrition'&&<NutritionScreen/>}
 
       {tab==='progress'&&<main className="screen progressScreen">
         <header className="moduleHeader">
