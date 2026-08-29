@@ -47,6 +47,9 @@ type NutritionEntry = {
   protein:number
   carbs:number
   fat:number
+  status?:'consumed'|'partial'|'skipped'|'manual'
+  source?:'programme'|'manual'
+  foods?:{name:string;plannedQty:string;actualQty:string}[]
 }
 
 type DailyFood={name:string;qty:string;icon?:string}
@@ -169,7 +172,7 @@ weeklyMenuProfiles.LOWER={...weeklyMenuProfiles.PUSH,session:'LOWER + BRAS',why:
 weeklyMenuProfiles.RECOVERY={...weeklyMenuProfiles.PUSH,session:'REPOS',mode:'RECOVERY DAY',why:["Énergie contrôlée le jour de repos.","Protéines maintenues pour la récupération.","Menu renouvelé chaque semaine."]}
 
 function seededPick<T>(arr:T[],seed:number,offset:number){
-  return arr[Math.abs((seed*9301+offset*49297+233280)%233280)%arr.length]
+  return arr[Math.abs(seed+offset)%arr.length]
 }
 function buildWeeklyProtocol(sessionKey:string,weekSeed:number){
   const profile=weeklyMenuProfiles[sessionKey]||weeklyMenuProfiles.PUSH
@@ -182,48 +185,96 @@ function buildWeeklyProtocol(sessionKey:string,weekSeed:number){
 function NutritionScreen(){
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-  const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
   const weekSeed=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/(86400000*7))
+  const weekKey=`${now.getFullYear()}-W${String(weekSeed%52+1).padStart(2,'0')}`
+  const currentSession=sessions[store.getDay()%sessions.length]
+  const rawSession=(currentSession?.title||'PUSH').toUpperCase()
+  const sessionKey=rawSession.includes('PULL')?'PULL':rawSession.includes('LEG')?'LEGS':rawSession.includes('UPPER')?'UPPER':rawSession.includes('LOWER')?'LOWER':rawSession.includes('REPOS')||rawSession.includes('REST')?'RECOVERY':'PUSH'
+
+  const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
   const consumedKey=`bodyos:nutrition:consumed:${dayKey}`
   type MealState='planned'|'consumed'|'partial'|'skipped'
   const [consumedMeals,setConsumedMeals]=useState<Record<string,MealState>>(()=>{try{return JSON.parse(localStorage.getItem(consumedKey)||'{}')}catch{return{}}})
   const [dayClosed,setDayClosed]=useState(()=>localStorage.getItem(`bodyos:nutrition:closed:${dayKey}`)==='1')
-  const [regen,setRegen]=useState(()=>Number(localStorage.getItem(`bodyos:nutrition:variant:${dayKey}`)||0))
+  const overrideKey=`bodyos:nutrition:weekly-override:${weekKey}:${sessionKey}`
+  const [regen,setRegen]=useState(()=>Number(localStorage.getItem(overrideKey)||0))
   const targets={kcal:2800,protein:190,fat:85,carbs:319,water:3.0}
-  const [entries,setEntries]=useState<NutritionEntry[]>(()=>{try{return JSON.parse(localStorage.getItem(`bodyos:nutrition:${dayKey}`)||'[]')}catch{return[]}})
+  const journalKey=`bodyos:nutrition:${dayKey}`
+  const [entries,setEntries]=useState<NutritionEntry[]>(()=>{try{return JSON.parse(localStorage.getItem(journalKey)||'[]')}catch{return[]}})
   const [water,setWater]=useState(()=>Number(localStorage.getItem(`bodyos:water:${dayKey}`)||0))
   const [editorOpen,setEditorOpen]=useState(false)
   const [editingId,setEditingId]=useState<string|null>(null)
+  const [adjustingMeal,setAdjustingMeal]=useState<DailyMeal|null>(null)
 
-  // Deterministic daily protocol: changes with calendar day, not on every render.
-  const baseIndex=weekSeed%nutritionVariants.length
-  const variant=nutritionVariants[(baseIndex+regen)%nutritionVariants.length]
-  const meals:DailyMeal[]=variant.meals.map((m:any)=>({time:m[0],title:m[1],kcal:m[2],p:m[3],c:m[4],f:m[5],foods:m[6].map((x:any)=>({name:x[0],qty:x[1],icon:foodIcon(x[0])}))}))
-  const protocol:NutritionProtocol={day:dayKey,mode:variant.mode,session:variant.session,kcal:targets.kcal,protein:targets.protein,carbs:targets.carbs,fat:targets.fat,score:86,meals,why:[`Journée ${variant.session}`,'Cible cut maintenue','Répartition adaptée à la séance']}
+  const protocolRaw=buildWeeklyProtocol(sessionKey,weekSeed+regen)
+  const protocol:NutritionProtocol={
+    ...protocolRaw,day:dayKey,
+    meals:protocolRaw.meals.map(m=>({...m,foods:m.foods.map(f=>({...f,icon:foodIcon(f.name)}))}))
+  }
+
+  const persistEntries=(next:NutritionEntry[])=>{
+    setEntries(next)
+    localStorage.setItem(journalKey,JSON.stringify(next))
+  }
+  const upsertProgrammeEntry=(meal:DailyMeal,status:'consumed'|'partial'|'skipped',foods:{name:string;plannedQty:string;actualQty:string}[],ratio=1)=>{
+    const id=`programme:${dayKey}:${meal.time}`
+    const factor=status==='skipped'?0:Math.max(0,Math.min(1.5,ratio))
+    const entry:NutritionEntry={
+      id,meal:meal.title,title:`${meal.title} • ${protocol.session}`,time:meal.time,
+      kcal:Math.round(meal.kcal*factor),
+      protein:Number((meal.p*factor).toFixed(1)),
+      carbs:Number((meal.c*factor).toFixed(1)),
+      fat:Number((meal.f*factor).toFixed(1)),
+      status,source:'programme',foods
+    }
+    const exists=entries.some(e=>e.id===id)
+    persistEntries(exists?entries.map(e=>e.id===id?entry:e):[...entries,entry])
+  }
+  const plannedFoods=(meal:DailyMeal)=>meal.foods.map(f=>({name:f.name,plannedQty:f.qty,actualQty:f.qty}))
+  const setMealState=(meal:DailyMeal,state:MealState)=>{
+    if(state==='partial'){ setAdjustingMeal(meal); return }
+    const next={...consumedMeals,[meal.time]:state}
+    setConsumedMeals(next);localStorage.setItem(consumedKey,JSON.stringify(next))
+    if(state==='consumed') upsertProgrammeEntry(meal,'consumed',plannedFoods(meal),1)
+    if(state==='skipped') upsertProgrammeEntry(meal,'skipped',meal.foods.map(f=>({name:f.name,plannedQty:f.qty,actualQty:'0'})),0)
+  }
+  const numberFromQty=(value:string)=>Number((value.replace(',','.').match(/\d+(?:\.\d+)?/)||['0'])[0])
+  const saveAdjustedMeal=(form:HTMLFormElement)=>{
+    if(!adjustingMeal)return
+    const fd=new FormData(form)
+    const foods=adjustingMeal.foods.map((f,i)=>({
+      name:f.name,plannedQty:f.qty,actualQty:String(fd.get(`actual-${i}`)||'0')
+    }))
+    const ratios=foods.map(f=>{
+      const planned=numberFromQty(f.plannedQty), actual=numberFromQty(f.actualQty)
+      return planned>0?Math.max(0,Math.min(1.5,actual/planned)):0
+    })
+    const ratio=ratios.length?ratios.reduce((a,b)=>a+b,0)/ratios.length:0
+    const next={...consumedMeals,[adjustingMeal.time]:'partial' as MealState}
+    setConsumedMeals(next);localStorage.setItem(consumedKey,JSON.stringify(next))
+    upsertProgrammeEntry(adjustingMeal,'partial',foods,ratio)
+    setAdjustingMeal(null)
+    setNutritionView('journal')
+  }
 
   const totals=entries.reduce((a,e)=>({kcal:a.kcal+e.kcal,protein:a.protein+e.protein,carbs:a.carbs+e.carbs,fat:a.fat+e.fat}),{kcal:0,protein:0,carbs:0,fat:0})
   const saveEntry=(form:HTMLFormElement)=>{
     const fd=new FormData(form); const n=(k:string)=>Number(fd.get(k)||0)
-    const entry:NutritionEntry={id:editingId||crypto.randomUUID(),meal:String(fd.get('meal')||'Repas'),title:String(fd.get('title')||'Aliment'),time:String(fd.get('time')||''),kcal:n('kcal'),protein:n('protein'),carbs:n('carbs'),fat:n('fat')}
+    const entry:NutritionEntry={id:editingId||crypto.randomUUID(),meal:String(fd.get('meal')||'Repas'),title:String(fd.get('title')||'Aliment'),time:String(fd.get('time')||''),kcal:n('kcal'),protein:n('protein'),carbs:n('carbs'),fat:n('fat'),status:'manual',source:'manual'}
     const next=editingId?entries.map(e=>e.id===editingId?entry:e):[...entries,entry]
-    setEntries(next);localStorage.setItem(`bodyos:nutrition:${dayKey}`,JSON.stringify(next));setEditorOpen(false);setEditingId(null)
+    persistEntries(next);setEditorOpen(false);setEditingId(null)
   }
-  const removeEntry=(id:string)=>{const next=entries.filter(e=>e.id!==id);setEntries(next);localStorage.setItem(`bodyos:nutrition:${dayKey}`,JSON.stringify(next))}
+  const removeEntry=(id:string)=>persistEntries(entries.filter(e=>e.id!==id))
   const changeWater=(d:number)=>{const n=Math.max(0,water+d);setWater(n);localStorage.setItem(`bodyos:water:${dayKey}`,String(n))}
-  const regenerate=()=>{const n=(regen+1)%nutritionVariants.length;setRegen(n);localStorage.setItem(`bodyos:nutrition:variant:${dayKey}`,String(n))}
-
-  const setMealState=(time:string,state:MealState)=>{
-    const next={...consumedMeals,[time]:state}
-    setConsumedMeals(next);localStorage.setItem(consumedKey,JSON.stringify(next))
-  }
+  const regenerate=()=>{const n=regen+1;setRegen(n);localStorage.setItem(overrideKey,String(n))}
   const resolvedCount=protocol.meals.filter(m=>consumedMeals[m.time]&&consumedMeals[m.time]!=='planned').length
-  const consumedCount=protocol.meals.filter(m=>consumedMeals[m.time]==='consumed').length
   const closeDay=()=>{
     if(resolvedCount<protocol.meals.length){
       alert(`Renseigne les ${protocol.meals.length-resolvedCount} repas restants avant de clôturer la journée.`); return
     }
     localStorage.setItem(`bodyos:nutrition:closed:${dayKey}`,'1');setDayClosed(true)
   }
+  const statusLabel=(s?:NutritionEntry['status'])=>s==='consumed'?'CONSOMMÉ':s==='partial'?'AJUSTÉ':s==='skipped'?'NON CONSOMMÉ':'SAISIE MANUELLE'
 
   return <main className="screen nutritionScreen adaptiveNutrition">
     <header className="nutritionTopbar"><button aria-label="Menu">☰</button><div><h1>NUTRITION</h1><p>Adaptive Nutrition Engine</p></div><button aria-label="Réglages">☷</button></header>
@@ -231,7 +282,7 @@ function NutritionScreen(){
 
     {nutritionView==='program'&&<>
       <section className="protocolHero glass">
-        <div><small>✦ TODAY'S NUTRITION PROTOCOL</small><strong>2 800 <em>KCAL</em></strong><b>{protocol.mode} • {protocol.session}</b><span>Weekly rotation • W{weekSeed%52+1} • {dayKey}</span></div>
+        <div><small>✦ TODAY'S NUTRITION PROTOCOL</small><strong>2 800 <em>KCAL</em></strong><b>{protocol.mode} • {protocol.session}</b><span>Rotation hebdo • {weekKey}</span></div>
         <div className="adaptColumn"><div className="adaptScore"><i>{protocol.score}</i><small>OPTIMAL</small></div><div className="adaptSignals"><span>⚡ ÉNERGIE <b>✓</b></span><span>▥ MACROS <b>✓</b></span><span>◷ TIMING <b>✓</b></span></div></div>
       </section>
       <section className="macroStrip glass">
@@ -239,12 +290,12 @@ function NutritionScreen(){
       </section>
       <section className="mealTimeline">
         {protocol.meals.map((m,i)=>{const moment=mealMoment(m.time);return <article className={`adaptiveMeal glass ${moment.tone}`} key={m.time}>
-          <div className="mealMoment"><strong>{m.time}</strong><i>{moment.icon}</i><small>{moment.label}</small></div>
+          <div className="mealMoment"><strong>{m.time}</strong><i>{moment.icon}</i><small>{moment.label==='SUNSET'?'SOIR':moment.label}</small></div>
           <div className="mealBody"><header><b>0{i+1} • {m.title}</b><span>≈ {m.kcal} kcal</span></header>
           <div className="mealStateBar">
-            <button className={consumedMeals[m.time]==='consumed'?'active consumed':''} onClick={()=>setMealState(m.time,'consumed')}>✓ CONSOMMÉ</button>
-            <button className={consumedMeals[m.time]==='partial'?'active partial':''} onClick={()=>setMealState(m.time,'partial')}>½ PARTIEL</button>
-            <button className={consumedMeals[m.time]==='skipped'?'active skipped':''} onClick={()=>setMealState(m.time,'skipped')}>× NON CONSOMMÉ</button>
+            <button className={consumedMeals[m.time]==='consumed'?'active consumed':''} onClick={()=>setMealState(m,'consumed')}>✓ CONSOMMÉ</button>
+            <button className={consumedMeals[m.time]==='partial'?'active partial':''} onClick={()=>setMealState(m,'partial')}>✎ AJUSTER</button>
+            <button className={consumedMeals[m.time]==='skipped'?'active skipped':''} onClick={()=>setMealState(m,'skipped')}>× NON CONSOMMÉ</button>
           </div>
           <div className="mealContent"><div className="foodList">{m.foods.map(f=><div className="foodRow" key={f.name}><span className="foodThumb">{f.icon}</span><span className="foodName">{f.name}</span><b>{f.qty}</b></div>)}</div>
           <div className="mealMacroViz"><div className="macroDonut"></div><span>P <b>{m.p}g</b></span><span>G <b>{m.c}g</b></span><span>L <b>{m.f}g</b></span></div></div>
@@ -255,17 +306,29 @@ function NutritionScreen(){
         <div><small>DAILY MEMORY</small><b>{resolvedCount}/{protocol.meals.length} repas renseignés</b><span>{dayClosed?'Journée clôturée ✓':'Tous les repas doivent être qualifiés'}</span></div>
         <button disabled={dayClosed} onClick={closeDay}>{dayClosed?'ARCHIVÉE ✓':'CLÔTURER LA JOURNÉE'}</button>
       </section>
-      <section className="whyPlan glass"><header><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><span>AI RATIONALE</span></header><div><article>🏋️ <b>Séance {protocol.session}</b><small>Glucides répartis autour de l'entraînement.</small></article><article>📈 <b>Objectif cut</b><small>Énergie maintenue à 2 800 kcal aujourd'hui.</small></article><article>🧠 <b>Adaptation</b><small>Plan journalier stable, réévaluable demain.</small></article></div></section>
-      <div className="nutritionActions"><button onClick={regenerate}>↻ NOUVEAU MENU</button><button onClick={()=>setNutritionView('journal')}>✓ LOG MEAL</button></div>
+      <section className="whyPlan glass"><header><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><span>AI RATIONALE</span></header><div>{protocol.why.map((w,i)=><article key={w}>{i===0?'🏋️':i===1?'📈':'🧠'} <b>{i===0?`Séance ${protocol.session}`:i===1?'Objectif cut':'Rotation'}</b><small>{w}</small></article>)}</div></section>
+      <div className="nutritionActions"><button onClick={regenerate}>↻ NOUVEAU MENU</button><button onClick={()=>setNutritionView('journal')}>✓ OUVRIR LE JOURNAL</button></div>
     </>}
 
     {nutritionView==='journal'&&<>
       <section className="journalSummary glass"><div><small>CONSOMMÉ</small><strong>{Math.round(totals.kcal)} kcal</strong></div><div><small>RESTANT</small><strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))} kcal</strong></div></section>
       <button className="nutritionAddPrimary" onClick={()=>{setEditingId(null);setEditorOpen(true)}}>＋ SAISIR UN REPAS / ALIMENT</button>
       <section className="macroProgressGrid glass"><div><b>{Math.round(totals.protein)} / {targets.protein} g</b><small>PROTÉINES</small></div><div><b>{Math.round(totals.carbs)} / {targets.carbs} g</b><small>GLUCIDES</small></div><div><b>{Math.round(totals.fat)} / {targets.fat} g</b><small>LIPIDES</small></div></section>
-      <section className="nutritionEntries">{entries.length===0?<div className="glass emptyNutrition">Aucun repas saisi aujourd’hui.</div>:entries.map(e=><article className="glass nutritionEntry" key={e.id} onClick={()=>{setEditingId(e.id);setEditorOpen(true)}}><div><b>{e.title}</b><small>{e.meal} • {e.time}</small></div><span>{e.kcal} kcal</span></article>)}</section>
+      <section className="nutritionEntries">{entries.length===0?<div className="glass emptyNutrition">Aucun repas enregistré aujourd’hui.</div>:entries.map(e=><article className={`glass nutritionEntry ${e.status||'manual'}`} key={e.id} onClick={()=>{if(e.source==='manual'){setEditingId(e.id);setEditorOpen(true)}}}>
+        <div className="journalEntryMain"><div><b>{e.title}</b><small>{e.meal} • {e.time}</small></div><span>{e.kcal} kcal</span></div>
+        <div className="journalStatus">{statusLabel(e.status)}</div>
+        {e.foods&&<div className="journalFoods">{e.foods.map(f=><div key={f.name}><span>{f.name}</span><b>{f.actualQty}</b>{f.actualQty!==f.plannedQty&&<small> prévu {f.plannedQty}</small>}</div>)}</div>}
+        <footer>P {e.protein}g • G {e.carbs}g • L {e.fat}g</footer>
+      </article>)}</section>
       <section className="glass hydrationCard"><div><small>HYDRATATION</small><b>{water.toFixed(2)} L / {targets.water.toFixed(1)} L</b></div><div className="waterActions"><button onClick={()=>changeWater(-.25)}>−250</button><button onClick={()=>changeWater(.25)}>+250</button></div></section>
     </>}
+
+    {adjustingMeal&&<div className="nutritionEditorBackdrop"><form className="nutritionEditor glass adjustMealEditor" onSubmit={e=>{e.preventDefault();saveAdjustedMeal(e.currentTarget)}}>
+      <header><div><b>AJUSTER LE REPAS</b><small>{adjustingMeal.time} • {adjustingMeal.title}</small></div><button type="button" onClick={()=>setAdjustingMeal(null)}>×</button></header>
+      <p className="adjustHelp">Indique précisément ce que tu as réellement consommé. Les macros du journal seront recalculées proportionnellement aux quantités déclarées.</p>
+      <div className="adjustFoodList">{adjustingMeal.foods.map((f,i)=><label key={f.name}><span><b>{f.name}</b><small>Prévu : {f.qty}</small></span><input name={`actual-${i}`} defaultValue={f.qty}/></label>)}</div>
+      <div className="nutritionEditorActions"><button type="button" onClick={()=>setAdjustingMeal(null)}>ANNULER</button><button type="submit" className="primary">ENREGISTRER DANS JOURNAL</button></div>
+    </form></div>}
 
     {editorOpen&&<div className="nutritionEditorBackdrop"><form className="nutritionEditor glass" onSubmit={e=>{e.preventDefault();saveEntry(e.currentTarget)}}>
       <header><b>{editingId?'MODIFIER':'AJOUTER'} LE REPAS</b><button type="button" onClick={()=>setEditorOpen(false)}>×</button></header>

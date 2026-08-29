@@ -1404,3 +1404,110 @@ html,body,#root,.desktopStage,.phoneApp{
 .mealStateBar .consumed{border-color:#35b674;background:#123928;color:#67ef9f}
 .mealStateBar .partial{border-color:#d39a39;background:#3a2b14;color:#ffc96a}
 .mealStateBar .skipped{border-color:#b14b62;background:#371821;color:#ff8199}
+
+/* V6.20 — GLOBAL BRIGHT DARK PREMIUM */
+html,body,#root{background:#050b12!important}
+.desktopStage{
+  background:
+    radial-gradient(circle at 50% 2%,rgba(68,96,170,.20),transparent 34%),
+    linear-gradient(180deg,#07111c,#03080e 70%)!important
+}
+.phoneApp{
+  background:linear-gradient(180deg,#091522,#050c14)!important;
+  border-color:#34475d!important
+}
+.screen{
+  background:
+    radial-gradient(circle at 8% 0%,rgba(87,73,210,.10),transparent 25%),
+    radial-gradient(circle at 96% 18%,rgba(44,143,220,.08),transparent 25%)!important
+}
+.glass,.panel,.exercisePanel{
+  background:linear-gradient(145deg,#17283a,#0e1d2c)!important;
+  border-color:#405871!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 10px 28px rgba(0,0,0,.12)!important
+}
+.todayScreen .missionCard,.missionCard{
+  background:
+    radial-gradient(circle at 80% 42%,rgba(53,101,206,.30),transparent 48%),
+    linear-gradient(145deg,#14263a,#0b1724)!important;
+  border-color:#3e5771!important
+}
+.helloCard,.l5Card,.trendCard,.coachCard,.workoutHeaderCard,.workoutExerciseCard,.exercisePanel,
+.progressHero,.progressCard,.coachHero,.checkinProgress,.sliderCard{
+  background:linear-gradient(145deg,#16283a,#0d1c2b)!important;
+  border-color:#3d5770!important
+}
+.bottomNav{
+  background:rgba(5,12,20,.96)!important;
+  border-top-color:#314559!important;
+  box-shadow:0 -10px 28px rgba(0,0,0,.22)!important
+}
+.sessionRail button,.mockupGrid button,.nutritionTabs button,.nutritionTopbar button,
+.nutritionActions button,.hydrationCard button,.sectionTitleRow button{
+  background:linear-gradient(145deg,#162a3d,#0e2030)!important;
+  border-color:#46617c!important
+}
+.sessionRail button.active,.nutritionTabs button.active{
+  background:linear-gradient(135deg,#23305a,#172842)!important;
+  box-shadow:0 0 22px rgba(109,77,255,.18)!important
+}
+.exerciseMedia,.exerciseMetaStrip>div,.cardioGrid article{
+  background:#102132!important;
+  border-color:#3b5570!important
+}
+.adaptiveNutrition{
+  background:
+    radial-gradient(circle at 10% 4%,rgba(123,82,255,.22),transparent 29%),
+    radial-gradient(circle at 92% 18%,rgba(43,168,255,.18),transparent 31%),
+    linear-gradient(180deg,#0c1a2a,#07121e 58%,#050b13)!important
+}
+.adaptiveNutrition .glass{
+  background:linear-gradient(145deg,#1c3349,#102538)!important;
+  border-color:#4b6885!important
+}
+.protocolHero{
+  background:
+    radial-gradient(circle at 15% 18%,rgba(144,91,255,.34),transparent 42%),
+    radial-gradient(circle at 84% 22%,rgba(45,188,255,.24),transparent 40%),
+    linear-gradient(145deg,#203954,#112a40)!important
+}
+.adaptiveMeal{background:linear-gradient(145deg,#19364c,#10283b)!important;border-color:#4c6b89!important}
+.mealMoment{background:linear-gradient(180deg,#1b3c56,#112c42)!important}
+.foodThumb{background:linear-gradient(145deg,#294b67,#17334b)!important;border-color:#62809d!important}
+.whyPlan{background:linear-gradient(145deg,#1c334a,#11283b)!important}
+.dailyMemory{background:linear-gradient(135deg,#293767,#17405c)!important}
+.macroDonut:after{background:#10283b!important}
+
+/* V6.20 — programme -> journal logging */
+.mealStateBar button{font-size:6.7px}
+.mealStateBar .partial{border-color:#df9d37;background:#483215;color:#ffd17a}
+.adjustMealEditor{max-height:78vh;overflow:auto}
+.adjustMealEditor header>div{display:flex;flex-direction:column;gap:3px}
+.adjustMealEditor header small{font-size:8px;color:#8298af}
+.adjustHelp{font-size:9px;line-height:1.45;color:#9fb1c4;margin:8px 0 12px}
+.adjustFoodList{display:grid;gap:8px}
+.adjustFoodList label{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 110px;gap:10px;align-items:center;
+  padding:9px;border:1px solid #3e5872;border-radius:10px;background:#102538
+}
+.adjustFoodList label span{display:flex;flex-direction:column;gap:3px}
+.adjustFoodList label b{font-size:10px}
+.adjustFoodList label small{font-size:7px;color:#8197ad}
+.adjustFoodList input{
+  width:100%;border:1px solid #55728f!important;background:#18334a!important;color:#fff!important;
+  border-radius:8px;padding:8px!important;text-align:right
+}
+.nutritionEntry{padding:11px!important;display:block!important}
+.journalEntryMain{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.journalEntryMain>div{display:flex;flex-direction:column;gap:3px}
+.journalEntryMain small{color:#8499af;font-size:8px}
+.journalStatus{display:inline-flex;margin-top:7px;padding:4px 7px;border-radius:999px;border:1px solid #45617c;color:#a9bad0;font-size:7px;font-weight:850}
+.nutritionEntry.consumed .journalStatus{border-color:#35b674;color:#69efa1;background:#113625}
+.nutritionEntry.partial .journalStatus{border-color:#d59b3c;color:#ffd078;background:#3b2a14}
+.nutritionEntry.skipped .journalStatus{border-color:#b85368;color:#ff8ca1;background:#351720}
+.journalFoods{display:grid;gap:4px;margin-top:9px;padding-top:8px;border-top:1px solid #334c64}
+.journalFoods>div{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;align-items:center;font-size:8px}
+.journalFoods b{color:#dce8f5}
+.journalFoods small{color:#72879c;font-size:7px}
+.nutritionEntry footer{margin-top:8px;color:#9d83ff;font-size:8px}
+.sectionLabel,.todayScreen .sectionLabel,.glass small,.panel small{color:#9eafc1}

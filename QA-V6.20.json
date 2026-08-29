@@ -1,0 +1,39 @@
+{
+  "version": "6.20",
+  "scope": [
+    "global brighter dark-premium visual system across TODAY, WORKOUT, NUTRITION, PROGRESS, AI COACH",
+    "programme meal actions synchronized to journal",
+    "AJUSTER flow with per-food actual quantities",
+    "strict daily closure",
+    "weekly menu selection tied to current BODY OS workout family",
+    "Vite/Rollup bundle splitting"
+  ],
+  "nutrition_logging": {
+    "consumed": "upserts full planned meal into daily journal",
+    "adjust": "opens per-food quantity editor then upserts adjusted meal",
+    "skipped": "journaled with zero calories/macros",
+    "dedupe": "stable programme:<date>:<time> id prevents duplicates",
+    "macro_recalculation": "estimated proportionally from entered quantity ratios because per-food nutrient data is not yet modeled"
+  },
+  "weekly_rotation": {
+    "source": "current BODY OS workout day from store.getDay() / sessions",
+    "cadence": "weekly",
+    "pool_selection": "advances with weekly seed; same week stable unless NOUVEAU MENU is used"
+  },
+  "bundle": {
+    "strategy": "manualChunks",
+    "chunks": [
+      "react-vendor",
+      "charts-vendor",
+      "vendor",
+      "app"
+    ],
+    "warning_limit_not_increased": true
+  },
+  "limitations": [
+    "Adjusted meal macro recalculation is proportional estimation, not ingredient-level nutrition database computation.",
+    "No backend AI/photo nutrition recognition in this version.",
+    "Real photographic food thumbnails remain a future media pass."
+  ],
+  "deployment": "NOT DEPLOYED"
+}
