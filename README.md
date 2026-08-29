@@ -185,3 +185,12 @@ La Nutrition devient un vrai journal quotidien :
 La prochaine architecture prévue ajoute une analyse nutritionnelle par photo.
 Cette analyse devra toujours être présentée comme une estimation : kcal et macros
 avec score de confiance, détail détecté et possibilité de correction manuelle.
+
+## V6.13 — PUSH DEVELOPED
+- direction WORKOUT validée appliquée au PUSH ;
+- Golden développé incliné conservée ;
+- Chest Press, Cable Fly, lateral raise, Shoulder Press et Rope Pushdown passent sur des médias raster issus de la référence validée ;
+- anatomie reste secondaire ;
+- catalogue de maquettes prototype masqué ;
+- Nutrition V6.12 conservée.
+Limite connue : l'élévation latérale utilise provisoirement le visuel shoulder-family le plus proche de la référence ; média final dédié à produire.

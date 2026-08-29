@@ -45,11 +45,11 @@ const inclinePrescription:PrescribedSet[]=[
 export const sessions:Session[]=[
 {id:'push',day:'J1',title:'PUSH',subtitle:'Haut des pectoraux • Épaules • Triceps',exercises:[
 e('incline-machine','Développé incliné machine',4,'6–10','2–3',150,'HAUT PEC','Poitrine haute, omoplates stables.',({...m('/body-os/workout-incline-demo-golden.jpg','front',['upper-chest'],['front-delts','triceps']),anatomyAsset:'/body-os/anatomy-incline-machine.svg'}),'low',inclinePrescription),
-e('chest-press','Chest press machine',3,'8–12','2',120,'PECTORAUX','Amplitude contrôlée, pas de rebond.',m('/body-os/demo-chest-press.svg','front',['chest'],['front-delts','triceps'])),
-e('cable-fly','Écartés câble',3,'12–15','2',75,'PECTORAUX','Étirement contrôlé.',m('/body-os/demo-cable-fly.svg','front',['chest'],['front-delts'])),
-e('lat-raise','Élévations latérales câble',4,'12–20','1–2',60,'DELTOÏDES','Monte sans élan.',m('/body-os/demo-lat-raise.svg','front',['side-delts'],['front-delts'])),
-e('shoulder-press','Shoulder press machine',2,'8–12','2',120,'ÉPAULES','Dos soutenu.',m('/body-os/demo-shoulder-press.svg','front',['front-delts','side-delts'],['triceps'])),
-e('rope-pushdown','Extension triceps corde',3,'10–15','1–2',75,'TRICEPS','Coudes fixes.',m('/body-os/demo-rope-pushdown.svg','front',['triceps']))
+e('chest-press','Chest press machine',3,'8–12','2',120,'PECTORAUX','Amplitude contrôlée, pas de rebond.',m('/body-os/demo-chest-press-approved.jpg','front',['chest'],['front-delts','triceps'])),
+e('cable-fly','Écartés câble',3,'12–15','2',75,'PECTORAUX','Étirement contrôlé.',m('/body-os/demo-cable-fly-approved.jpg','front',['chest'],['front-delts'])),
+e('lat-raise','Élévations latérales câble',4,'12–20','1–2',60,'DELTOÏDES','Monte sans élan.',m('/body-os/demo-lat-raise-approved.jpg','front',['side-delts'],['front-delts'])),
+e('shoulder-press','Shoulder press machine',2,'8–12','2',120,'ÉPAULES','Dos soutenu.',m('/body-os/demo-shoulder-press-approved.jpg','front',['front-delts','side-delts'],['triceps'])),
+e('rope-pushdown','Extension triceps corde',3,'10–15','1–2',75,'TRICEPS','Coudes fixes.',m('/body-os/demo-rope-pushdown-approved.jpg','front',['triceps']))
 ]},
 {id:'pull',day:'J2',title:'PULL',subtitle:'Largeur • Épaisseur • Arrière épaules • Biceps',exercises:[
 e('lat-pulldown','Tirage vertical neutre',4,'6–10','2',120,'DORSAUX','Coudes vers les côtes.',m('/body-os/demo-lat-pulldown.svg','back',['lats'],['biceps','rear-delts'])),

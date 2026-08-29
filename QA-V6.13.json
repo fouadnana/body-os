@@ -1,0 +1,13 @@
+{
+  "version": "6.13",
+  "scope": "PUSH workout implementation",
+  "approved_reference": "workout mockup approved in conversation",
+  "push_exercises": 6,
+  "golden_incline_preserved": true,
+  "new_raster_demo_assets": 5,
+  "nutrition_v6_12_preserved": true,
+  "prototype_labels_removed": true,
+  "catalog_hidden": true,
+  "important_limitation": "The approved composite provides cropped visual references. Cable lateral raise reuses the closest approved shoulder-family crop; a dedicated final exercise photo remains to be produced.",
+  "deployment": "NOT DEPLOYED"
+}
