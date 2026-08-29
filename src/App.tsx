@@ -49,9 +49,41 @@ type NutritionEntry = {
   fat:number
 }
 
-type DailyFood={name:string;qty:string}
+type DailyFood={name:string;qty:string;icon?:string}
 type DailyMeal={time:string;title:string;kcal:number;p:number;c:number;f:number;foods:DailyFood[]}
 type NutritionProtocol={day:string;mode:string;session:string;kcal:number;protein:number;carbs:number;fat:number;score:number;meals:DailyMeal[];why:string[]}
+
+
+const foodIcon=(name:string)=>{
+  const n=name.toLowerCase()
+  if(n.includes('avoine')) return '🥣'
+  if(n.includes('skyr')||n.includes('fromage blanc')) return '🥛'
+  if(n.includes('œuf')) return '🥚'
+  if(n.includes('banane')) return '🍌'
+  if(n.includes('amande')) return '🌰'
+  if(n.includes('poulet')) return '🍗'
+  if(n.includes('riz')||n.includes('quinoa')) return '🍚'
+  if(n.includes('légume')||n.includes('haricot')||n.includes('brocoli')) return '🥦'
+  if(n.includes('huile')) return '🫒'
+  if(n.includes('myrtil')||n.includes('fruit rouge')) return '🫐'
+  if(n.includes('cacahu')) return '🥜'
+  if(n.includes('miel')) return '🍯'
+  if(n.includes('saumon')||n.includes('poisson')||n.includes('cabillaud')) return '🐟'
+  if(n.includes('patate')||n.includes('pomme')) return '🥔'
+  if(n.includes('avocat')) return '🥑'
+  if(n.includes('pain')) return '🍞'
+  if(n.includes('kiwi')) return '🥝'
+  if(n.includes('steak')) return '🥩'
+  if(n.includes('galette')) return '🍘'
+  return '🍽️'
+}
+const mealMoment=(time:string)=>{
+  const h=Number(time.split(':')[0])
+  if(h<10) return {icon:'☀️',label:'MATIN',tone:'morning'}
+  if(h<15) return {icon:'☀️',label:'MIDI',tone:'midday'}
+  if(h<19) return {icon:'🌇',label:'SUNSET',tone:'sunset'}
+  return {icon:'🌙',label:'NUIT',tone:'night'}
+}
 
 const nutritionVariants=[
   {
@@ -106,7 +138,7 @@ function NutritionScreen(){
   // Deterministic daily protocol: changes with calendar day, not on every render.
   const baseIndex=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/86400000)%nutritionVariants.length
   const variant=nutritionVariants[(baseIndex+regen)%nutritionVariants.length]
-  const meals:DailyMeal[]=variant.meals.map((m:any)=>({time:m[0],title:m[1],kcal:m[2],p:m[3],c:m[4],f:m[5],foods:m[6].map((x:any)=>({name:x[0],qty:x[1]}))}))
+  const meals:DailyMeal[]=variant.meals.map((m:any)=>({time:m[0],title:m[1],kcal:m[2],p:m[3],c:m[4],f:m[5],foods:m[6].map((x:any)=>({name:x[0],qty:x[1],icon:foodIcon(x[0])}))}))
   const protocol:NutritionProtocol={day:dayKey,mode:variant.mode,session:variant.session,kcal:targets.kcal,protein:targets.protein,carbs:targets.carbs,fat:targets.fat,score:86,meals,why:[`Journée ${variant.session}`,'Cible cut maintenue','Répartition adaptée à la séance']}
 
   const totals=entries.reduce((a,e)=>({kcal:a.kcal+e.kcal,protein:a.protein+e.protein,carbs:a.carbs+e.carbs,fat:a.fat+e.fat}),{kcal:0,protein:0,carbs:0,fat:0})
@@ -121,26 +153,27 @@ function NutritionScreen(){
   const regenerate=()=>{const n=(regen+1)%nutritionVariants.length;setRegen(n);localStorage.setItem(`bodyos:nutrition:variant:${dayKey}`,String(n))}
 
   return <main className="screen nutritionScreen adaptiveNutrition">
-    <header className="sectionHead"><div><h1>NUTRITION</h1><p>Adaptive Nutrition Engine</p></div></header>
+    <header className="nutritionTopbar"><button aria-label="Menu">☰</button><div><h1>NUTRITION</h1><p>Adaptive Nutrition Engine</p></div><button aria-label="Réglages">☷</button></header>
     <div className="nutritionTabs"><button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button><button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button></div>
 
     {nutritionView==='program'&&<>
       <section className="protocolHero glass">
         <div><small>✦ TODAY'S NUTRITION PROTOCOL</small><strong>2 800 <em>KCAL</em></strong><b>{protocol.mode} • {protocol.session}</b><span>Generated for {dayKey}</span></div>
-        <div className="adaptScore"><i>{protocol.score}</i><small>OPTIMAL</small></div>
+        <div className="adaptColumn"><div className="adaptScore"><i>{protocol.score}</i><small>OPTIMAL</small></div><div className="adaptSignals"><span>⚡ ÉNERGIE <b>✓</b></span><span>▥ MACROS <b>✓</b></span><span>◷ TIMING <b>✓</b></span></div></div>
       </section>
       <section className="macroStrip glass">
         <div><b>2 800</b><small>KCAL</small></div><div><b>190 g</b><small>PROTÉINES</small></div><div><b>319 g</b><small>GLUCIDES</small></div><div><b>85 g</b><small>LIPIDES</small></div>
       </section>
       <section className="mealTimeline">
-        {protocol.meals.map((m,i)=><article className="adaptiveMeal glass" key={m.time}>
-          <div className="mealTime">{m.time}</div>
+        {protocol.meals.map((m,i)=>{const moment=mealMoment(m.time);return <article className={`adaptiveMeal glass ${moment.tone}`} key={m.time}>
+          <div className="mealMoment"><strong>{m.time}</strong><i>{moment.icon}</i><small>{moment.label}</small></div>
           <div className="mealBody"><header><b>0{i+1} • {m.title}</b><span>≈ {m.kcal} kcal</span></header>
-          {m.foods.map(f=><div className="foodRow" key={f.name}><span>{f.name}</span><b>{f.qty}</b></div>)}
-          <footer><span>P <b>{m.p}g</b></span><span>G <b>{m.c}g</b></span><span>L <b>{m.f}g</b></span></footer></div>
-        </article>)}
+          <div className="mealContent"><div className="foodList">{m.foods.map(f=><div className="foodRow" key={f.name}><span className="foodThumb">{f.icon}</span><span className="foodName">{f.name}</span><b>{f.qty}</b></div>)}</div>
+          <div className="mealMacroViz"><div className="macroDonut"></div><span>P <b>{m.p}g</b></span><span>G <b>{m.c}g</b></span><span>L <b>{m.f}g</b></span></div></div>
+          </div>
+        </article>})}
       </section>
-      <section className="whyPlan glass"><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><div>{protocol.why.map(x=><span key={x}>✓ {x}</span>)}</div></section>
+      <section className="whyPlan glass"><header><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><span>AI RATIONALE</span></header><div><article>🏋️ <b>Séance {protocol.session}</b><small>Glucides répartis autour de l'entraînement.</small></article><article>📈 <b>Objectif cut</b><small>Énergie maintenue à 2 800 kcal aujourd'hui.</small></article><article>🧠 <b>Adaptation</b><small>Plan journalier stable, réévaluable demain.</small></article></div></section>
       <div className="nutritionActions"><button onClick={regenerate}>↻ REGENERATE DAY</button><button onClick={()=>setNutritionView('journal')}>✓ LOG MEAL</button></div>
     </>}
 

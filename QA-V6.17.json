@@ -1,0 +1,17 @@
+{
+  "version": "6.17",
+  "scope": "Nutrition Fidelity Pass",
+  "implemented": [
+    "safe iPhone header",
+    "sun/day/sunset/night timeline",
+    "food thumbnails bound to generated foods",
+    "meal color states",
+    "macro donut",
+    "energy/macros/timing signals",
+    "AI rationale cards",
+    "denser meal cards"
+  ],
+  "engine": "V6.16 daily adaptive rule engine preserved",
+  "note": "Food thumbnails use offline semantic emoji icons in V6.17; photographic food asset library remains a later upgrade.",
+  "deployment": "NOT DEPLOYED"
+}
