@@ -1350,3 +1350,24 @@ html,body,#root,.desktopStage,.phoneApp{
 .mealMacroViz{border-left:1px solid #213247;padding-left:8px;display:flex;flex-direction:column;justify-content:center;gap:2px;font-size:7px;color:#9e80ff}.macroDonut{width:34px;height:34px;border-radius:50%;margin:0 auto 4px;background:conic-gradient(#9a65ff 0 35%,#4ba8ff 35% 72%,#ffac35 72%);position:relative}.macroDonut:after{content:"";position:absolute;inset:7px;border-radius:50%;background:#08111b}
 .whyPlan{padding:12px}.whyPlan header{display:flex;justify-content:space-between}.whyPlan header>b{font-size:9px;color:#9d7cff}.whyPlan header>span{font-size:7px;color:#66788e}.whyPlan>div{grid-template-columns:repeat(3,1fr);gap:5px}.whyPlan article{font-size:8px;border-right:1px solid #213147;padding-right:5px}.whyPlan article:last-child{border:0}.whyPlan article b,.whyPlan article small{display:block}.whyPlan article small{margin-top:3px;color:#7f8fa3;line-height:1.35}
 @media(max-width:390px){.protocolHero{grid-template-columns:1fr 125px}.adaptColumn{grid-template-columns:68px 1fr}.adaptScore{width:62px;height:62px}.adaptiveMeal{grid-template-columns:82px minmax(0,1fr)}.mealTimeline:before{left:40px}.mealContent{grid-template-columns:minmax(0,1fr) 60px}}
+
+/* V6.18 — Dark Premium + Nutrition Memory */
+:root{--v618-surface:#0b1724;--v618-surface2:#101d2c;--v618-line:#30465e}
+.adaptiveNutrition{background:
+ radial-gradient(circle at 15% 10%,rgba(93,67,255,.10),transparent 27%),
+ radial-gradient(circle at 92% 35%,rgba(34,143,255,.07),transparent 25%),
+ #03080e}
+.adaptiveNutrition .glass{background:linear-gradient(145deg,rgba(16,29,44,.96),rgba(7,16,27,.96));border-color:var(--v618-line);box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 10px 30px rgba(0,0,0,.12)}
+.protocolHero{background:
+ radial-gradient(circle at 12% 20%,rgba(126,76,255,.22),transparent 42%),
+ radial-gradient(circle at 88% 25%,rgba(39,163,255,.13),transparent 38%),
+ linear-gradient(145deg,#111d30,#07131f)!important}
+.adaptiveMeal{box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 8px 25px rgba(8,32,58,.14)!important}
+.mealMoment{background:linear-gradient(180deg,#0d1b2a,#08121e)!important}
+.foodThumb{background:linear-gradient(145deg,#1a2a3c,#0d1724)!important;border-color:#3a5069!important}
+.mealConsumed{margin:6px 0 3px;border:1px solid #334a63;border-radius:7px;padding:5px 8px;background:#0b1826;color:#8fa1b6;font-size:7px;font-weight:850;letter-spacing:.05em}
+.mealConsumed.yes{border-color:#2b9a61;background:#0d2a20;color:#55ec8f}
+.dailyMemory{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px;margin-top:10px;background:linear-gradient(135deg,rgba(28,28,60,.95),rgba(8,25,39,.96))!important}
+.dailyMemory>div{display:flex;flex-direction:column;gap:3px}.dailyMemory small{font-size:7px;color:#9277ff;letter-spacing:.12em}.dailyMemory b{font-size:11px}.dailyMemory span{font-size:8px;color:#7f91a5}
+.dailyMemory button{border:1px solid #7255e9;border-radius:9px;background:linear-gradient(135deg,#322365,#15294a);color:#fff;padding:9px;font-size:8px;font-weight:850}.dailyMemory button:disabled{border-color:#2d7753;background:#103124;color:#55e78c}
+.nutritionTopbar button,.nutritionTabs button,.nutritionActions button{background:linear-gradient(145deg,#101c2a,#08111c)!important}

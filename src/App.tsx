@@ -128,6 +128,10 @@ function NutritionScreen(){
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
+  const weekSeed=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/(86400000*7))
+  const consumedKey=`bodyos:nutrition:consumed:${dayKey}`
+  const [consumedMeals,setConsumedMeals]=useState<Record<string,boolean>>(()=>{try{return JSON.parse(localStorage.getItem(consumedKey)||'{}')}catch{return{}}})
+  const [dayClosed,setDayClosed]=useState(()=>localStorage.getItem(`bodyos:nutrition:closed:${dayKey}`)==='1')
   const [regen,setRegen]=useState(()=>Number(localStorage.getItem(`bodyos:nutrition:variant:${dayKey}`)||0))
   const targets={kcal:2800,protein:190,fat:85,carbs:319,water:3.0}
   const [entries,setEntries]=useState<NutritionEntry[]>(()=>{try{return JSON.parse(localStorage.getItem(`bodyos:nutrition:${dayKey}`)||'[]')}catch{return[]}})
@@ -136,7 +140,7 @@ function NutritionScreen(){
   const [editingId,setEditingId]=useState<string|null>(null)
 
   // Deterministic daily protocol: changes with calendar day, not on every render.
-  const baseIndex=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/86400000)%nutritionVariants.length
+  const baseIndex=weekSeed%nutritionVariants.length
   const variant=nutritionVariants[(baseIndex+regen)%nutritionVariants.length]
   const meals:DailyMeal[]=variant.meals.map((m:any)=>({time:m[0],title:m[1],kcal:m[2],p:m[3],c:m[4],f:m[5],foods:m[6].map((x:any)=>({name:x[0],qty:x[1],icon:foodIcon(x[0])}))}))
   const protocol:NutritionProtocol={day:dayKey,mode:variant.mode,session:variant.session,kcal:targets.kcal,protein:targets.protein,carbs:targets.carbs,fat:targets.fat,score:86,meals,why:[`Journée ${variant.session}`,'Cible cut maintenue','Répartition adaptée à la séance']}
@@ -152,13 +156,23 @@ function NutritionScreen(){
   const changeWater=(d:number)=>{const n=Math.max(0,water+d);setWater(n);localStorage.setItem(`bodyos:water:${dayKey}`,String(n))}
   const regenerate=()=>{const n=(regen+1)%nutritionVariants.length;setRegen(n);localStorage.setItem(`bodyos:nutrition:variant:${dayKey}`,String(n))}
 
+  const toggleConsumed=(time:string)=>{
+    const next={...consumedMeals,[time]:!consumedMeals[time]}
+    setConsumedMeals(next);localStorage.setItem(consumedKey,JSON.stringify(next))
+  }
+  const consumedCount=protocol.meals.filter(m=>consumedMeals[m.time]).length
+  const closeDay=()=>{
+    if(consumedCount<protocol.meals.length&&!confirm(`${consumedCount}/${protocol.meals.length} repas sont renseignés. Clôturer quand même ?`)) return
+    localStorage.setItem(`bodyos:nutrition:closed:${dayKey}`,'1');setDayClosed(true)
+  }
+
   return <main className="screen nutritionScreen adaptiveNutrition">
     <header className="nutritionTopbar"><button aria-label="Menu">☰</button><div><h1>NUTRITION</h1><p>Adaptive Nutrition Engine</p></div><button aria-label="Réglages">☷</button></header>
     <div className="nutritionTabs"><button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button><button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button></div>
 
     {nutritionView==='program'&&<>
       <section className="protocolHero glass">
-        <div><small>✦ TODAY'S NUTRITION PROTOCOL</small><strong>2 800 <em>KCAL</em></strong><b>{protocol.mode} • {protocol.session}</b><span>Generated for {dayKey}</span></div>
+        <div><small>✦ TODAY'S NUTRITION PROTOCOL</small><strong>2 800 <em>KCAL</em></strong><b>{protocol.mode} • {protocol.session}</b><span>Weekly rotation • W{weekSeed%52+1} • {dayKey}</span></div>
         <div className="adaptColumn"><div className="adaptScore"><i>{protocol.score}</i><small>OPTIMAL</small></div><div className="adaptSignals"><span>⚡ ÉNERGIE <b>✓</b></span><span>▥ MACROS <b>✓</b></span><span>◷ TIMING <b>✓</b></span></div></div>
       </section>
       <section className="macroStrip glass">
@@ -168,10 +182,15 @@ function NutritionScreen(){
         {protocol.meals.map((m,i)=>{const moment=mealMoment(m.time);return <article className={`adaptiveMeal glass ${moment.tone}`} key={m.time}>
           <div className="mealMoment"><strong>{m.time}</strong><i>{moment.icon}</i><small>{moment.label}</small></div>
           <div className="mealBody"><header><b>0{i+1} • {m.title}</b><span>≈ {m.kcal} kcal</span></header>
+          <button className={`mealConsumed ${consumedMeals[m.time]?'yes':''}`} onClick={()=>toggleConsumed(m.time)}>{consumedMeals[m.time]?'✓ CONSOMMÉ':'MARQUER CONSOMMÉ'}</button>
           <div className="mealContent"><div className="foodList">{m.foods.map(f=><div className="foodRow" key={f.name}><span className="foodThumb">{f.icon}</span><span className="foodName">{f.name}</span><b>{f.qty}</b></div>)}</div>
           <div className="mealMacroViz"><div className="macroDonut"></div><span>P <b>{m.p}g</b></span><span>G <b>{m.c}g</b></span><span>L <b>{m.f}g</b></span></div></div>
           </div>
         </article>})}
+      </section>
+      <section className="dailyMemory glass">
+        <div><small>DAILY MEMORY</small><b>{consumedCount}/{protocol.meals.length} repas enregistrés</b><span>{dayClosed?'Journée clôturée ✓':'À clôturer avant archivage'}</span></div>
+        <button disabled={dayClosed} onClick={closeDay}>{dayClosed?'ARCHIVÉE ✓':'CLÔTURER LA JOURNÉE'}</button>
       </section>
       <section className="whyPlan glass"><header><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><span>AI RATIONALE</span></header><div><article>🏋️ <b>Séance {protocol.session}</b><small>Glucides répartis autour de l'entraînement.</small></article><article>📈 <b>Objectif cut</b><small>Énergie maintenue à 2 800 kcal aujourd'hui.</small></article><article>🧠 <b>Adaptation</b><small>Plan journalier stable, réévaluable demain.</small></article></div></section>
       <div className="nutritionActions"><button onClick={regenerate}>↻ REGENERATE DAY</button><button onClick={()=>setNutritionView('journal')}>✓ LOG MEAL</button></div>

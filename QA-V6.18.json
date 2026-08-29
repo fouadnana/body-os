@@ -1,0 +1,32 @@
+{
+  "version": "6.18",
+  "scope": [
+    "Nutrition consumption memory",
+    "daily closure",
+    "weekly rotation",
+    "dark premium luminosity"
+  ],
+  "memory": {
+    "meal_states": [
+      "planned",
+      "consumed"
+    ],
+    "daily_close": true,
+    "incomplete_close_confirmation": true,
+    "persistence": "localStorage per calendar day"
+  },
+  "rotation": {
+    "cadence": "weekly",
+    "deterministic": true,
+    "manual_regenerate_preserved": true
+  },
+  "visual": {
+    "dark_premium": "brighter blue-night surfaces and subtle purple/blue glows"
+  },
+  "limitations": [
+    "Weekly rotation is rule-based V1, not yet linked to actual Workout schedule/muscle telemetry.",
+    "Food images remain semantic offline icons, not photographic assets.",
+    "Partial/skipped states and exact planned-vs-consumed quantities are next-level enhancements."
+  ],
+  "deployment": "NOT DEPLOYED"
+}
