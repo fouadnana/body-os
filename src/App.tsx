@@ -35,6 +35,230 @@ const nav:[Tab,string,string][]=[
   ['coach','◌','AI COACH']
 ]
 
+
+
+
+type NutritionEntry = {
+  id:string
+  meal:string
+  title:string
+  time:string
+  kcal:number
+  protein:number
+  carbs:number
+  fat:number
+}
+
+function NutritionScreen(){
+  const targets = { kcal:2800, protein:190, fat:85, carbs:319, water:3.0 }
+  const dayKey=new Date().toISOString().slice(0,10)
+  const entriesKey=`bodyos:nutrition:${dayKey}`
+  const waterKey=`bodyos:water:${dayKey}`
+
+  const [entries,setEntries]=useState<NutritionEntry[]>(()=>{
+    try{
+      const raw=localStorage.getItem(entriesKey)
+      return raw?JSON.parse(raw):[]
+    }catch{return []}
+  })
+  const [water,setWater]=useState<number>(()=>{
+    try{return Number(localStorage.getItem(waterKey))||0}catch{return 0}
+  })
+  const [editorOpen,setEditorOpen]=useState(false)
+  const [editingId,setEditingId]=useState<string|null>(null)
+
+  const totals=entries.reduce((a,e)=>({
+    kcal:a.kcal+e.kcal,
+    protein:a.protein+e.protein,
+    carbs:a.carbs+e.carbs,
+    fat:a.fat+e.fat
+  }),{kcal:0,protein:0,carbs:0,fat:0})
+
+  const pct=(v:number,t:number)=>Math.min(100,Math.round((v/t)*100))
+  const remaining=(v:number,t:number)=>Math.max(0,Math.round((t-v)*10)/10)
+  const adherence=Math.max(0,Math.min(100,Math.round(
+    Math.min(totals.protein/targets.protein,1)*45+
+    (1-Math.min(Math.abs(totals.kcal-targets.kcal)/targets.kcal,1))*35+
+    Math.min(water/targets.water,1)*20
+  )))
+  const editing=entries.find(e=>e.id===editingId)
+
+  function persist(next:NutritionEntry[]){
+    setEntries(next)
+    localStorage.setItem(entriesKey,JSON.stringify(next))
+  }
+
+  function saveEntry(form:HTMLFormElement){
+    const fd=new FormData(form)
+    const item:NutritionEntry={
+      id:editingId||String(Date.now()),
+      meal:String(fd.get('meal')||'AUTRE'),
+      title:String(fd.get('title')||'Aliment / repas'),
+      time:String(fd.get('time')||new Date().toTimeString().slice(0,5)),
+      kcal:Number(fd.get('kcal'))||0,
+      protein:Number(fd.get('protein'))||0,
+      carbs:Number(fd.get('carbs'))||0,
+      fat:Number(fd.get('fat'))||0,
+    }
+    persist(editingId?entries.map(e=>e.id===editingId?item:e):[...entries,item])
+    setEditingId(null)
+    setEditorOpen(false)
+  }
+
+  function removeEntry(id:string){
+    persist(entries.filter(e=>e.id!==id))
+    setEditingId(null)
+    setEditorOpen(false)
+  }
+
+  function changeWater(delta:number){
+    const next=Math.max(0,Math.round((water+delta)*100)/100)
+    setWater(next)
+    localStorage.setItem(waterKey,String(next))
+  }
+
+  function resetDay(){
+    if(!confirm('Réinitialiser les saisies nutritionnelles du jour ?'))return
+    persist([])
+    setWater(0)
+    localStorage.setItem(waterKey,'0')
+  }
+
+  return <main className="screen nutritionScreen">
+    <header className="sectionHeader">
+      <div>
+        <small className="eyebrow">BODY OS / AI CUT</small>
+        <h1>NUTRITION</h1>
+        <p>Saisie réelle • calories & macros</p>
+      </div>
+      <span className="adherencePill">{adherence}% ADHÉRENCE</span>
+    </header>
+
+    <section className="nutritionHero glass">
+      <div className="kcalRing" style={{'--p':`${pct(totals.kcal,targets.kcal)}%`} as React.CSSProperties}>
+        <div><b>{Math.round(totals.kcal)}</b><small>/ {targets.kcal} kcal</small></div>
+      </div>
+      <div className="nutritionHeroCopy">
+        <small>RESTANT AUJOURD'HUI</small>
+        <strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))} kcal</strong>
+        <p>{entries.length===0?'Commence par saisir ton premier repas.':totals.protein<targets.protein?'Priorité : compléter les protéines sans dépasser les calories.':'Objectif protéines atteint. Garde une fin de journée maîtrisée.'}</p>
+      </div>
+    </section>
+
+    <button className="nutritionAddPrimary" onClick={()=>{setEditingId(null);setEditorOpen(true)}}>＋ SAISIR UN REPAS / ALIMENT</button>
+
+    <section className="macroProgressGrid">
+      {[
+        ['PROTÉINES',totals.protein,targets.protein,'g'],
+        ['GLUCIDES',totals.carbs,targets.carbs,'g'],
+        ['LIPIDES',totals.fat,targets.fat,'g'],
+      ].map(([label,val,tgt,unit])=><article className="macroProgress glass" key={label as string}>
+        <div><small>{label}</small><b>{Math.round(Number(val))}<span> / {tgt as number} {unit}</span></b></div>
+        <div className="progressTrack"><i style={{width:`${pct(Number(val),Number(tgt))}%`}}/></div>
+        <em>{Math.round(remaining(Number(val),Number(tgt)))} {unit} restants</em>
+      </article>)}
+    </section>
+
+    <section className="nutritionSection">
+      <div className="sectionTitleRow">
+        <h2>SAISIES DU JOUR</h2>
+        <button onClick={()=>{setEditingId(null);setEditorOpen(true)}}>+ AJOUTER</button>
+      </div>
+      {entries.length===0?<div className="emptyNutrition glass">
+        <b>Aucune saisie aujourd'hui</b>
+        <p>Ajoute un aliment ou un repas avec ses kcal, protéines, glucides et lipides.</p>
+      </div>:<div className="mealList">
+        {[...entries].sort((a,b)=>a.time.localeCompare(b.time)).map(e=><article className="mealCard glass editable" key={e.id} onClick={()=>{setEditingId(e.id);setEditorOpen(true)}}>
+          <time>{e.time}</time>
+          <div>
+            <small>{e.meal}</small>
+            <b>{e.title}</b>
+            <span>{e.kcal} kcal • P {e.protein}g • G {e.carbs}g • L {e.fat}g</span>
+          </div>
+          <strong>›</strong>
+        </article>)}
+      </div>}
+    </section>
+
+    <section className="nutritionSplit">
+      <article className="glass hydrationCard">
+        <small>HYDRATATION</small>
+        <b>{water.toFixed(2)} <span>/ {targets.water.toFixed(1)} L</span></b>
+        <div className="progressTrack"><i style={{width:`${pct(water,targets.water)}%`}}/></div>
+        <div className="waterActions">
+          <button onClick={()=>changeWater(-.25)}>− 250</button>
+          <button onClick={()=>changeWater(.25)}>+ 250 ML</button>
+        </div>
+      </article>
+      <article className="glass nutritionCoachCard">
+        <small>AI NUTRITION</small>
+        <b>{adherence>=80?'ON TRACK':adherence>=60?'À AJUSTER':'PRIORITÉ'}</b>
+        <p>{totals.protein<targets.protein?`Il reste ${Math.max(0,Math.round(targets.protein-totals.protein))} g de protéines à couvrir.`:'Protéines sécurisées. Surveille surtout le total calorique.'}</p>
+      </article>
+    </section>
+
+    <section className="nutritionTargets glass">
+      <div><small>CALORIES</small><b>{targets.kcal}</b><span>kcal</span></div>
+      <div><small>PROTÉINES</small><b>{targets.protein}</b><span>g</span></div>
+      <div><small>LIPIDES</small><b>{targets.fat}</b><span>g</span></div>
+      <div><small>GLUCIDES</small><b>{targets.carbs}</b><span>g</span></div>
+    </section>
+
+    <button className="nutritionReset" onClick={resetDay}>Réinitialiser la journée</button>
+
+    {editorOpen&&<div className="nutritionModalBackdrop" onClick={()=>setEditorOpen(false)}>
+      <section className="nutritionEditor glass" onClick={e=>e.stopPropagation()}>
+        <div className="nutritionEditorHead">
+          <div><small>JOURNAL NUTRITION</small><h2>{editing?'MODIFIER':'NOUVELLE SAISIE'}</h2></div>
+          <button type="button" onClick={()=>setEditorOpen(false)}>×</button>
+        </div>
+
+        <form onSubmit={e=>{e.preventDefault();saveEntry(e.currentTarget)}}>
+          <label>Moment
+            <select name="meal" defaultValue={editing?.meal||'DÉJEUNER'}>
+              <option>PETIT-DÉJEUNER</option><option>DÉJEUNER</option><option>COLLATION</option><option>DÎNER</option><option>AUTRE</option>
+            </select>
+          </label>
+
+          <label>Aliment / repas
+            <input required name="title" defaultValue={editing?.title||''} placeholder="Ex. poulet + riz"/>
+          </label>
+
+          <label>Heure
+            <input required name="time" type="time" defaultValue={editing?.time||new Date().toTimeString().slice(0,5)}/>
+          </label>
+
+          <div className="nutritionNumbers">
+            <label>Calories
+              <input required min="0" step="1" name="kcal" type="number" defaultValue={editing?.kcal||''} placeholder="kcal"/>
+            </label>
+            <label>Protéines
+              <input required min="0" step="0.1" name="protein" type="number" defaultValue={editing?.protein||''} placeholder="g"/>
+            </label>
+            <label>Glucides
+              <input required min="0" step="0.1" name="carbs" type="number" defaultValue={editing?.carbs||''} placeholder="g"/>
+            </label>
+            <label>Lipides
+              <input required min="0" step="0.1" name="fat" type="number" defaultValue={editing?.fat||''} placeholder="g"/>
+            </label>
+          </div>
+
+          <div className="nutritionEditorActions">
+            {editing&&<button className="danger" type="button" onClick={()=>removeEntry(editing.id)}>SUPPRIMER</button>}
+            <button className="save" type="submit">ENREGISTRER ✓</button>
+          </div>
+        </form>
+
+        <div className="photoNutritionPreview">
+          <div>📷</div>
+          <span><small>PROCHAINE VERSION</small><b>Analyse nutritionnelle par photo</b><p>Estimation kcal + protéines + glucides + lipides, avec niveau de confiance et correction manuelle.</p></span>
+        </div>
+      </section>
+    </div>}
+  </main>
+}
+
+
 export default function App(){
   const [tab,setTab]=useState<Tab>('today')
   const [day,setDayState]=useState(store.getDay())
@@ -211,7 +435,7 @@ export default function App(){
               <img className={`workoutDemoPhoto ${hasExerciseDemo?'':'genericDemo'}`} src={demoAsset} alt={`Démonstration visuelle : ${exercise.name}`}/>
             </div>
             <button className={`play ${exercise.id==='incline-machine'?'goldenPlayHitbox':''}`} aria-label="Voir la démonstration" onClick={()=>setDemoOpen(true)}>{exercise.id==='incline-machine'?'':'▶'}</button>
-            {!hasExerciseDemo&&<span className="mediaPending">DÉMO À PRODUIRE</span>}
+            
             {exercise.id!=='incline-machine'&&<div className={`muscleMap ${exercise.media.anatomyView}`} aria-label="Muscles sollicités">
               <img src={anatomyAsset} alt={`Carte anatomique : ${exercise.area}`}/>
               <div className="muscleMapLegend">

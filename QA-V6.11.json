@@ -1,0 +1,18 @@
+{
+  "version": "6.11",
+  "exercise_count": 31,
+  "workout_demo_mockups": 31,
+  "anatomy_maps": 31,
+  "demo_placeholder_labels_remaining": 0,
+  "nutrition_sections": [
+    "calorie ring",
+    "remaining calories",
+    "macro progress",
+    "meal list",
+    "hydration",
+    "AI nutrition",
+    "target summary"
+  ],
+  "deployment": "NOT DEPLOYED",
+  "note": "30 exercise visuals remain UX mockups, not final photo/video media."
+}

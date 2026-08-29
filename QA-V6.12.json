@@ -1,0 +1,35 @@
+{
+  "version": "6.12",
+  "nutrition_input": {
+    "daily_entries": true,
+    "fields": [
+      "meal",
+      "title",
+      "time",
+      "kcal",
+      "protein",
+      "carbs",
+      "fat"
+    ],
+    "edit": true,
+    "delete": true,
+    "daily_totals": true,
+    "remaining_targets": true,
+    "water_tracking": true,
+    "local_persistence": true,
+    "day_reset": true
+  },
+  "future_photo_analysis": {
+    "planned": true,
+    "outputs": [
+      "estimated kcal",
+      "protein",
+      "carbs",
+      "fat",
+      "confidence"
+    ],
+    "requires_manual_correction": true,
+    "warning": "image-only nutrition estimation is approximate"
+  },
+  "deployment": "NOT DEPLOYED"
+}

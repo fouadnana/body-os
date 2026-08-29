@@ -156,3 +156,32 @@ Chaque exercice est maintenant inspectable depuis WORKOUT avec :
 
 Le développé incliné conserve la Golden Reference validée.
 Les 30 autres visuels sont des maquettes UX de développement destinées à valider l'ensemble avant production des médias photo/vidéo finaux.
+
+## V6.11 — CONTENT COMPLETE
+
+Nutrition est reconstruite avec progression calorique, macros, repas, hydratation,
+adhérence et AI Nutrition.
+
+Workout conserve les 31 exercices. Le label visible `DÉMO À PRODUIRE` est supprimé.
+Le développé incliné reste la Golden Reference. Les 30 autres mouvements utilisent
+leurs maquettes dédiées déjà intégrées au moteur, avec anatomie séparée.
+
+Les 30 nouvelles démonstrations restent des maquettes UX et non des photos/vidéos finales.
+
+## V6.12 — NUTRITION INPUT
+
+La Nutrition devient un vrai journal quotidien :
+- ajout d'un aliment ou repas ;
+- calories ;
+- protéines ;
+- glucides ;
+- lipides ;
+- heure et moment du repas ;
+- modification / suppression ;
+- calcul automatique des totaux et du restant ;
+- hydratation ;
+- persistance locale par journée.
+
+La prochaine architecture prévue ajoute une analyse nutritionnelle par photo.
+Cette analyse devra toujours être présentée comme une estimation : kcal et macros
+avec score de confiance, détail détecté et possibilité de correction manuelle.
