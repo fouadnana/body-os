@@ -1,0 +1,18 @@
+{
+  "version": "6.24",
+  "name": "Weekly Shopping + Ingredient Macro Fit",
+  "changes": [
+    "Shopping list now aggregates a full seven-day nutrition week",
+    "Weekly plan includes PUSH, PULL, LEGS, UPPER, LOWER and two RECOVERY days",
+    "Shopping quantities are totaled across the week and show number/day markers",
+    "Current-day recipe substitutions are reflected in the weekly shopping list",
+    "Shopping completion state is persisted by week instead of only day/session",
+    "Recipe replacement now performs ingredient-level quantity optimization",
+    "Macro-fit considers calories, protein, carbs and fat instead of calories alone",
+    "The engine evaluates each meal and selects the best fitted recipe/meal pairing",
+    "Adjusted ingredient quantities and recalculated macros are written to Journal",
+    "Macro-fit metadata is persisted for traceability"
+  ],
+  "technical_note": "Ingredient nutrition values are an embedded estimation table for the current recipe catalogue. The fit is deterministic and bounded to avoid unrealistic portion changes.",
+  "deployment": "NOT DEPLOYED"
+}

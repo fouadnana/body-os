@@ -1,9 +1,10 @@
 export type MuscleGroup =
   | 'upper-chest' | 'chest' | 'front-delts' | 'side-delts' | 'rear-delts'
-  | 'triceps' | 'lats' | 'mid-back' | 'biceps'
+  | 'triceps' | 'lats' | 'mid-back' | 'traps' | 'biceps' | 'forearms'
   | 'quads' | 'hamstrings' | 'glutes' | 'calves' | 'core';
 
 export type PrescribedSet = { weight?: string; reps: string; rir: string };
+export type ExerciseRole = 'BASE' | 'ISOLATION' | 'CORE';
 
 export type ExerciseMedia = {
   demoKind: 'photo' | 'video';
@@ -18,22 +19,41 @@ export type Exercise = {
   id:string; name:string; sets:number; reps:string; rir:string; rest:number;
   area:string; cue:string; backRisk?:'low'|'medium'|'high';
   media:ExerciseMedia; prescription?:PrescribedSet[];
+  role?:ExerciseRole; optional?:boolean;
 };
 
 export type Session={id:string;day:string;title:string;subtitle:string;exercises:Exercise[]};
 
-const m=(demoAsset:string|undefined,anatomyView:ExerciseMedia['anatomyView'],primaryMuscles:MuscleGroup[],secondaryMuscles:MuscleGroup[]=[]):ExerciseMedia=>({
-  demoKind:'photo',
-  demoAsset,
-  anatomyAsset: demoAsset?.includes('/demo-') ? demoAsset.replace('/demo-','/anatomy-') : undefined,
-  anatomyView,
-  primaryMuscles,
-  secondaryMuscles
+const anatomyViewFor=(primary:MuscleGroup[]):ExerciseMedia['anatomyView']=>{
+  if(primary.some(x=>['quads','glutes','hamstrings','calves'].includes(x))) return primary.some(x=>['hamstrings','glutes','calves'].includes(x))?'legs-back':'legs-front'
+  if(primary.some(x=>['lats','mid-back','traps','rear-delts'].includes(x))) return 'back'
+  return 'front'
+};
+
+const anatomyAssetFor=(id:string)=>`/body-os/anatomy-${id}.svg`;
+const demoAssetFor=(id:string)=>`/body-os/demo-${id}.svg`;
+
+const makeExercise=(
+  id:string,name:string,area:string,sets:number,reps:string,rir:string,rest:number,cue:string,
+  primaryMuscles:MuscleGroup[],secondaryMuscles:MuscleGroup[]=[],lowBackRisk=false,
+  demoAsset?:string,role:ExerciseRole='BASE',optional=false,prescription?:PrescribedSet[]
+):Exercise=>({
+  id,name,sets,reps,rir,rest,area,cue,
+  backRisk:lowBackRisk?'medium':'low',role,optional,prescription,
+  media:{
+    demoKind:'photo',demoAsset:demoAsset||demoAssetFor(id),anatomyAsset:anatomyAssetFor(id),
+    anatomyView:anatomyViewFor(primaryMuscles),primaryMuscles,secondaryMuscles
+  }
 });
 
-const e=(id:string,name:string,sets:number,reps:string,rir:string,rest:number,area:string,cue:string,media:ExerciseMedia,backRisk:'low'|'medium'|'high'='low',prescription?:PrescribedSet[]):Exercise=>({
-  id,name,sets,reps,rir,rest,area,cue,media,backRisk,prescription
-});
+const m=(id:string,name:string,area:string,sets:number,reps:string,rir:string,rest:number,cue:string,primary:MuscleGroup[],secondary:MuscleGroup[]=[],lowBackRisk=false,demoAsset?:string,role:ExerciseRole='BASE',optional=false,prescription?:PrescribedSet[])=>
+  makeExercise(id,name,area,sets,reps,rir,rest,cue,primary,secondary,lowBackRisk,demoAsset,role,optional,prescription);
+
+const iso=(id:string,name:string,area:string,sets:number,reps:string,rir:string,rest:number,cue:string,primary:MuscleGroup[],secondary:MuscleGroup[]=[],optional=true)=>
+  makeExercise(id,name,area,sets,reps,rir,rest,cue,primary,secondary,false,undefined,'ISOLATION',optional);
+
+const core=(id:string,name:string,area:string,sets:number,reps:string,rir:string,rest:number,cue:string,primary:MuscleGroup[]=['core'],optional=true)=>
+  makeExercise(id,name,area,sets,reps,rir,rest,cue,primary,[],true,undefined,'CORE',optional);
 
 const inclinePrescription:PrescribedSet[]=[
   {weight:'80',reps:'10',rir:'2'},
@@ -43,54 +63,83 @@ const inclinePrescription:PrescribedSet[]=[
 ];
 
 export const sessions:Session[]=[
-{id:'push',day:'J1',title:'PUSH',subtitle:'Haut des pectoraux • Épaules • Triceps',exercises:[
-e('incline-machine','Développé incliné machine',4,'6–10','2–3',150,'HAUT PEC','Poitrine haute, omoplates stables.',({...m('/body-os/workout-incline-demo-golden.jpg','front',['upper-chest'],['front-delts','triceps']),anatomyAsset:'/body-os/anatomy-incline-machine.svg'}),'low',inclinePrescription),
-e('chest-press','Chest press machine',3,'8–12','2',120,'PECTORAUX','Amplitude contrôlée, pas de rebond.',m('/body-os/demo-chest-press-approved.jpg','front',['chest'],['front-delts','triceps'])),
-e('cable-fly','Écartés câble',3,'12–15','2',75,'PECTORAUX','Étirement contrôlé.',m('/body-os/demo-cable-fly-approved.jpg','front',['chest'],['front-delts'])),
-e('lat-raise','Élévations latérales câble',4,'12–20','1–2',60,'DELTOÏDES','Monte sans élan.',m('/body-os/demo-lat-raise-approved.jpg','front',['side-delts'],['front-delts'])),
-e('shoulder-press','Shoulder press machine',2,'8–12','2',120,'ÉPAULES','Dos soutenu.',m('/body-os/demo-shoulder-press-approved.jpg','front',['front-delts','side-delts'],['triceps'])),
-e('rope-pushdown','Extension triceps corde',3,'10–15','1–2',75,'TRICEPS','Coudes fixes.',m('/body-os/demo-rope-pushdown-approved.jpg','front',['triceps']))
-]},
-{id:'pull',day:'J2',title:'PULL',subtitle:'Largeur • Épaisseur • Arrière épaules • Biceps',exercises:[
-e('lat-pulldown','Tirage vertical neutre',4,'6–10','2',120,'DORSAUX','Coudes vers les côtes.',m('/body-os/demo-lat-pulldown.svg','back',['lats'],['biceps','rear-delts'])),
-e('chest-row','Rowing poitrine supportée',4,'8–12','2',120,'DOS','Poitrine collée au support.',m('/body-os/demo-chest-row.svg','back',['mid-back'],['lats','rear-delts','biceps'])),
-e('one-arm-cable','Tirage unilatéral câble',3,'10–15','2',90,'DORSAUX','Trajectoire vers la hanche.',m('/body-os/demo-one-arm-cable.svg','back',['lats'],['mid-back','biceps'])),
-e('reverse-pec','Reverse pec-deck',4,'12–20','1–2',60,'ARRIÈRE ÉPAULE','Sans hausser les épaules.',m('/body-os/demo-reverse-pec.svg','back',['rear-delts'],['mid-back'])),
-e('incline-curl','Curl incliné',3,'8–12','1–2',75,'BICEPS','Pas d’élan.',m('/body-os/demo-incline-curl.svg','front',['biceps'])),
-e('cable-curl','Curl câble',2,'12–15','1–2',60,'BICEPS','Tension continue.',m('/body-os/demo-cable-curl.svg','front',['biceps']))
-]},
-{id:'legsA',day:'J3',title:'LEGS A',subtitle:'Quadriceps • Fessiers • Ischios • Mollets',exercises:[
-e('hack-squat','Hack squat — si bien toléré',3,'6–10','2–3',150,'QUADRICEPS','Amplitude contrôlée.',m('/body-os/demo-hack-squat.svg','legs-front',['quads'],['glutes','hamstrings']),'medium'),
-e('leg-press','Presse à cuisses',3,'10–15','2',120,'JAMBES','Ne décolle pas le bassin.',m('/body-os/demo-leg-press.svg','legs-front',['quads'],['glutes','hamstrings']),'medium'),
-e('bulgarian','Bulgarian split squat',3,'8–12/côté','2',105,'JAMBES','Contrôle du bassin.',m('/body-os/demo-bulgarian.svg','legs-front',['quads','glutes'],['hamstrings']),'medium'),
-e('leg-extension','Leg extension',3,'12–15','1–2',75,'QUADRICEPS','Verrouillage contrôlé.',m('/body-os/demo-leg-extension.svg','legs-front',['quads'])),
-e('seated-curl','Leg curl assis',4,'10–15','1–2',75,'ISCHIOS','Bassin plaqué.',m('/body-os/demo-seated-curl.svg','legs-back',['hamstrings'])),
-e('calf','Mollets',4,'10–15','1–2',60,'MOLLETS','Amplitude complète.',m('/body-os/demo-calf.svg','legs-back',['calves']))
-]},
-{id:'upper',day:'J4',title:'UPPER',subtitle:'Esthétique • Épaules • Haut pecs • Dorsaux',exercises:[
-e('incline-db','Développé incliné haltères',3,'8–12','2',120,'HAUT PEC','Trajectoire convergente.',m('/body-os/demo-incline-db.svg','front',['upper-chest'],['front-delts','triceps'])),
-e('pulldown-2','Tirage vertical',3,'8–12','2',120,'DORSAUX','Cage haute.',m('/body-os/demo-pulldown-2.svg','back',['lats'],['biceps'])),
-e('machine-row','Rowing machine',3,'10–15','2',90,'DOS','Pas d’élan lombaire.',m('/body-os/demo-machine-row.svg','back',['mid-back'],['lats','rear-delts','biceps'])),
-e('low-high-fly','Écartés câble bas→haut',3,'12–15','1–2',75,'HAUT PEC','Vers la ligne claviculaire.',m('/body-os/demo-low-high-fly.svg','front',['upper-chest'],['front-delts'])),
-e('lat-raise-2','Élévations latérales',5,'12–20','1–2',60,'DELTOÏDES','Tension constante.',m('/body-os/demo-lat-raise-2.svg','front',['side-delts'])),
-e('reverse-fly','Reverse fly',3,'15–20','1–2',60,'ARRIÈRE ÉPAULE','Mouvement léger.',m('/body-os/demo-reverse-fly.svg','back',['rear-delts'],['mid-back']))
-]},
-{id:'lowerarms',day:'J5',title:'LOWER + BRAS',subtitle:'Jambes • Chaîne postérieure progressive • Bras',exercises:[
-e('single-press','Presse unilatérale',3,'10–15/côté','2',90,'JAMBES','Bassin fixe.',m('/body-os/demo-single-press.svg','legs-front',['quads','glutes'],['hamstrings']),'medium'),
-e('leg-curl','Leg curl',4,'8–12','1–2',75,'ISCHIOS','Contrôle excentrique.',m('/body-os/demo-leg-curl.svg','legs-back',['hamstrings'])),
-e('step-up','Split squat / step-up',3,'10/côté','2',105,'JAMBES','Pousse dans le talon.',m('/body-os/demo-step-up.svg','legs-front',['quads','glutes'],['hamstrings']),'medium'),
-e('leg-extension-2','Leg extension',2,'15','1–2',60,'QUADRICEPS','Contrôle.',m('/body-os/demo-leg-extension-2.svg','legs-front',['quads'])),
-e('calf-2','Mollets',3,'12–20','1–2',60,'MOLLETS','Amplitude complète.',m('/body-os/demo-calf-2.svg','legs-back',['calves'])),
-e('curl','Curl',3,'10–15','1–2',60,'BICEPS','Pas d’élan.',m('/body-os/demo-curl.svg','front',['biceps'])),
-e('triceps','Triceps',3,'10–15','1–2',60,'TRICEPS','Coudes fixes.',m('/body-os/demo-triceps.svg','front',['triceps']))
-]}
-];
+  {
+    id:'push',day:'J1',title:'PUSH',subtitle:'Pectoraux • Épaules • Triceps',
+    exercises:[
+      m('incline-machine','Développé incliné machine','HAUT PEC',4,'6–10','2–3',150,'Omoplates fixées, trajectoire contrôlée.',['upper-chest'],['front-delts','triceps'],true,'/body-os/workout-incline-demo-golden.jpg','BASE',false,inclinePrescription),
+      m('chest-press','Chest press machine','PECTORAUX',3,'8–12','2',120,'Poitrine haute, amplitude sans décoller les épaules.',['chest'],['triceps','front-delts'],false,'/body-os/demo-chest-press-approved.jpg','BASE'),
+      iso('cable-fly','Écartés câble','PECTORAUX',3,'12–15','1–2',75,'Cherche l’adduction du bras, pas la charge.',['chest'],['upper-chest'],false),
+      iso('low-high-fly-push','Écartés câble bas→haut','HAUT PEC',2,'12–15','1–2',75,'Conduis les mains vers le haut du sternum.',['upper-chest'],['chest']),
+      iso('lat-raise','Élévations latérales câble','DELTOÏDE LATÉRAL',4,'12–20','1–2',60,'Monte avec le coude, épaules basses.',['side-delts'],[],false),
+      m('shoulder-press','Shoulder press machine','ÉPAULES',2,'8–12','2',120,'Dos plaqué, pas d’hyperextension lombaire.',['front-delts'],['side-delts','triceps'],true,'/body-os/demo-shoulder-press-approved.jpg','BASE'),
+      iso('rear-delt-cable','Oiseau câble unilatéral','ARRIÈRE ÉPAULE',3,'15–20','1–2',60,'Bras légèrement fléchi, ouvre sans tourner le buste.',['rear-delts'],['mid-back']),
+      iso('overhead-triceps','Extension triceps au-dessus de la tête','TRICEPS LONGUE PORTION',3,'10–15','1–2',75,'Coudes serrés, étirement complet derrière la tête.',['triceps']),
+      iso('rope-pushdown','Extension triceps corde','TRICEPS',3,'10–15','1–2',75,'Verrouille les coudes, écarte la corde en bas.',['triceps'],[],false),
+    ]
+  },
+  {
+    id:'pull',day:'J2',title:'PULL',subtitle:'Dos • Arrière épaules • Biceps',
+    exercises:[
+      m('lat-pulldown','Tirage vertical neutre','DORSAUX',4,'8–12','2',120,'Amène les coudes vers les hanches.',['lats'],['biceps']),
+      m('chest-row','Rowing poitrine supportée','ÉPAISSEUR DOS',4,'8–12','2',120,'Poitrine collée au support, tire avec les coudes.',['mid-back'],['lats','biceps']),
+      m('one-arm-cable','Tirage unilatéral câble','DORSAUX',3,'10–14','2',90,'Laisse l’omoplate avancer puis ramène le coude vers la hanche.',['lats'],['mid-back','biceps']),
+      iso('straight-arm-pulldown','Pullover câble bras tendus','DORSAUX',3,'12–15','1–2',75,'Garde les bras presque tendus et ferme les aisselles.',['lats']),
+      iso('reverse-pec','Reverse pec-deck','ARRIÈRE ÉPAULE',3,'12–20','1–2',60,'Écarte sans hausser les épaules.',['rear-delts'],['mid-back']),
+      iso('cable-shrug','Shrug câble','TRAPÈZES',3,'10–15','1–2',75,'Monte les épaules verticalement, marque une pause.',['traps']),
+      iso('incline-curl','Curl incliné','BICEPS ÉTIRÉ',3,'8–12','1–2',75,'Épaules en arrière, extension complète en bas.',['biceps']),
+      iso('hammer-curl','Curl marteau','BRACHIAL / AVANT-BRAS',3,'10–14','1–2',75,'Poignets neutres, sans balancer.',['biceps','forearms']),
+      iso('cable-curl','Curl câble','BICEPS',2,'12–15','1',60,'Tension continue, serre en haut.',['biceps']),
+    ]
+  },
+  {
+    id:'legsA',day:'J3',title:'LEGS A',subtitle:'Quadriceps • Ischios • Fessiers • Mollets',
+    exercises:[
+      m('hack-squat','Hack squat','QUADRICEPS',4,'6–10','2–3',150,'Amplitude tolérée, bassin plaqué.',['quads'],['glutes'],true),
+      m('leg-press','Presse à cuisses','QUADRICEPS',3,'10–15','2',120,'Descends sans arrondir le bas du dos.',['quads'],['glutes'],true),
+      m('bulgarian','Bulgarian split squat','UNILATÉRAL',3,'8–12 / jambe','2',120,'Buste stable, contrôle du genou.',['quads','glutes'],['hamstrings'],true),
+      iso('leg-extension','Leg extension','QUADRICEPS',3,'12–18','1–2',75,'Contracte fort en haut, contrôle la descente.',['quads']),
+      iso('seated-curl','Leg curl assis','ISCHIOS ÉTIRÉS',4,'10–15','1–2',75,'Garde les hanches plaquées, contrôle l’étirement.',['hamstrings']),
+      iso('hip-abduction','Abduction machine','MOYEN FESSIER',3,'15–25','1–2',60,'Ouvre les genoux sans rebond.',['glutes']),
+      iso('calf','Mollets debout / presse','MOLLETS',4,'8–15','1–2',60,'Pause en bas et contraction complète en haut.',['calves']),
+      core('dead-bug','Dead bug','CORE',3,'8–12 / côté','3',60,'Plaque les lombaires, souffle en allongeant.', ['core']),
+    ]
+  },
+  {
+    id:'upper',day:'J4',title:'UPPER',subtitle:'Haut du corps complet',
+    exercises:[
+      m('incline-db','Développé incliné haltères','HAUT PEC',3,'8–12','2',120,'Contrôle la descente et garde les omoplates stables.',['upper-chest'],['front-delts','triceps'],true),
+      m('pulldown-2','Tirage vertical','DORSAUX',3,'8–12','2',120,'Tire les coudes vers les côtes.',['lats'],['biceps']),
+      m('machine-row','Rowing machine','DOS',3,'8–12','2',120,'Poitrine fixée, rapproche les omoplates.',['mid-back'],['lats','biceps']),
+      iso('low-high-fly','Écartés câble bas→haut','HAUT PEC',3,'12–15','1–2',75,'Conduis vers le haut du sternum.',['upper-chest'],['chest']),
+      iso('lat-raise-2','Élévations latérales','DELTOÏDE LATÉRAL',4,'12–20','1–2',60,'Conserve la tension sur le côté de l’épaule.',['side-delts']),
+      iso('reverse-fly','Reverse fly','ARRIÈRE ÉPAULE',3,'15–20','1–2',60,'Ouvre les bras avec contrôle.',['rear-delts'],['mid-back']),
+      iso('preacher-curl','Curl pupitre / machine','BICEPS',3,'10–15','1–2',75,'Bras fixé, pas d’élan.',['biceps']),
+      iso('single-arm-pushdown','Pushdown unilatéral','TRICEPS',3,'10–15','1–2',75,'Épaule fixe, extension complète.',['triceps']),
+      iso('forearm-curl','Flexion / extension poignets','AVANT-BRAS',2,'15–20','1–2',60,'Amplitude contrôlée, sans douleur.',['forearms']),
+    ]
+  },
+  {
+    id:'lowerarms',day:'J5',title:'LOWER + BRAS',subtitle:'Bas du corps • Bras • Core',
+    exercises:[
+      m('single-press','Presse unilatérale','QUADRICEPS',3,'10–15 / jambe','2',120,'Bassin stable, amplitude confortable.',['quads'],['glutes'],true),
+      iso('leg-curl','Leg curl','ISCHIOS',4,'10–15','1–2',75,'Contrôle la phase excentrique.',['hamstrings']),
+      m('step-up','Split squat / step-up','FESSIERS / QUADS',3,'8–12 / jambe','2',120,'Pousse dans le pied avant et reste gainé.',['glutes','quads'],['hamstrings'],true),
+      iso('leg-extension-2','Leg extension','QUADRICEPS',3,'12–18','1–2',75,'Contraction maximale sans verrouiller brutalement.',['quads']),
+      iso('glute-kickback','Kickback câble','FESSIERS',3,'12–20','1–2',60,'Bassin fixe, extension de hanche sans cambrer.',['glutes']),
+      iso('calf-2','Mollets assis','MOLLETS',4,'12–20','1–2',60,'Pause étirée en bas, montée complète.',['calves']),
+      iso('curl','Curl câble / machine','BICEPS',3,'8–12','1–2',75,'Pas d’élan, serre en haut.',['biceps']),
+      iso('triceps','Extension triceps','TRICEPS',3,'10–15','1–2',75,'Coude fixe, extension complète.',['triceps']),
+      iso('hammer-cross','Curl marteau croisé','BRACHIAL / AVANT-BRAS',2,'12–15','1–2',60,'Poignet neutre, mouvement propre.',['biceps','forearms']),
+      core('pallof-press','Pallof press','CORE ANTI-ROTATION',3,'10–15 / côté','3',60,'Résiste à la rotation, bassin et cage alignés.', ['core']),
+    ]
+  }
+]
 
 export const muscleLabels:Record<MuscleGroup,string>={
 'upper-chest':'Haut pecs','chest':'Pectoraux','front-delts':'Deltoïdes antérieurs',
 'side-delts':'Deltoïdes latéraux','rear-delts':'Deltoïdes postérieurs','triceps':'Triceps',
-'lats':'Dorsaux','mid-back':'Milieu du dos','biceps':'Biceps','quads':'Quadriceps',
-'hamstrings':'Ischios','glutes':'Fessiers','calves':'Mollets','core':'Core'
+'lats':'Dorsaux','mid-back':'Milieu du dos','traps':'Trapèzes','biceps':'Biceps','forearms':'Avant-bras',
+'quads':'Quadriceps','hamstrings':'Ischios','glutes':'Fessiers','calves':'Mollets','core':'Core'
 };
 
 export const backLevels=[

@@ -1,0 +1,11 @@
+{
+  "version": "6.24.2",
+  "fixes": [
+    "Program engine helpers aligned with the original Exercise/ExerciseMedia model",
+    "Added BASE/ISOLATION/CORE and optional metadata without breaking existing workout UI",
+    "Added traps and forearms to MuscleGroup and labels",
+    "Weekly volume uses primaryMuscles/secondaryMuscles and valid ternary syntax",
+    "Anatomy asset mapping is now explicit per exercise id instead of deriving from approved JPG filename",
+    "Incline prescription preserved"
+  ]
+}

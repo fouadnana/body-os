@@ -1,0 +1,25 @@
+{
+  "version": "6.22",
+  "name": "Training Volume & Isolation Engine",
+  "changes": [
+    "Expanded 5-day programme with more isolation work across chest, delts, back, arms, legs, glutes, calves and core",
+    "Exercise metadata: BASE / ISOLATION / CORE and optional flag",
+    "Weekly volume dashboard by muscle",
+    "Optional isolation blocks for fatigue/recovery flexibility",
+    "Core work added with L5-S1-conscious anti-extension/anti-rotation choices",
+    "Existing Nutrition V6.21 preserved"
+  ],
+  "program_summary": {
+    "PUSH": 9,
+    "PULL": 9,
+    "LEGS A": 8,
+    "UPPER": 9,
+    "LOWER + BRAS": 10
+  },
+  "known_limitations": [
+    "New exercises reuse generic/mockup media asset paths until dedicated demo/anatomy assets are produced",
+    "Weekly volume counts direct sets and estimates secondary contribution at 0.5x for display only",
+    "Optional isolation blocks are user-selectable conceptually but automatic readiness-based hiding is not yet implemented"
+  ],
+  "deployment": "NOT DEPLOYED"
+}

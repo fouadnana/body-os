@@ -1,0 +1,21 @@
+{
+  "version": "6.23",
+  "name": "Recipes & Shopping Engine",
+  "changes": [
+    "Nutrition now has PROGRAMME / JOURNAL / RECETTES / COURSES internal tabs",
+    "VOIR TOUT opens the recipe catalogue",
+    "VOIR LA RECETTE opens a functional recipe detail modal",
+    "Recipe cards include ingredients, preparation steps, prep time and macros",
+    "Recipe replacement writes the selected recipe into the closest-kcal programme meal and opens Journal",
+    "Shopping list is generated from the active nutrition protocol",
+    "Shopping items are grouped into proteins, starches, fruit & vegetables, dairy and pantry",
+    "Persistent MAISON / ACHETÉ states per day and active session",
+    "V6.22 training isolation engine and V6.21 Nutrition UI retained"
+  ],
+  "known_limitations": [
+    "Shopping list currently aggregates the active daily protocol, not a full seven-day generated week.",
+    "Recipe replacement picks the closest-kcal meal rather than performing ingredient-level macro optimization.",
+    "Recipe food photography is still represented by semantic visual placeholders."
+  ],
+  "deployment": "NOT DEPLOYED"
+}

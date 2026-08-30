@@ -5,6 +5,8 @@ import { store, type SetLog, type CoachCheckin } from './lib/storage'
 const todayAnatomy = '/body-os/today-anatomy-premium.png'
 const l5Spine = '/body-os/l5-spine.svg'
 const workoutInclineDemo = '/body-os/workout-incline-demo.jpg'
+const appRead=<T,>(key:string,fallback:T):T=>{try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw) as T:fallback}catch{return fallback}}
+const appWrite=(key:string,value:unknown)=>localStorage.setItem(key,JSON.stringify(value))
 
 type Tab = 'today'|'workout'|'nutrition'|'progress'|'coach'
 const target={calories:2800,protein:190,fat:85,carbs:319,steps:8000}
@@ -184,6 +186,178 @@ function buildWeeklyProtocol(sessionKey:string,weekSeed:number){
   return {day:'WEEKLY',mode:profile.mode,session:profile.session,kcal:profile.kcal,protein:profile.protein,carbs:profile.carbs,fat:profile.fat,score:86,meals,why:profile.why}
 }
 
+
+type RecipeCategory='PETIT-DÉJEUNER'|'PLAT'|'DESSERT'|'RAPIDE'|'HIGH PROTEIN'
+type RecipeIngredient={name:string;qty:number;unit:string;category:'PROTÉINES'|'FÉCULENTS'|'FRUITS & LÉGUMES'|'PRODUITS LAITIERS'|'ÉPICERIE'}
+type MacroVector={kcal:number;protein:number;carbs:number;fat:number}
+type Recipe={id:string;title:string;category:RecipeCategory;prep:number;kcal:number;protein:number;carbs:number;fat:number;emoji:string;ingredients:RecipeIngredient[];steps:string[]}
+
+const recipes:Recipe[]=[
+  {
+    id:'protein-pancakes',title:'Pancakes protéinés',category:'PETIT-DÉJEUNER',prep:12,kcal:520,protein:42,carbs:61,fat:12,emoji:'🥞',
+    ingredients:[
+      {name:'Flocons d’avoine',qty:70,unit:'g',category:'FÉCULENTS'},
+      {name:'Skyr 0%',qty:180,unit:'g',category:'PRODUITS LAITIERS'},
+      {name:'Œufs',qty:2,unit:'pièces',category:'PROTÉINES'},
+      {name:'Banane',qty:100,unit:'g',category:'FRUITS & LÉGUMES'},
+      {name:'Levure chimique',qty:4,unit:'g',category:'ÉPICERIE'}
+    ],
+    steps:['Mixer les flocons, le skyr, les œufs et la banane.','Ajouter la levure puis mélanger.','Cuire en petites portions 2 à 3 minutes par face.']
+  },
+  {
+    id:'chicken-bowl',title:'Chicken bowl',category:'PLAT',prep:20,kcal:690,protein:55,carbs:78,fat:18,emoji:'🥗',
+    ingredients:[
+      {name:'Blanc de poulet',qty:180,unit:'g',category:'PROTÉINES'},
+      {name:'Riz basmati cru',qty:90,unit:'g',category:'FÉCULENTS'},
+      {name:'Poivrons',qty:150,unit:'g',category:'FRUITS & LÉGUMES'},
+      {name:'Courgette',qty:150,unit:'g',category:'FRUITS & LÉGUMES'},
+      {name:'Huile d’olive',qty:10,unit:'g',category:'ÉPICERIE'}
+    ],
+    steps:['Cuire le riz.','Saisir le poulet assaisonné.','Ajouter les légumes puis assembler le bowl avec l’huile d’olive.']
+  },
+  {
+    id:'skyr-cheesecake',title:'Cheesecake skyr',category:'DESSERT',prep:8,kcal:280,protein:26,carbs:31,fat:7,emoji:'🍰',
+    ingredients:[
+      {name:'Skyr 0%',qty:250,unit:'g',category:'PRODUITS LAITIERS'},
+      {name:'Fromage frais léger',qty:60,unit:'g',category:'PRODUITS LAITIERS'},
+      {name:'Fruits rouges',qty:100,unit:'g',category:'FRUITS & LÉGUMES'},
+      {name:'Biscuits avoine',qty:25,unit:'g',category:'FÉCULENTS'}
+    ],
+    steps:['Mélanger le skyr et le fromage frais.','Émietter les biscuits au fond du récipient.','Ajouter la crème puis les fruits rouges et réserver au frais.']
+  },
+  {
+    id:'turkey-wrap',title:'Wrap dinde express',category:'RAPIDE',prep:8,kcal:510,protein:46,carbs:49,fat:15,emoji:'🌯',
+    ingredients:[
+      {name:'Escalope de dinde',qty:150,unit:'g',category:'PROTÉINES'},
+      {name:'Wrap complet',qty:1,unit:'pièce',category:'FÉCULENTS'},
+      {name:'Salade',qty:80,unit:'g',category:'FRUITS & LÉGUMES'},
+      {name:'Tomate',qty:100,unit:'g',category:'FRUITS & LÉGUMES'},
+      {name:'Skyr 0%',qty:50,unit:'g',category:'PRODUITS LAITIERS'}
+    ],
+    steps:['Cuire la dinde puis la trancher.','Mélanger le skyr avec les épices pour la sauce.','Garnir le wrap avec dinde, salade, tomate et sauce.']
+  },
+  {
+    id:'beef-pasta',title:'Pasta bœuf high protein',category:'HIGH PROTEIN',prep:22,kcal:760,protein:60,carbs:86,fat:20,emoji:'🍝',
+    ingredients:[
+      {name:'Bœuf 5%',qty:180,unit:'g',category:'PROTÉINES'},
+      {name:'Pâtes complètes crues',qty:100,unit:'g',category:'FÉCULENTS'},
+      {name:'Coulis de tomate',qty:180,unit:'g',category:'FRUITS & LÉGUMES'},
+      {name:'Épinards',qty:150,unit:'g',category:'FRUITS & LÉGUMES'},
+      {name:'Parmesan',qty:15,unit:'g',category:'PRODUITS LAITIERS'}
+    ],
+    steps:['Cuire les pâtes.','Cuire le bœuf avec le coulis de tomate.','Ajouter les épinards, mélanger aux pâtes puis terminer avec le parmesan.']
+  }
+]
+
+
+const ingredientNutrition:Record<string,{basis:number;kcal:number;p:number;c:number;f:number}>={
+  'flocons d’avoine':{basis:100,kcal:372,p:13,c:60,f:7},
+  'skyr 0%':{basis:100,kcal:59,p:10,c:4,f:.2},
+  'œufs':{basis:1,kcal:72,p:6.3,c:.4,f:4.8},
+  'banane':{basis:100,kcal:89,p:1.1,c:23,f:.3},
+  'levure chimique':{basis:100,kcal:53,p:0,c:28,f:0},
+  'blanc de poulet':{basis:100,kcal:110,p:23,c:0,f:1.5},
+  'riz basmati cru':{basis:100,kcal:350,p:8,c:77,f:1},
+  'poivrons':{basis:100,kcal:31,p:1,c:6,f:.3},
+  'courgette':{basis:100,kcal:17,p:1.2,c:3.1,f:.3},
+  'huile d’olive':{basis:100,kcal:884,p:0,c:0,f:100},
+  'fromage frais léger':{basis:100,kcal:120,p:8,c:5,f:7},
+  'fruits rouges':{basis:100,kcal:45,p:1,c:8,f:.5},
+  'biscuits avoine':{basis:100,kcal:430,p:8,c:67,f:14},
+  'escalope de dinde':{basis:100,kcal:110,p:24,c:0,f:1.2},
+  'wrap complet':{basis:1,kcal:210,p:7,c:35,f:5},
+  'salade':{basis:100,kcal:15,p:1.4,c:2.9,f:.2},
+  'tomate':{basis:100,kcal:18,p:.9,c:3.9,f:.2},
+  'bœuf 5%':{basis:100,kcal:137,p:21,c:0,f:5},
+  'pâtes complètes crues':{basis:100,kcal:350,p:13,c:67,f:2.5},
+  'coulis de tomate':{basis:100,kcal:29,p:1.4,c:5,f:.2},
+  'épinards':{basis:100,kcal:23,p:2.9,c:3.6,f:.4},
+  'parmesan':{basis:100,kcal:392,p:35.8,c:3.2,f:25.8}
+}
+const normIngredient=(name:string)=>name.toLowerCase().trim()
+const ingredientMacros=(ingredient:RecipeIngredient,qty=ingredient.qty):MacroVector=>{
+  const n=ingredientNutrition[normIngredient(ingredient.name)]
+  if(!n){
+    const ratio=qty/Math.max(1,ingredient.qty)
+    return {kcal:0,protein:0,carbs:0,fat:0}
+  }
+  const factor=qty/n.basis
+  return {kcal:n.kcal*factor,protein:n.p*factor,carbs:n.c*factor,fat:n.f*factor}
+}
+const sumMacros=(ingredients:RecipeIngredient[]):MacroVector=>ingredients.reduce((a,i)=>{
+  const m=ingredientMacros(i)
+  return {kcal:a.kcal+m.kcal,protein:a.protein+m.protein,carbs:a.carbs+m.carbs,fat:a.fat+m.fat}
+},{kcal:0,protein:0,carbs:0,fat:0})
+const macroDistance=(m:MacroVector,target:MacroVector)=>{
+  const dK=(m.kcal-target.kcal)/Math.max(150,target.kcal)
+  const dP=(m.protein-target.protein)/Math.max(15,target.protein)
+  const dC=(m.carbs-target.carbs)/Math.max(20,target.carbs)
+  const dF=(m.fat-target.fat)/Math.max(8,target.fat)
+  return dK*dK*.25+dP*dP*.32+dC*dC*.25+dF*dF*.18
+}
+const fitRecipeToMeal=(recipe:Recipe,target:MacroVector)=>{
+  let q=recipe.ingredients.map(i=>i.qty)
+  const mins=recipe.ingredients.map(i=>i.qty*.55)
+  const maxs=recipe.ingredients.map(i=>i.qty*1.65)
+  const rounded=(i:number,v:number)=>{
+    const unit=recipe.ingredients[i].unit.toLowerCase()
+    const step=unit.startsWith('pièce')?1:5
+    return Math.max(mins[i],Math.min(maxs[i],Math.round(v/step)*step))
+  }
+  const evaluate=(vals:number[])=>{
+    const ingredients=recipe.ingredients.map((i,j)=>({...i,qty:vals[j]}))
+    return {ingredients,macros:sumMacros(ingredients)}
+  }
+  let best=evaluate(q)
+  let bestScore=macroDistance(best.macros,target)
+  for(let pass=0;pass<18;pass++){
+    let improved=false
+    for(let i=0;i<q.length;i++){
+      const unit=recipe.ingredients[i].unit.toLowerCase()
+      const step=unit.startsWith('pièce')?1:5
+      for(const dir of [-1,1]){
+        const next=[...q]
+        next[i]=rounded(i,next[i]+dir*step)
+        const ev=evaluate(next)
+        const score=macroDistance(ev.macros,target)
+        if(score+1e-8<bestScore){
+          q=next;best=ev;bestScore=score;improved=true
+        }
+      }
+    }
+    if(!improved) break
+  }
+  return {
+    ...recipe,
+    ingredients:best.ingredients,
+    kcal:Math.round(best.macros.kcal),
+    protein:Math.round(best.macros.protein),
+    carbs:Math.round(best.macros.carbs),
+    fat:Math.round(best.macros.fat),
+    fitScore:Math.max(0,Math.round((1-Math.min(1,bestScore))*100))
+  }
+}
+const recipeTargetDistance=(recipe:Recipe,target:MacroVector)=>{
+  const base=sumMacros(recipe.ingredients)
+  return macroDistance(base,target)
+}
+const weeklySessionPlan=['PUSH','PULL','LEGS','UPPER','LOWER','RECOVERY','RECOVERY'] as const
+const ingredientCategory=(name:string):RecipeIngredient['category']=>{
+  const n=name.toLowerCase()
+  if(/poulet|dinde|boeuf|bœuf|oeuf|œuf|thon|saumon|jambon|steak/.test(n)) return 'PROTÉINES'
+  if(/riz|pâte|avoine|muesli|pain|wrap|pomme de terre|patate|quinoa|semoule|biscuit/.test(n)) return 'FÉCULENTS'
+  if(/skyr|yaourt|fromage|lait|parmesan/.test(n)) return 'PRODUITS LAITIERS'
+  if(/huile|amande|noix|beurre|épice|sauce|levure/.test(n)) return 'ÉPICERIE'
+  return 'FRUITS & LÉGUMES'
+}
+const parseFoodQty=(qty:string|number)=>{
+  if(typeof qty==='number') return {qty,unit:'g'}
+  const raw=String(qty)
+  const num=Number((raw.match(/[\d,.]+/)?.[0]||'1').replace(',','.'))
+  const unit=(raw.match(/kg|ml|cl|l|g|pièces?|pièce|tranches?|portion/i)?.[0]||'g')
+  return {qty:Number.isFinite(num)?num:1,unit}
+}
+const shoppingKey=(dayKey:string,session:string)=>`bodyos:shopping:${dayKey}:${session}`
 function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSessionChange:(day:number)=>void}){
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
@@ -198,7 +372,7 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
     :sessionId.includes('LOWER')||rawSession.includes('LOWER')?'LOWER'
     :rawSession.includes('REPOS')||rawSession.includes('REST')?'RECOVERY':'PUSH'
 
-  const [nutritionView,setNutritionView]=useState<'program'|'journal'>('program')
+  const [nutritionView,setNutritionView]=useState<'program'|'journal'|'recipes'|'shopping'>('program')
   const consumedKey=`bodyos:nutrition:consumed:${dayKey}`
   type MealState='planned'|'consumed'|'partial'|'skipped'
   const [consumedMeals,setConsumedMeals]=useState<Record<string,MealState>>(()=>{try{return JSON.parse(localStorage.getItem(consumedKey)||'{}')}catch{return{}}})
@@ -212,6 +386,10 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
   const [editorOpen,setEditorOpen]=useState(false)
   const [editingId,setEditingId]=useState<string|null>(null)
   const [adjustingMeal,setAdjustingMeal]=useState<DailyMeal|null>(null)
+  const [selectedRecipe,setSelectedRecipe]=useState<Recipe|null>(null)
+  const [recipeFilter,setRecipeFilter]=useState<'TOUT'|RecipeCategory>('TOUT')
+  const [shoppingTick,setShoppingTick]=useState(0)
+
 
   useEffect(()=>{
     setRegen(Number(localStorage.getItem(overrideKey)||0))
@@ -301,9 +479,83 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
   const nutritionScore=Math.round(calorieScore*.3+proteinScore*.3+timingScore*.15+hydrationScore*.1+adherenceScore*.15)
   const sessionChoices=sessions.map((session,i)=>({i,label:session.title.replace(' A','').replace(' + BRAS','')}))
 
+  const weeklyProtocols=useMemo(()=>weeklySessionPlan.map((session,i)=>({
+    dayIndex:i,
+    session,
+    protocol:buildWeeklyProtocol(session,weekSeed+i)
+  })),[weekSeed])
+
+  const generatedShopping=useMemo(()=>{
+    const map=new Map<string,{name:string;qty:number;unit:string;category:RecipeIngredient['category'];days:Set<number>}>()
+    const add=(name:string,qty:number,unit:string,category:RecipeIngredient['category'],dayIndex:number)=>{
+      const k=`${name}|${unit}`
+      const prev=map.get(k)
+      if(prev){prev.qty+=qty;prev.days.add(dayIndex)}
+      else map.set(k,{name,qty,unit,category,days:new Set([dayIndex])})
+    }
+    weeklyProtocols.forEach(({dayIndex,session,protocol:weekProtocol})=>{
+      weekProtocol.meals.forEach(meal=>{
+        const currentDayReplacement=dayIndex===0?entries.find(e=>e.source==='programme'&&e.time===meal.time&&e.foods?.length):undefined
+        if(currentDayReplacement?.foods?.length){
+          currentDayReplacement.foods.forEach(food=>{
+            const parsed=parseFoodQty(food.actualQty||food.plannedQty||'0 g')
+            add(food.name,parsed.qty,parsed.unit,ingredientCategory(food.name),dayIndex)
+          })
+        }else{
+          meal.foods.forEach(food=>{
+            const parsed=parseFoodQty(food.qty)
+            add(food.name,parsed.qty,parsed.unit,ingredientCategory(food.name),dayIndex)
+          })
+        }
+      })
+    })
+    return Array.from(map.values()).map(i=>({...i,days:Array.from(i.days).sort()}))
+  },[weeklyProtocols,entries])
+
+  const shoppingState=appRead<Record<string,'todo'|'home'|'bought'>>(`bodyos:shopping:week:${weekSeed}`,{})
+  const setShoppingStatus=(name:string,status:'todo'|'home'|'bought')=>{
+    const next={...shoppingState,[name]:status}
+    appWrite(`bodyos:shopping:week:${weekSeed}`,next)
+    setShoppingTick(v=>v+1)
+  }
+
+  const replaceMealWithRecipe=(recipe:Recipe)=>{
+    const candidates=protocol.meals.map(m=>{
+      const target={kcal:m.kcal,protein:m.p,carbs:m.c,fat:m.f}
+      const fitted=fitRecipeToMeal(recipe,target)
+      return {meal:m,fitted,score:macroDistance({kcal:fitted.kcal,protein:fitted.protein,carbs:fitted.carbs,fat:fitted.fat},target)}
+    }).sort((a,b)=>a.score-b.score)
+    const {meal:candidate,fitted}=candidates[0]
+    const entry: NutritionEntry={
+      id:`recipe:${dayKey}:${candidate.time}`,
+      meal:candidate.title,
+      time:candidate.time,
+      title:fitted.title,
+      kcal:fitted.kcal,protein:fitted.protein,carbs:fitted.carbs,fat:fitted.fat,
+      status:'partial',source:'programme',
+      foods:fitted.ingredients.map(i=>({name:i.name,plannedQty:`${i.qty} ${i.unit}`,actualQty:`${i.qty} ${i.unit}`}))
+    }
+    const without=entries.filter(e=>!(e.source==='programme'&&e.time===candidate.time))
+    const next=[...without,entry]
+    setEntries(next)
+    appWrite(`bodyos:nutrition:${dayKey}`,next)
+    localStorage.setItem(`bodyos:recipe-fit:${dayKey}:${candidate.time}`,JSON.stringify({
+      recipeId:fitted.id,fitScore:fitted.fitScore,target:{kcal:candidate.kcal,p:candidate.p,c:candidate.c,f:candidate.f},
+      actual:{kcal:fitted.kcal,p:fitted.protein,c:fitted.carbs,f:fitted.fat}
+    }))
+    setSelectedRecipe(null)
+    setNutritionView('journal')
+  }
+
+
   return <main className="screen nutritionScreen adaptiveNutrition">
     <header className="nutritionTopbar"><button aria-label="Menu">☰</button><div><h1>NUTRITION</h1><p>Adaptive Nutrition Engine</p></div><button aria-label="Réglages">☷</button></header>
-    <div className="nutritionTabs"><button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button><button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button></div>
+    <div className="nutritionTabs nutritionTabsFour">
+      <button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button>
+      <button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button>
+      <button className={nutritionView==='recipes'?'active':''} onClick={()=>setNutritionView('recipes')}>RECETTES</button>
+      <button className={nutritionView==='shopping'?'active':''} onClick={()=>setNutritionView('shopping')}>COURSES</button>
+    </div>
     <section className="nutritionSessionSwitch glass">
       <div><small>SÉANCE DU JOUR</small><b>{protocol.session}</b></div>
       <div className="nutritionSessionChoices">
@@ -339,11 +591,11 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
       </section>
       <section className="whyPlan glass"><header><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><span>AI RATIONALE</span></header><div>{protocol.why.map((w,i)=><article key={w}>{i===0?'🏋️':i===1?'📈':'🧠'} <b>{i===0?`Séance ${protocol.session}`:i===1?'Objectif cut':'Rotation'}</b><small>{w}</small></article>)}</div></section>
       <section className="recipeIdeas glass">
-        <header><div><small>✦ INSPIRATION DU JOUR</small><b>RECETTES PROTÉINÉES</b></div><button>VOIR TOUT</button></header>
+        <header><div><small>✦ INSPIRATION DU JOUR</small><b>RECETTES PROTÉINÉES</b></div><button onClick={()=>setNutritionView('recipes')}>VOIR TOUT</button></header>
         <div className="recipeCards">
-          <article><div className="recipeVisual">🥞</div><small>PETIT-DÉJEUNER</small><b>Pancakes protéinés</b><span>≈ 520 kcal • P 42 g</span><button>VOIR LA RECETTE</button></article>
-          <article><div className="recipeVisual">🍲</div><small>PLAT</small><b>Chicken bowl</b><span>≈ 690 kcal • P 55 g</span><button>VOIR LA RECETTE</button></article>
-          <article><div className="recipeVisual">🍰</div><small>DESSERT</small><b>Cheesecake skyr</b><span>≈ 280 kcal • P 26 g</span><button>VOIR LA RECETTE</button></article>
+          <article><div className="recipeVisual">🥞</div><small>PETIT-DÉJEUNER</small><b>Pancakes protéinés</b><span>≈ 520 kcal • P 42 g</span><button onClick={()=>setSelectedRecipe(recipes.find(r=>r.id==='protein-pancakes')||null)}>VOIR LA RECETTE</button></article>
+          <article><div className="recipeVisual">🍲</div><small>PLAT</small><b>Chicken bowl</b><span>≈ 690 kcal • P 55 g</span><button onClick={()=>setSelectedRecipe(recipes.find(r=>r.id==='chicken-bowl')||null)}>VOIR LA RECETTE</button></article>
+          <article><div className="recipeVisual">🍰</div><small>DESSERT</small><b>Cheesecake skyr</b><span>≈ 280 kcal • P 26 g</span><button onClick={()=>setSelectedRecipe(recipes.find(r=>r.id==='skyr-cheesecake')||null)}>VOIR LA RECETTE</button></article>
         </div>
       </section>
       <div className="nutritionActions"><button onClick={regenerate}>↻ AUTRE MENU POUR {protocol.session}</button><button onClick={()=>setNutritionView('journal')}>✓ OUVRIR LE JOURNAL</button></div>
@@ -400,6 +652,86 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
       </section>
     </>}
 
+
+    {nutritionView==='recipes'&&<>
+      <section className="recipeHero glass">
+        <div><small>BODY OS RECIPE ENGINE</small><h2>Recettes compatibles avec ton protocole</h2><p>Choisis une recette selon ton envie. BODY OS te montre ses macros et peut la rattacher au repas du jour le plus proche.</p></div>
+        <div className="recipeHeroScore"><b>{protocol.session}</b><span>{protocol.kcal} kcal</span></div>
+      </section>
+      <div className="recipeFilters">
+        {(['TOUT','PETIT-DÉJEUNER','PLAT','DESSERT','RAPIDE','HIGH PROTEIN'] as const).map(f=><button key={f} className={recipeFilter===f?'active':''} onClick={()=>setRecipeFilter(f)}>{f}</button>)}
+      </div>
+      <section className="recipeCatalog">
+        {recipes.filter(r=>recipeFilter==='TOUT'||r.category===recipeFilter).map(recipe=><article className="recipeCatalogCard glass" key={recipe.id}>
+          <div className="recipeVisual">{recipe.emoji}</div>
+          <div className="recipeCatalogContent">
+            <small>{recipe.category}</small><h3>{recipe.title}</h3>
+            <p>⏱ {recipe.prep} min · {recipe.kcal} kcal · P {recipe.protein} g</p>
+            <div className="recipeMacroMini"><span>G {recipe.carbs} g</span><span>L {recipe.fat} g</span></div>
+            <button onClick={()=>setSelectedRecipe(recipe)}>VOIR LA RECETTE ›</button>
+          </div>
+        </article>)}
+      </section>
+    </>}
+
+    {nutritionView==='shopping'&&<>
+      <section className="shoppingHero glass">
+        <div><small>LISTE DE COURSES</small><h2>Courses • semaine complète</h2><p>7 jours agrégés : PUSH, PULL, LEGS, UPPER, LOWER + 2 jours récupération. La journée en cours tient compte des recettes remplacées.</p></div>
+        <div><b>{generatedShopping.length}</b><span>articles / 7 j</span></div>
+      </section>
+      <section className="shoppingProgress glass">
+        <div><small>PROGRESSION</small><b>{generatedShopping.filter(i=>shoppingState[i.name]==='bought'||shoppingState[i.name]==='home').length} / {generatedShopping.length} couverts</b></div>
+        <i><span style={{width:`${generatedShopping.length?Math.round(generatedShopping.filter(i=>shoppingState[i.name]==='bought'||shoppingState[i.name]==='home').length/generatedShopping.length*100):0}%`}}/></i>
+      </section>
+      <section className="shoppingGroups">
+        {(['PROTÉINES','FÉCULENTS','FRUITS & LÉGUMES','PRODUITS LAITIERS','ÉPICERIE'] as const).map(cat=>{
+          const items=generatedShopping.filter(i=>i.category===cat)
+          if(!items.length)return null
+          return <article className="shoppingGroup glass" key={cat}>
+            <header><b>{cat}</b><span>{items.length}</span></header>
+            {items.map(item=>{
+              const state=shoppingState[item.name]||'todo'
+              return <div className={`shoppingRow ${state}`} key={`${item.name}-${shoppingTick}`}>
+                <div><b>{item.name}</b><small>{Math.round(item.qty*10)/10} {item.unit} · {item.days.length} j</small><em className="shoppingDayDots">{item.days.map(d=><i key={d}>{['L','M','M','J','V','S','D'][d]}</i>)}</em></div>
+                <div className="shoppingActions">
+                  <button className={state==='home'?'active':''} onClick={()=>setShoppingStatus(item.name,'home')}>MAISON</button>
+                  <button className={state==='bought'?'active':''} onClick={()=>setShoppingStatus(item.name,'bought')}>ACHETÉ</button>
+                  {(state==='home'||state==='bought')&&<button onClick={()=>setShoppingStatus(item.name,'todo')}>↺</button>}
+                </div>
+              </div>
+            })}
+          </article>
+        })}
+      </section>
+    </>}
+
+    {selectedRecipe&&<div className="recipeModalBackdrop" onClick={()=>setSelectedRecipe(null)}>
+      <section className="recipeModal glass" onClick={e=>e.stopPropagation()}>
+        <button className="recipeClose" onClick={()=>setSelectedRecipe(null)}>×</button>
+        <div className="recipeModalVisual">{selectedRecipe.emoji}</div>
+        <small>{selectedRecipe.category}</small>
+        <h2>{selectedRecipe.title}</h2>
+        <div className="recipeStats">
+          <span><b>{selectedRecipe.prep}</b><small>min</small></span>
+          <span><b>{selectedRecipe.kcal}</b><small>kcal</small></span>
+          <span><b>{selectedRecipe.protein}</b><small>P g</small></span>
+          <span><b>{selectedRecipe.carbs}</b><small>G g</small></span>
+          <span><b>{selectedRecipe.fat}</b><small>L g</small></span>
+        </div>
+        <div className="recipeFitInfo">
+          <b>MACRO FIT</b>
+          <span>BODY OS ajuste les quantités ingrédient par ingrédient puis choisit le repas du jour offrant la meilleure correspondance calories / protéines / glucides / lipides.</span>
+        </div>
+        <h3>INGRÉDIENTS</h3>
+        <div className="recipeIngredients">
+          {selectedRecipe.ingredients.map(i=><div key={i.name}><span>{i.name}</span><b>{i.qty} {i.unit}</b></div>)}
+        </div>
+        <h3>PRÉPARATION</h3>
+        <ol className="recipeSteps">{selectedRecipe.steps.map((step,i)=><li key={step}><span>{i+1}</span>{step}</li>)}</ol>
+        <button className="recipeReplace" onClick={()=>replaceMealWithRecipe(selectedRecipe)}>ADAPTER LA RECETTE AUX MACROS DU REPAS</button>
+      </section>
+    </div>}
+
     {adjustingMeal&&<div className="nutritionEditorBackdrop"><form className="nutritionEditor glass adjustMealEditor" onSubmit={e=>{e.preventDefault();saveAdjustedMeal(e.currentTarget)}}>
       <header><div><b>AJUSTER LE REPAS</b><small>{adjustingMeal.time} • {adjustingMeal.title}</small></div><button type="button" onClick={()=>setAdjustingMeal(null)}>×</button></header>
       <p className="adjustHelp">Indique précisément ce que tu as réellement consommé. Les macros du journal seront recalculées proportionnellement aux quantités déclarées.</p>
@@ -416,6 +748,23 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
       <div className="nutritionEditorActions">{editingId&&<button type="button" className="danger" onClick={()=>{removeEntry(editingId);setEditorOpen(false)}}>SUPPRIMER</button>}<button type="submit" className="primary">ENREGISTRER</button></div>
     </form></div>}
   </main>
+}
+
+
+const weeklyVolume=()=>{
+  const out:Record<string,{direct:number;secondary:number}>= {}
+  sessions.forEach(session=>session.exercises.forEach(ex=>{
+    const roleFactor = ex.optional ? 0.85 : 1
+    ex.media.primaryMuscles.forEach(m=>{
+      out[m] ||= {direct:0,secondary:0}
+      out[m].direct += ex.sets*roleFactor
+    })
+    ;(ex.media.secondaryMuscles??[]).forEach(m=>{
+      out[m] ||= {direct:0,secondary:0}
+      out[m].secondary += ex.sets*.5
+    })
+  }))
+  return out
 }
 
 export default function App(){

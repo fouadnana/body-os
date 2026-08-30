@@ -1603,3 +1603,65 @@ html,body,#root{background:#050b12!important}
   .journalCockpit{grid-template-columns:88px minmax(0,1fr)}
   .journalCalorieRing{width:82px;height:82px}.journalCalorieRing:before{width:66px;height:66px}
 }
+
+/* =========================================================
+   V6.22 — TRAINING VOLUME & ISOLATION ENGINE
+   ========================================================= */
+.exerciseRoleRow{display:flex;gap:5px;align-items:center;margin-top:5px}
+.exerciseRole,.exerciseOptional{
+  border:1px solid #47647d;border-radius:999px;padding:3px 6px;font-size:5.7px;font-weight:900;letter-spacing:.08em
+}
+.exerciseRole.base{color:#7dc6ff;background:#102b42;border-color:#316b91}
+.exerciseRole.isolation{color:#c79cff;background:#251c48;border-color:#7048b6}
+.exerciseRole.core{color:#6ee6b1;background:#12392f;border-color:#2f8d70}
+.exerciseOptional{color:#a6b6c6;background:#142536}
+.trainingVolumePanel{margin:10px 0;padding:11px}
+.trainingVolumePanel header{display:flex;justify-content:space-between;gap:10px;align-items:end;margin-bottom:9px}
+.trainingVolumePanel header>div{display:flex;flex-direction:column;gap:2px}
+.trainingVolumePanel header small{font-size:6px;letter-spacing:.12em;color:#9f83ff}
+.trainingVolumePanel header b{font-size:10px}
+.trainingVolumePanel header>span{font-size:5.5px;color:#8fa3b7;border:1px solid #405a73;border-radius:999px;padding:4px 6px}
+.trainingVolumeGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px}
+.trainingVolumeGrid>div{display:grid;grid-template-columns:70px 1fr 40px;gap:5px;align-items:center}
+.trainingVolumeGrid span{font-size:6px;color:#becad6}
+.trainingVolumeGrid i{height:5px;border-radius:999px;background:#1c354a;overflow:hidden}
+.trainingVolumeGrid i b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#3e8dff,#915dff)}
+.trainingVolumeGrid strong{font-size:6px;text-align:right;color:#dbe5ee}
+.trainingVolumePanel p{font-size:6px;color:#8da0b3;line-height:1.45;margin:9px 0 0;padding-top:8px;border-top:1px solid #304a61}
+
+/* =========================================================
+   V6.23 — RECIPES & SHOPPING ENGINE
+   ========================================================= */
+.nutritionTabsFour{grid-template-columns:repeat(4,1fr)!important;gap:5px!important}
+.nutritionTabsFour button{padding:10px 3px!important;font-size:6px!important;letter-spacing:.08em!important}
+.recipeHero,.shoppingHero{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:14px;margin-top:10px}
+.recipeHero small,.shoppingHero small{font-size:6px;color:#9f83ff;letter-spacing:.13em}
+.recipeHero h2,.shoppingHero h2{font-size:14px;margin:4px 0}
+.recipeHero p,.shoppingHero p{font-size:6.5px;color:#9db0c2;line-height:1.45;margin:0}
+.recipeHeroScore,.shoppingHero>div:last-child{min-width:74px;height:74px;border-radius:18px;border:1px solid #5a5b8f;background:linear-gradient(145deg,#25245a,#15324a);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.recipeHeroScore b,.shoppingHero>div:last-child b{font-size:13px;color:#fff}.recipeHeroScore span,.shoppingHero>div:last-child span{font-size:6px;color:#aab9c8;margin-top:3px}
+.recipeFilters{display:flex;gap:5px;overflow:auto;scrollbar-width:none;margin:10px 0}
+.recipeFilters button{flex:0 0 auto;border:1px solid #425d77;border-radius:999px;background:#102437;color:#8fa3b7;padding:7px 9px;font-size:5.5px;font-weight:850}
+.recipeFilters button.active{background:linear-gradient(135deg,#3d2c83,#183c60);border-color:#8262e8;color:#fff}
+.recipeCatalog{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.recipeCatalogCard{overflow:hidden}.recipeVisual{height:83px;display:grid;place-items:center;font-size:38px;background:radial-gradient(circle at 50% 35%,#244865,#10263a 65%,#0d1b29)}
+.recipeCatalogContent{padding:9px}.recipeCatalogContent>small{font-size:5.5px;color:#a87dff}.recipeCatalogContent h3{font-size:10px;margin:4px 0}.recipeCatalogContent p{font-size:6px;color:#9eb0c0;margin:0 0 6px}.recipeMacroMini{display:flex;gap:5px;margin-bottom:7px}.recipeMacroMini span{font-size:5.5px;border:1px solid #3d5871;padding:3px 5px;border-radius:999px}.recipeCatalogContent button{width:100%;border:1px solid #526f88;background:#132d43;color:#fff;border-radius:8px;padding:8px;font-size:6px;font-weight:900}
+.recipeModalBackdrop{position:fixed;z-index:90;inset:0;background:rgba(2,7,13,.82);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center}
+.recipeModal{width:min(100%,430px);max-height:88vh;overflow:auto;border-radius:24px 24px 0 0!important;padding:17px 16px 24px;position:relative}
+.recipeClose{position:absolute;right:14px;top:14px;width:30px;height:30px;border-radius:50%;border:1px solid #49647d;background:#14283b;color:#fff;font-size:18px}
+.recipeModalVisual{height:115px;border-radius:15px;display:grid;place-items:center;font-size:55px;background:radial-gradient(circle,#285171,#12283b 70%)}
+.recipeModal>small{display:block;color:#a982ff;font-size:6px;margin-top:10px}.recipeModal h2{font-size:19px;margin:3px 0 9px}.recipeModal h3{font-size:7px;color:#9dacbc;letter-spacing:.11em;margin:14px 0 7px}
+.recipeStats{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.recipeStats span{border:1px solid #405a73;background:#11283c;border-radius:9px;padding:7px 3px;display:flex;flex-direction:column;text-align:center}.recipeStats b{font-size:9px}.recipeStats small{font-size:5px;color:#8ea2b5}
+.recipeIngredients{border-top:1px solid #324d65}.recipeIngredients div{display:flex;justify-content:space-between;border-bottom:1px solid #2c465d;padding:7px 2px;font-size:7px}.recipeIngredients b{color:#d9e5ef}
+.recipeSteps{padding:0;margin:0;list-style:none;display:flex;flex-direction:column;gap:7px}.recipeSteps li{display:grid;grid-template-columns:22px 1fr;gap:7px;font-size:7px;line-height:1.5;color:#b8c6d2}.recipeSteps li span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#382d7c;color:#fff;font-weight:900}
+.recipeReplace{width:100%;border:0;border-radius:11px;background:linear-gradient(135deg,#315dff,#8f42ff);color:#fff;padding:12px 10px;font-size:7px;font-weight:950;margin-top:16px}
+.shoppingProgress{padding:10px;margin:9px 0}.shoppingProgress>div{display:flex;justify-content:space-between}.shoppingProgress small{font-size:6px;color:#9baec0}.shoppingProgress b{font-size:7px}.shoppingProgress>i{display:block;height:6px;background:#1d354a;border-radius:999px;overflow:hidden;margin-top:7px}.shoppingProgress>i span{display:block;height:100%;background:linear-gradient(90deg,#3fa0ff,#7457ff,#45dc8a);border-radius:999px}
+.shoppingGroups{display:flex;flex-direction:column;gap:9px}.shoppingGroup{padding:10px}.shoppingGroup>header{display:flex;justify-content:space-between;border-bottom:1px solid #375169;padding-bottom:7px}.shoppingGroup>header b{font-size:8px}.shoppingGroup>header span{font-size:6px;border:1px solid #48647c;border-radius:999px;padding:2px 6px}
+.shoppingRow{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #29445a}.shoppingRow:last-child{border-bottom:0}.shoppingRow>div:first-child{display:flex;flex-direction:column;gap:2px}.shoppingRow>div:first-child b{font-size:8px}.shoppingRow>div:first-child small{font-size:6px;color:#8fa2b4}.shoppingRow.home,.shoppingRow.bought{opacity:.62}.shoppingRow.bought>div:first-child b{text-decoration:line-through}
+.shoppingActions{display:flex;gap:4px}.shoppingActions button{border:1px solid #456079;background:#11283a;color:#8fa4b7;border-radius:7px;padding:6px 5px;font-size:5px;font-weight:850}.shoppingActions button.active{border-color:#42ba78;background:#123c2a;color:#6eed9d}
+@media(max-width:380px){.recipeCatalog{grid-template-columns:1fr}.nutritionTabsFour button{font-size:5.4px!important}}
+
+/* V6.24 — WEEKLY SHOPPING + INGREDIENT MACRO FIT */
+.recipeFitInfo{margin:9px 0 0;padding:8px 9px;border:1px solid #52618e;border-radius:10px;background:linear-gradient(135deg,#1a2944,#211e4e);display:flex;gap:8px;align-items:flex-start}
+.recipeFitInfo b{font-size:6px;color:#b791ff;white-space:nowrap}.recipeFitInfo span{font-size:5.8px;color:#afbfce;line-height:1.45}
+.shoppingDayDots{display:flex;gap:2px;margin-top:4px;font-style:normal}.shoppingDayDots i{font-style:normal;width:14px;height:14px;border-radius:50%;display:grid;place-items:center;border:1px solid #405d78;color:#9eb1c3;font-size:4.8px;background:#10263a}
