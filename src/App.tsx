@@ -463,6 +463,9 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
   const [shoppingTick,setShoppingTick]=useState(0)
   const [recipeSearch,setRecipeSearch]=useState('')
   const [favoriteRecipes,setFavoriteRecipes]=useState<string[]>(()=>appRead<string[]>('bodyos:recipe-favorites',[]))
+  const [expandedJournalMeal,setExpandedJournalMeal]=useState<string|null>(null)
+  const [lastAddedId,setLastAddedId]=useState<string|null>(null)
+
   const [undoAction,setUndoAction]=useState<{label:string;restore:()=>void}|null>(null)
   const undoTimer=useRef<number|undefined>(undefined)
   const pushUndo=(label:string,restore:()=>void)=>{
@@ -513,6 +516,15 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
     if(state==='skipped') upsertProgrammeEntry(meal,'skipped',meal.foods.map(f=>({name:f.name,plannedQty:f.qty,actualQty:'0'})),0)
   }
   const numberFromQty=(value:string)=>Number((value.replace(',','.').match(/\d+(?:\.\d+)?/)||['0'])[0])
+  const formatQty=(value?:string)=>{
+    if(!value)return ''
+    const match=value.replace(',','.').match(/-?\d+(?:\.\d+)?/)
+    if(!match)return value
+    const n=Number(match[0])
+    const clean=Number.isInteger(n)?String(n):String(Math.round(n*10)/10).replace('.',',')
+    return value.replace(match[0],clean)
+  }
+
   const saveAdjustedMeal=(form:HTMLFormElement)=>{
     if(!adjustingMeal)return
     const fd=new FormData(form)
@@ -534,9 +546,12 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
   const totals=entries.reduce((a,e)=>({kcal:a.kcal+e.kcal,protein:a.protein+e.protein,carbs:a.carbs+e.carbs,fat:a.fat+e.fat}),{kcal:0,protein:0,carbs:0,fat:0})
   const saveEntry=(form:HTMLFormElement)=>{
     const fd=new FormData(form); const n=(k:string)=>Number(fd.get(k)||0)
-    const entry:NutritionEntry={id:editingId||crypto.randomUUID(),meal:String(fd.get('meal')||'Repas'),title:String(fd.get('title')||'Aliment'),time:String(fd.get('time')||''),kcal:n('kcal'),protein:n('protein'),carbs:n('carbs'),fat:n('fat'),status:'manual',source:'manual'}
+    const id=editingId||crypto.randomUUID()
+    const currentTime=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
+    const entry:NutritionEntry={id,meal:String(fd.get('meal')||'Repas libre'),title:String(fd.get('title')||'Aliment'),time:String(fd.get('time')||currentTime),kcal:n('kcal'),protein:n('protein'),carbs:n('carbs'),fat:n('fat'),status:'manual',source:'manual'}
     const next=editingId?entries.map(e=>e.id===editingId?entry:e):[...entries,entry]
-    persistEntries(next);setEditorOpen(false);setEditingId(null)
+    persistEntries(next);setEditorOpen(false);setEditingId(null);setNutritionView('journal');setLastAddedId(id)
+    window.setTimeout(()=>setLastAddedId(current=>current===id?null:current),4200)
   }
   const removeEntry=(id:string)=>persistEntries(entries.filter(e=>e.id!==id))
   const changeWater=(d:number)=>{const n=Math.max(0,water+d);setWater(n);localStorage.setItem(`bodyos:water:${dayKey}`,String(n))}
@@ -701,54 +716,80 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
     </>}
 
     {nutritionView==='journal'&&<>
-      <section className="journalCockpit glass">
-        <div className="journalCalorieRing" style={{'--journal-pct':`${pct(totals.kcal,targets.kcal)*3.6}deg`} as React.CSSProperties}>
-          <div><strong>{Math.round(totals.kcal)}</strong><span>/ {targets.kcal}</span><small>kcal</small></div>
+      <section className="journalCommand glass">
+        <div className="journalCommandTop">
+          <div><small>AUJOURD'HUI • {protocol.session}</small><strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))}</strong><span>kcal restantes</span></div>
+          <div className="journalMiniRing" style={{'--journal-pct':`${pct(totals.kcal,targets.kcal)*3.6}deg`} as React.CSSProperties}><b>{pct(totals.kcal,targets.kcal)}%</b><small>{Math.round(totals.kcal)} / {targets.kcal}</small></div>
         </div>
-        <div className="journalCalorieCopy"><small>CALORIES</small><b>{Math.round(totals.kcal)} <span>kcal consommées</span></b><strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))} <span>kcal restantes</span></strong></div>
-        <div className="journalMacroBars">
+        <div className="journalCommandMacros">
           {[
-            ['PROTÉINES',totals.protein,targets.protein,'#9a75ff'],
-            ['GLUCIDES',totals.carbs,targets.carbs,'#46a8ff'],
-            ['LIPIDES',totals.fat,targets.fat,'#f5ad43']
-          ].map(([label,value,max,color])=><div key={String(label)}><small>{label}</small><b>{Math.round(Number(value))} / {max} g <em>{pct(Number(value),Number(max))}%</em></b><i><span style={{width:`${pct(Number(value),Number(max))}%`,background:String(color)}}/></i></div>)}
+            ['P',totals.protein,targets.protein],['G',totals.carbs,targets.carbs],['L',totals.fat,targets.fat]
+          ].map(([label,value,max])=><div key={String(label)}><span>{label}</span><b>{Math.round(Number(value))}<i>/ {max}g</i></b><em>{Math.max(0,Number(max)-Math.round(Number(value)))}g restants</em></div>)}
         </div>
+        <div className="journalSignalRow"><span className="liveDot"/> <b>{resolvedCount}/{protocol.meals.length}</b> repas du programme renseignés <i>•</i> <b>{entries.filter(e=>e.source==='manual').length}</b> saisie(s) libre(s)</div>
       </section>
 
-      <button className="nutritionAddPrimary" onClick={()=>{setEditingId(null);setEditorOpen(true)}}>＋ SAISIR UN REPAS / ALIMENT</button>
+      <section className="journalFlowHeader">
+        <div><small>FLUX DU JOUR</small><b>Ce que tu as réellement mangé</b></div>
+        <button onClick={()=>{setEditingId(null);setEditorOpen(true)}}>＋ AJOUTER</button>
+      </section>
 
-      <section className="journalTimeline">
-        <div className="journalTodayLabel">✦ AUJOURD'HUI</div>
-        {protocol.meals.map((meal,i)=>{
+      <section className="journalFlow">
+        {protocol.meals.map((meal)=>{
           const entry=entries.find(e=>e.source==='programme'&&e.time===meal.time)
           const moment=mealMoment(meal.time)
-          const actual=entry?.kcal
           const delta=entry?Math.round(entry.kcal-meal.kcal):0
-          return <article className={`journalTimelineRow ${entry?.status||'planned'}`} key={meal.time}>
-            <div className="journalTimeRail"><span>{meal.time}</span><i>{moment.icon}</i></div>
-            <div className="journalMealCard glass">
-              <header><div><b>{meal.title} • {protocol.session}</b><small>{entry?`${meal.time} • enregistré`:`Planifié • ≈ ${meal.kcal} kcal`}</small></div><span>{entry?`${actual} kcal`:'— kcal'}</span></header>
-              <div className={`journalStatus ${entry?.status||'planned'}`}>{entry?statusLabel(entry.status):'À RENSEIGNER'}</div>
-              {entry?<div className="plannedActualGrid">
-                <div><small>PRÉVU</small><b>{meal.kcal} kcal</b><span>P {meal.p} g</span><span>G {meal.c} g</span><span>L {meal.f} g</span></div>
-                <div><small>RÉEL</small><b>{entry.kcal} kcal</b><span>P {entry.protein} g</span><span>G {entry.carbs} g</span><span>L {entry.fat} g</span></div>
-                <div className={delta>0?'positiveDelta':delta<0?'negativeDelta':''}><small>ÉCART</small><b>{delta>0?'+':''}{delta} kcal</b><span>{entry.protein-meal.p>=0?'+':''}{Math.round(entry.protein-meal.p)} g P</span><span>{entry.carbs-meal.c>=0?'+':''}{Math.round(entry.carbs-meal.c)} g G</span><span>{entry.fat-meal.f>=0?'+':''}{Math.round(entry.fat-meal.f)} g L</span></div>
-              </div>:<div className="plannedMealPreview">{meal.foods.map(food=><span key={food.name}><i>{food.icon}</i><b>{food.name}</b></span>)}</div>}
-              {entry?.foods&&<div className="journalFoodThumbs"><div className="journalEntryActions"><button onClick={()=>resetMealToPlanned(entry)}>↺ PLANIFIÉ</button><button className="danger" onClick={()=>deleteNutritionEntry(entry)}>SUPPRIMER</button></div>{entry.foods.map(food=><span key={food.name}><i>{foodIcon(food.name)}</i><small>{food.actualQty}</small></span>)}</div>}
+          const expanded=expandedJournalMeal===meal.time
+          return <article className={`flowMeal ${entry?.status||'planned'} ${expanded?'expanded':''}`} key={meal.time}>
+            <div className="flowRail"><span>{meal.time}</span><i>{moment.icon}</i><em/></div>
+            <div className="flowCard glass">
+              <button className="flowSummary" onClick={()=>setExpandedJournalMeal(expanded?null:meal.time)}>
+                <div className="flowSummaryText"><small>{entry?statusLabel(entry.status):'PLANIFIÉ'}</small><b>{meal.title}</b><span>{entry?`${Math.round(entry.kcal)} kcal consommées`:`≈ ${meal.kcal} kcal prévues`}</span></div>
+                <div className="flowSummaryRight"><strong>{entry?`${delta>0?'+':''}${delta}`:'—'}<small>{entry?' kcal':' '}</small></strong><i>{expanded?'⌃':'⌄'}</i></div>
+              </button>
+              {!expanded&&<div className="flowPreview">
+                <div className="flowMacroChips"><span>P {Math.round(entry?.protein??meal.p)}g</span><span>G {Math.round(entry?.carbs??meal.c)}g</span><span>L {Math.round(entry?.fat??meal.f)}g</span></div>
+                <div className="flowFoodPeek">{(entry?.foods?.length?entry.foods.map(f=>({name:f.name,qty:f.actualQty})):meal.foods.map(f=>({name:f.name,qty:f.qty}))).slice(0,4).map(f=><span key={f.name}><i>{foodIcon(f.name)}</i><small>{formatQty(f.qty)}</small></span>)}</div>
+              </div>}
+              {expanded&&<div className="flowDetails">
+                {entry?<div className="flowCompare">
+                  <div><small>PRÉVU</small><b>{meal.kcal} kcal</b><span>P {meal.p} • G {meal.c} • L {meal.f}</span></div>
+                  <div><small>RÉEL</small><b>{Math.round(entry.kcal)} kcal</b><span>P {Math.round(entry.protein)} • G {Math.round(entry.carbs)} • L {Math.round(entry.fat)}</span></div>
+                  <div className={delta>0?'over':delta<0?'under':''}><small>ÉCART</small><b>{delta>0?'+':''}{delta} kcal</b><span>{Math.abs(delta)<=50?'Dans la cible':'À surveiller'}</span></div>
+                </div>:<p className="flowPlannedCopy">Ce repas est prévu mais n’a pas encore été enregistré.</p>}
+                <div className="flowFoods">{(entry?.foods?.length?entry.foods.map(f=>({name:f.name,qty:f.actualQty})):meal.foods.map(f=>({name:f.name,qty:f.qty}))).map(f=><span key={f.name}><i>{foodIcon(f.name)}</i><b>{f.name}</b><small>{formatQty(f.qty)}</small></span>)}</div>
+                <div className="flowActions">
+                  {!entry&&<><button onClick={()=>setMealState(meal,'consumed')}>✓ CONSOMMÉ</button><button onClick={()=>setMealState(meal,'partial')}>✎ AJUSTER</button></>}
+                  {entry&&<button onClick={()=>resetMealToPlanned(entry)}>↺ RETOUR AU PLAN</button>}
+                  {entry&&<button className="danger" onClick={()=>deleteNutritionEntry(entry)}>SUPPRIMER</button>}
+                </div>
+              </div>}
             </div>
           </article>
         })}
+
+        {entries.filter(e=>e.source==='manual').sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(entry=><article className={`flowMeal manual ${lastAddedId===entry.id?'justAdded':''}`} key={entry.id}>
+          <div className="flowRail"><span>{entry.time||'—'}</span><i>＋</i><em/></div>
+          <div className="flowCard freeMealCard glass">
+            <div className="freeMealTag">{lastAddedId===entry.id?'NOUVEAU':'SAISIE LIBRE'}</div>
+            <div className="freeMealMain"><div><small>{entry.meal||'REPAS LIBRE'}</small><b>{entry.title}</b><span>P {Math.round(entry.protein)}g • G {Math.round(entry.carbs)}g • L {Math.round(entry.fat)}g</span></div><strong>{Math.round(entry.kcal)}<small>kcal</small></strong></div>
+            <div className="freeMealActions"><button onClick={()=>{setEditingId(entry.id);setEditorOpen(true)}}>MODIFIER</button><button className="danger" onClick={()=>deleteNutritionEntry(entry)}>SUPPRIMER</button></div>
+          </div>
+        </article>)}
       </section>
 
-      {kcalDelta!==0&&<section className="nutritionAdaptation glass">
-        <div><small>ADAPTATION DISPONIBLE</small><b>{kcalDelta>0?`+${kcalDelta}`:kcalDelta} kcal vs protocole enregistré</b><span>BODY OS peut tenir compte de cet écart pour le reste de la journée sans modifier les repas déjà consommés.</span></div>
-        <button onClick={()=>alert(`Écart actuel : ${kcalDelta>0?'+':''}${kcalDelta} kcal. Le moteur d'adaptation alimentaire complet arrive dans la prochaine couche fonctionnelle.`)}>ADAPTER LE RESTE DE MA JOURNÉE ›</button>
+      {kcalDelta!==0&&<section className="nutritionAdaptation fluidAdapt glass">
+        <div><small>ADAPTATION INTELLIGENTE</small><b>{kcalDelta>0?`+${kcalDelta}`:kcalDelta} kcal vs protocole</b><span>Le plan restant peut être ajusté sans toucher à ce qui est déjà consommé.</span></div>
+        <button onClick={()=>alert(`Écart actuel : ${kcalDelta>0?'+':''}${kcalDelta} kcal.`)}>ADAPTER ›</button>
       </section>}
 
-      <section className="journalBottomGrid">
-        <section className="glass hydrationCard compactHydration"><div><small>HYDRATATION</small><b>{water.toFixed(2)} L / {targets.water.toFixed(1)} L</b></div><div className="waterActions"><button onClick={()=>changeWater(-.25)}>− 250 ml</button><button onClick={()=>changeWater(.25)}>+ 250 ml</button></div></section>
-        <section className="glass nutritionScoreCard"><div className="nutritionScoreRing" style={{'--score-pct':`${nutritionScore*3.6}deg`} as React.CSSProperties}><b>{nutritionScore}</b></div><div><small>NUTRITION SCORE</small><span><i/>Calories <b>{calorieScore}</b></span><span><i/>Protéines <b>{proteinScore}</b></span><span><i/>Timing <b>{timingScore}</b></span><span><i/>Hydratation <b>{hydrationScore}</b></span><span><i/>Adhérence <b>{adherenceScore}</b></span></div></section>
+      <section className="journalHealthStrip glass">
+        <div><small>HYDRATATION</small><b>{water.toFixed(2)} L</b><span>/ {targets.water.toFixed(1)} L</span></div>
+        <div className="healthWaterActions"><button onClick={()=>changeWater(-.25)}>−</button><button onClick={()=>changeWater(.25)}>＋</button></div>
+        <div className="healthScore"><small>SCORE</small><b>{nutritionScore}</b><span>/100</span></div>
       </section>
+
+      <button className="nutritionFab" onClick={()=>{setEditingId(null);setEditorOpen(true)}}><span>＋</span><b>Ajouter</b></button>
     </>}
 
 
@@ -840,10 +881,10 @@ function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSession
     </form></div>}
 
     {editorOpen&&<div className="nutritionEditorBackdrop"><form className="nutritionEditor glass" onSubmit={e=>{e.preventDefault();saveEntry(e.currentTarget)}}>
-      <header><b>{editingId?'MODIFIER':'AJOUTER'} LE REPAS</b><button type="button" onClick={()=>setEditorOpen(false)}>×</button></header>
-      <label>Repas<input name="meal" defaultValue={editingId?entries.find(e=>e.id===editingId)?.meal:'Déjeuner'}/></label>
+      <header><div><small>JOURNAL NUTRITION</small><b>{editingId?'MODIFIER LA SAISIE':"AJOUTER CE QUE J'AI MANGÉ"}</b></div><button type="button" onClick={()=>setEditorOpen(false)}>×</button></header>
+      <label>Repas<input name="meal" defaultValue={editingId?entries.find(e=>e.id===editingId)?.meal:'Repas libre'}/></label>
       <label>Aliment / repas<input name="title" required defaultValue={editingId?entries.find(e=>e.id===editingId)?.title:''}/></label>
-      <label>Heure<input name="time" type="time" defaultValue={editingId?entries.find(e=>e.id===editingId)?.time:'12:30'}/></label>
+      <label>Heure<input name="time" type="time" defaultValue={editingId?entries.find(e=>e.id===editingId)?.time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}/></label>
       <div className="nutritionEditorGrid"><label>Kcal<input name="kcal" type="number" min="0" required defaultValue={editingId?entries.find(e=>e.id===editingId)?.kcal:''}/></label><label>Protéines<input name="protein" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.protein:''}/></label><label>Glucides<input name="carbs" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.carbs:''}/></label><label>Lipides<input name="fat" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.fat:''}/></label></div>
       <div className="nutritionEditorActions">{editingId&&<button type="button" className="danger" onClick={()=>{removeEntry(editingId);setEditorOpen(false)}}>SUPPRIMER</button>}<button type="submit" className="primary">ENREGISTRER</button></div>
     </form></div>}

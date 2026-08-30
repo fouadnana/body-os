@@ -1,0 +1,18 @@
+{
+  "version": "6.26",
+  "name": "Nutrition Fluid UX",
+  "focus": "major mobile UX redesign",
+  "changes": [
+    "Journal redesigned as a mobile control center",
+    "Compact expandable meal cards",
+    "Manual/free entries are now visible in the daily flow",
+    "Newly added meal highlight",
+    "Floating Add action",
+    "Quantity rounding for floating point artifacts",
+    "Compact macro/remaining-calorie hierarchy",
+    "Actions revealed progressively instead of always visible",
+    "Hydration and score condensed into a single strip",
+    "Existing recipes, shopping, macro fit, program engine retained"
+  ],
+  "deployment": "NOT DEPLOYED"
+}
