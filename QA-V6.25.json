@@ -1,0 +1,15 @@
+{
+  "version": "6.25",
+  "name": "Nutrition UX Consolidation",
+  "recipe_count": 77,
+  "changes": [
+    "Journal delete/reset",
+    "5-second Undo",
+    "Protocol vs Journal clarification",
+    "Recipe search",
+    "Persistent favorites",
+    "72 new structured recipes",
+    "Weekly shopping and macro-fit retained"
+  ],
+  "deployment": "NOT DEPLOYED"
+}
