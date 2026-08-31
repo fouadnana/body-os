@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220">
+<defs>
+  <linearGradient id="bone" x1="0" x2="1"><stop stop-color="#d9e2eb"/><stop offset="1" stop-color="#6f7d8d"/></linearGradient>
+  <filter id="g"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="160" height="220" rx="24" fill="#07101a"/>
+<path d="M83 15 C66 29 66 44 80 57 C95 71 95 87 80 100 C65 114 65 131 80 145 C95 159 95 176 80 191" fill="none" stroke="url(#bone)" stroke-width="18" stroke-linecap="round"/>
+<g fill="#c7d2df">
+  <ellipse cx="82" cy="42" rx="25" ry="8"/>
+  <ellipse cx="81" cy="77" rx="26" ry="8"/>
+  <ellipse cx="80" cy="112" rx="27" ry="8"/>
+  <ellipse cx="80" cy="147" rx="28" ry="8"/>
+  <ellipse cx="80" cy="182" rx="29" ry="8"/>
+</g>
+<rect x="49" y="162" width="62" height="15" rx="7" fill="#20e0c7" filter="url(#g)"/>
+<circle cx="80" cy="170" r="24" fill="#20e0c7" opacity=".16" filter="url(#g)"/>
+</svg>

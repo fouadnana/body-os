@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="470" viewBox="0 0 360 470">
+<defs><filter id="g"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect width="360" height="470" rx="28" fill="#060b12"/>
+<text x="22" y="34" font-family="Arial" font-size="12" fill="#718095" letter-spacing="2">POSTÉRIEUR</text>
+<circle cx="180" cy="70" r="34" fill="#111923" stroke="#5d6b7d" stroke-width="3"/>
+<path d="M180 106 C130 110 120 155 128 225 L145 290 L150 410 L175 410 L180 286 L188 410 L214 410 L215 290 L232 225 C240 155 230 110 180 106Z" fill="#111923" stroke="#5d6b7d" stroke-width="3"/>
+<path d="M132 135 L82 255 M228 135 L278 255" stroke="#5d6b7d" stroke-width="26" stroke-linecap="round"/>
+<g filter="url(#g)"><rect x="143" y="286" width="25" height="94" rx="12" fill="#2f8dff" opacity="1"/><rect x="193" y="286" width="25" height="94" rx="12" fill="#2f8dff" opacity="1"/></g>
+<text x="22" y="446" font-family="Arial" font-size="13" fill="#8ea0b6">ISCHIOS</text>
+</svg>
