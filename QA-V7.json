@@ -1,0 +1,21 @@
+{
+  "version": "7.0",
+  "name": "Nutrition Golden Experience",
+  "golden_reference": "/mnt/data/a_high_fidelity_dark_ui_mockup_app_concept_poste.png",
+  "major_features": [
+    "Golden-reference visual redesign for Nutrition",
+    "Adaptive Calorie Engine with persisted profile",
+    "Weight trend based recommendation",
+    "Apply/reject calorie recommendation",
+    "Goal/weight/target hero",
+    "Dynamic calorie ring and macro targets",
+    "Premium programme/journal/recipes/shopping visual hierarchy",
+    "Existing recipe library, journal actions, weekly shopping and macro-fit retained"
+  ],
+  "notes": [
+    "Adaptive recommendations are rule-based and use local weight history; not medical advice.",
+    "No external paid nutrition API is embedded.",
+    "Existing BODY OS data remains localStorage-based."
+  ],
+  "deployment": "NOT DEPLOYED"
+}
