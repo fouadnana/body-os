@@ -103,15 +103,35 @@ function BottomNav({screen,setScreen}:{screen:Screen,setScreen:(s:Screen)=>void}
 }
 
 function Today({setScreen}:{setScreen:(s:Screen)=>void}){
- return <main className="v92TodayExact" aria-label="BODY OS Today — Golden V9">
-   <img src="/body-os/v9-today-golden-exact.png" alt="BODY OS — Sèche Jour 38"/>
-   <div className="v92TodayHotspots" aria-label="Navigation">
-     <button aria-label="Today" onClick={()=>setScreen('today')}></button>
-     <button aria-label="Nutrition" onClick={()=>setScreen('nutrition')}></button>
-     <button aria-label="Workout" onClick={()=>setScreen('workout')}></button>
-     <button aria-label="Progress" onClick={()=>setScreen('progress')}></button>
-     <button aria-label="Coach" onClick={()=>setScreen('coach')}></button>
-   </div>
+ return <main className="v104Today" aria-label="BODY OS Today">
+   <header className="v104Top">
+    <div className="v104Brand"><i></i><span><b>BODY OS</b><small>TON CORPS. TON SYSTÈME.</small></span></div>
+    <button aria-label="Adaptive Sèche" onClick={()=>setScreen('adaptive')}>S7</button>
+   </header>
+
+   <section className="v104Hero">
+    <div className="v104Mode"><b>SÈCHE <i></i></b><small>JOUR 38</small></div>
+    <div className="v104HeroArt"><img src="/body-os/v104-today-athlete-hero.jpg" alt="Athlète BODY OS"/></div>
+    <div className="v104Metric v104Weight"><small>POIDS</small><b>107,0 <em>kg</em></b><strong>−0,4 kg</strong><span>vs hier</span></div>
+    <div className="v104Metric v104Waist"><small>TOUR DE TAILLE</small><b>97 <em>cm</em></b><strong>−1,2 cm</strong><span>vs hier</span></div>
+    <button className="v104Trajectory" onClick={()=>setScreen('adaptive')}><span>TRAJECTOIRE</span><i></i><b>OPTIMALE</b><strong>›</strong></button>
+   </section>
+
+   <section className="v104TodayBlock">
+    <h2>AUJOURD'HUI</h2>
+    <div className="v104Kpis">
+     <article><i className="fire">♨</i><small>CALORIES</small><b>2 510</b><span>kcal</span></article>
+     <article><i className="protein">◯</i><small>PROTÉINES</small><b>180</b><span>g sur 180 g</span></article>
+     <button onClick={()=>setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>Pectoraux<br/>Triceps</b></button>
+     <article><i className="steps">♧</i><small>ACTIVITÉ</small><b>8 000</b><span>pas</span></article>
+    </div>
+   </section>
+
+   <button className="v104AdaptiveCard" onClick={()=>setScreen('adaptive')}>
+    <span className="brain">✦</span><span><b>Adaptive Sèche</b><small>Analyse de ta progression</small></span><strong>›</strong>
+   </button>
+
+   <BottomNav screen="today" setScreen={setScreen}/>
  </main>
 }
 
@@ -520,5 +540,5 @@ export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
  const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen}/>:screen==='nutrition'?<Nutrition/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:<Plan/>,[screen,workoutView])
  const showNav=screen==='nutrition'||screen==='progress'
- return <div className="v9Shell"><div className={'v9Phone '+(screen==='today'?'v92PhoneToday':'')}>{screen!=='today'&&<StatusBar/>}{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
+ return <div className="v9Shell"><div className="v9Phone">{screen!=='today'&&<StatusBar/>}{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
 }

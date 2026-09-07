@@ -1,0 +1,15 @@
+{
+  "version": "10.4",
+  "checks": {
+    "legacy_today_screenshot_removed_from_component": true,
+    "today_rebuilt_in_react": true,
+    "athlete_asset_separated": true,
+    "real_today_navigation": true,
+    "adaptive_cta": true,
+    "iphone_safe_area": true,
+    "iphone_100dvh": true,
+    "mobile_frame_removed": true,
+    "gemini_backend_preserved": true
+  },
+  "known_limit": "Final visual parity must be checked on deployed iPhone screenshots."
+}

@@ -1371,3 +1371,152 @@ body{
   .v103Ring{width:70px;height:70px}
   .v103Ring b{font-size:21px}
 }
+
+
+/* =========================================================
+   BODY OS V10.4 — TRUE MOBILE-FIRST TODAY REBUILD
+   The legacy full-screen screenshot is no longer used as the Today UI.
+   ========================================================= */
+.v104Today{
+  --safe-top:max(12px, env(safe-area-inset-top));
+  --safe-bottom:max(8px, env(safe-area-inset-bottom));
+  min-height:100dvh;
+  width:100%;
+  padding:var(--safe-top) 0 calc(74px + var(--safe-bottom));
+  position:relative;
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at 52% 24%,rgba(54,151,169,.23),transparent 28%),
+    linear-gradient(180deg,#0a242d 0%,#071b22 62%,#07171d 100%);
+}
+.v104Top{
+  height:44px;
+  padding:0 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:relative;
+  z-index:5;
+}
+.v104Brand{display:flex;align-items:center;gap:9px}
+.v104Brand>i{
+  width:32px;height:32px;border-radius:50%;
+  background:conic-gradient(#4df4ef 0 38%,#b9ed51 38% 55%,#2d7787 55% 100%);
+  position:relative;box-shadow:0 0 16px rgba(52,237,236,.26)
+}
+.v104Brand>i:after{content:"";position:absolute;inset:6px;border-radius:50%;background:#10313a}
+.v104Brand b{display:block;font-size:16px;line-height:1;letter-spacing:.035em}
+.v104Brand small{display:block;margin-top:4px;color:#adc2c8;font-size:6px;letter-spacing:.09em}
+.v104Top>button{
+  width:36px;height:30px;border:1px solid rgba(160,239,239,.16);
+  border-radius:14px;background:rgba(26,61,71,.62);color:#c8e5e8;
+  font-size:9px;font-weight:800;
+}
+.v104Hero{
+  height:min(58dvh,510px);
+  min-height:430px;
+  margin-top:2px;
+  position:relative;
+  overflow:hidden;
+}
+.v104Mode{position:absolute;left:18px;top:20px;z-index:4}
+.v104Mode b{display:block;font-size:25px;letter-spacing:.01em}
+.v104Mode b i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#49eef0;box-shadow:0 0 10px #49eef0}
+.v104Mode small{display:block;margin-top:5px;font-size:10px;color:#bdcdd1}
+.v104HeroArt{
+  position:absolute;left:50%;top:3px;transform:translateX(-50%);
+  width:min(76vw,324px);height:100%;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 6%,#000 88%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 6%,#000 88%,transparent 100%);
+}
+.v104HeroArt:after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,transparent 45%,rgba(4,22,28,.4) 72%,rgba(4,22,28,.9) 100%);
+  pointer-events:none;
+}
+.v104HeroArt img{
+  width:100%;height:100%;object-fit:cover;object-position:50% 48%;
+  filter:saturate(.96) contrast(1.04);
+}
+.v104Metric{position:absolute;z-index:4;top:48%;display:flex;flex-direction:column}
+.v104Metric small{font-size:8px;color:#adc1c6}
+.v104Metric b{font-size:25px;line-height:1.05;margin-top:4px;font-weight:650}
+.v104Metric b em{font-size:12px;font-style:normal;font-weight:500;color:#d5e3e6}
+.v104Metric strong{font-size:12px;color:#b8ef4f;margin-top:8px}
+.v104Metric span{font-size:8px;color:#a5b8bd;margin-top:3px}
+.v104Weight{left:18px;text-align:left}
+.v104Waist{right:18px;text-align:right;align-items:flex-end}
+.v104Trajectory{
+  position:absolute;left:18px;right:18px;bottom:12px;z-index:5;
+  height:42px;border:1px solid rgba(104,233,235,.48);border-radius:15px;
+  background:linear-gradient(90deg,rgba(8,35,43,.86),rgba(12,54,63,.62));
+  color:white;display:flex;align-items:center;padding:0 14px;gap:7px;
+}
+.v104Trajectory span{font-size:8px;color:#c4d5d8;letter-spacing:.05em}
+.v104Trajectory i{width:7px;height:7px;border-radius:50%;background:#b7ea4d}
+.v104Trajectory b{font-size:9px;color:#c3f35b;letter-spacing:.05em}
+.v104Trajectory strong{margin-left:auto;font-size:20px}
+.v104TodayBlock{padding:0 14px}
+.v104TodayBlock h2{font-size:13px;margin:4px 4px 10px;letter-spacing:.03em}
+.v104Kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.v104Kpis article,.v104Kpis button{
+  min-width:0;height:132px;padding:12px 5px 10px;
+  border:1px solid rgba(163,226,232,.13);border-radius:14px;
+  background:linear-gradient(180deg,rgba(22,61,72,.78),rgba(12,40,50,.76));
+  color:#eef7f8;text-align:center;display:flex;flex-direction:column;align-items:center;
+  box-shadow:inset 0 0 24px rgba(86,220,225,.025);
+}
+.v104Kpis i{height:32px;font-style:normal;font-size:25px;line-height:28px}
+.v104Kpis .fire{color:#ff6243}.v104Kpis .protein{color:#4ae9e8}.v104Kpis .train{color:#42cdec}.v104Kpis .steps{color:#bbec49}
+.v104Kpis small{font-size:6px;color:#a9bdc2;margin:7px 0 8px;white-space:nowrap}
+.v104Kpis b{font-size:17px;line-height:1.35;font-weight:650}
+.v104Kpis button b{font-size:11px;margin-top:2px}
+.v104Kpis span{font-size:8px;color:#b5c5c8;margin-top:auto}
+.v104AdaptiveCard{
+  width:calc(100% - 28px);height:58px;margin:12px 14px 8px;padding:0 15px;
+  border:1px solid #4ee7e7;border-radius:22px;
+  background:linear-gradient(90deg,rgba(8,39,47,.95),rgba(13,58,65,.85));
+  color:#edfafa;display:flex;align-items:center;text-align:left;
+}
+.v104AdaptiveCard .brain{width:34px;color:#58eff0;font-size:21px}
+.v104AdaptiveCard span:nth-child(2){flex:1}
+.v104AdaptiveCard b{display:block;font-size:11px}
+.v104AdaptiveCard small{display:block;color:#9fbac0;font-size:8px;margin-top:3px}
+.v104AdaptiveCard strong{font-size:20px}
+.v104Today>.v9Bottom{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:0;width:min(100%,430px);height:calc(58px + var(--safe-bottom));
+  padding-bottom:var(--safe-bottom);
+  z-index:20;background:rgba(5,22,28,.94);backdrop-filter:blur(16px);
+  border-top:1px solid rgba(146,221,225,.11);
+}
+.v104Today>.v9Bottom button small{font-size:7px}
+.v104Today>.v9Bottom button span{font-size:21px}
+
+/* App shell is a true mobile viewport on phones. */
+@media (max-width:430px){
+  html,body,#root{width:100%;min-height:100%;margin:0;background:#06141a}
+  body{overflow-x:hidden}
+  .v9Shell{
+    display:block;width:100%;min-height:100dvh;padding:0;background:#06141a;
+  }
+  .v9Phone{
+    width:100%;max-width:none;min-height:100dvh;
+    border:0!important;border-radius:0!important;box-shadow:none!important;
+    overflow-x:hidden;background:#071b22;
+  }
+}
+@media (max-width:390px){
+  .v104Top{padding-left:14px;padding-right:14px}
+  .v104Mode{left:14px}.v104Weight{left:14px}.v104Waist{right:14px}
+  .v104Trajectory{left:14px;right:14px}
+  .v104Hero{height:min(56dvh,485px);min-height:410px}
+  .v104HeroArt{width:78vw}
+  .v104Metric{top:49%}
+  .v104TodayBlock{padding:0 10px}
+  .v104Kpis{gap:6px}
+  .v104Kpis article,.v104Kpis button{height:126px;padding-left:3px;padding-right:3px}
+  .v104Kpis small{font-size:5.5px}
+  .v104Kpis b{font-size:16px}
+  .v104AdaptiveCard{width:calc(100% - 20px);margin-left:10px;margin-right:10px}
+}
