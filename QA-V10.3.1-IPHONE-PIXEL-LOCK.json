@@ -1,0 +1,13 @@
+{
+  "version": "10.3.1",
+  "checks": {
+    "adaptive_v103_preserved": true,
+    "gemini_preserved": true,
+    "iphone_safe_area": true,
+    "dynamic_viewport": true,
+    "mobile_full_width": true,
+    "390_breakpoint": true,
+    "v103_only_mobile_lock": true
+  },
+  "known_limit": "Visual pixel-lock still requires a deployed iPhone screenshot comparison."
+}

@@ -1171,3 +1171,203 @@ body{
 .v103Checkin{padding:15px;display:flex;align-items:center;justify-content:space-between;gap:10px}.v103Checkin div{display:flex;flex-direction:column;gap:4px}.v103Checkin b{font-size:11px}.v103Checkin p{margin:0;font-size:8px;color:#718b94}.v103Checkin button{border:0;border-radius:10px;padding:12px;background:linear-gradient(135deg,#1b9c86,#38d4a3);color:#04110e;font-size:9px;font-weight:900}
 .v103Guard{padding:13px;border-color:rgba(255,202,92,.2)}.v103Guard b{font-size:9px;color:#ffd77e}.v103Guard p{margin:5px 0 0;font-size:8px;line-height:1.45;color:#81979e}
 .v103Sheet{position:absolute;left:12px;right:12px;bottom:12px;z-index:80;padding:16px;border-radius:22px;background:#0a171c;border:1px solid rgba(120,239,240,.18);box-shadow:0 -20px 70px rgba(0,0,0,.5)}.v103Sheet header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.v103Sheet header>button{border:0;background:#14272d;color:white;border-radius:50%;width:30px;height:30px}.v103Sheet header div{display:flex;flex-direction:column;text-align:center}.v103Sheet header b{font-size:12px}.v103Sheet header small{font-size:8px;color:#718a93}.v103Sheet header span{width:30px}.v103Sheet label{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:9px;color:#8fa8b0;border-top:1px solid rgba(255,255,255,.05)}.v103Sheet input{width:95px;border:1px solid #24414a;background:#071216;color:white;border-radius:9px;padding:9px;text-align:right}.v103Scale{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid rgba(255,255,255,.05)}.v103Scale small{font-size:9px;color:#8fa8b0}.v103Scale span{display:flex;gap:5px}.v103Scale button{width:29px;height:29px;border-radius:8px;border:1px solid #203c45;background:#0b1b20;color:#7e969e}.v103Scale button.active{background:#1e9e85;color:white;border-color:#55e9c0}.v103Why b{display:block;color:#9dffbc;margin-bottom:10px}.v103Why p{font-size:11px;line-height:1.55;color:#a3b8bf}.v103Why small{display:block;margin-top:15px;color:#718a93;font-size:8px}.v103Why strong{display:block;margin-top:4px;color:#77eff0}
+
+
+/* =========================================================
+   BODY OS V10.3.1 — iPhone Pixel Lock
+   Goal: preserve the validated Adaptive Sèche composition
+   while fixing iPhone scale, density, safe areas and viewport fit.
+   ========================================================= */
+
+.v103Adaptive{
+  padding-left:0;
+  padding-right:0;
+  padding-top:max(8px, env(safe-area-inset-top));
+  padding-bottom:calc(76px + env(safe-area-inset-bottom));
+}
+.v103Adaptive .v9TitleBar{
+  height:48px;
+  padding:0 16px;
+  margin-bottom:2px;
+}
+.v103Adaptive .v9TitleBar>div{
+  line-height:1.05;
+  text-align:center;
+}
+.v103Adaptive .v9TitleBar>div>b{
+  font-size:14px;
+  letter-spacing:.09em;
+}
+.v103Adaptive .v9TitleBar>div>small{
+  display:block;
+  margin-top:4px;
+  font-size:7px;
+  letter-spacing:.1em;
+}
+.v103Adaptive .v9TitleBar>button{
+  width:28px;
+  height:28px;
+  padding:0;
+  font-size:25px;
+}
+.v103Live{
+  min-width:64px;
+  text-align:right;
+  font-size:8px;
+}
+
+.v103Decision,.v103Trend,.v103Signals,.v103Checkin,.v103Guard{
+  margin-left:12px;
+  margin-right:12px;
+  border-radius:16px;
+}
+.v103Decision{padding:15px}
+.v103DecisionTop small{font-size:8px}
+.v103DecisionTop b{font-size:23px;line-height:1}
+.v103DecisionTop>strong{
+  width:48px;height:48px;font-size:23px;
+}
+.v103Decision p{
+  margin:13px 0 10px;
+  font-size:10px;
+  line-height:1.45;
+}
+.v103DecisionMetrics{
+  gap:6px;
+  margin:10px 0;
+}
+.v103DecisionMetrics span{
+  min-width:0;
+  padding:8px;
+  border-radius:10px;
+}
+.v103DecisionMetrics small{font-size:6px}
+.v103DecisionMetrics b{
+  white-space:nowrap;
+  font-size:10px;
+}
+.v103Decision>button{
+  height:38px;
+  font-size:10px;
+}
+
+.v103Trend{padding:13px}
+.v103Trend header b{font-size:21px}
+.v103Trend header span{font-size:8px}
+.v103Trend .recharts-responsive-container{
+  margin-top:-2px;
+}
+.v103Trajectory{
+  margin-top:-4px;
+  font-size:7px;
+}
+
+.v103ScoreGrid{
+  gap:8px;
+  margin:0 12px;
+}
+.v103ScoreGrid>section{
+  min-width:0;
+  padding:12px 9px;
+  border-radius:16px;
+}
+.v103ScoreGrid>section>small{
+  display:block;
+  min-height:26px;
+  font-size:7px;
+  line-height:1.5;
+}
+.v103Ring{
+  width:76px;height:76px;
+  margin:9px auto;
+  border-width:7px;
+}
+.v103Ring b{font-size:23px}
+.v103Ring em{font-size:8px}
+.v103ScoreGrid strong{font-size:9px}
+.v103ScoreGrid p{
+  min-height:34px;
+  margin:8px 0 0;
+  font-size:7px;
+  line-height:1.4;
+}
+
+.v103Signals{padding:13px}
+.v103Signals header b{font-size:10px}
+.v103Signals header span{font-size:7px}
+.v103Signals>div{
+  grid-template-columns:minmax(0,1fr) 26px 58px;
+  padding:7px 0;
+  gap:6px;
+}
+.v103Signals small{font-size:7px}
+.v103Signals em{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:6px;
+}
+.v103Signals>div>b{font-size:10px}
+
+.v103Checkin{
+  padding:13px;
+  gap:8px;
+}
+.v103Checkin b{font-size:10px}
+.v103Checkin p{font-size:7px}
+.v103Checkin button{
+  flex:0 0 auto;
+  padding:10px 11px;
+  font-size:8px;
+}
+.v103Guard{padding:11px 13px}
+.v103Guard b{font-size:8px}
+.v103Guard p{font-size:7px}
+
+.v103Sheet{
+  position:fixed;
+  left:8px;
+  right:8px;
+  bottom:calc(8px + env(safe-area-inset-bottom));
+  max-height:calc(100dvh - 26px - env(safe-area-inset-top));
+  overflow:auto;
+  padding:14px;
+}
+
+@media (max-width:430px){
+  html,body,#root{width:100%;max-width:100%;overflow-x:hidden}
+  .v9Shell{
+    width:100%;
+    padding:0;
+    justify-content:flex-start;
+  }
+  .v9Phone{
+    width:100%;
+    max-width:none;
+    min-height:100dvh;
+    border:0;
+    border-radius:0;
+    box-shadow:none;
+  }
+  .v103Adaptive{
+    width:100%;
+    min-height:100dvh;
+    box-sizing:border-box;
+  }
+}
+
+@media (max-width:390px){
+  .v103Decision,.v103Trend,.v103Signals,.v103Checkin,.v103Guard{
+    margin-left:10px;
+    margin-right:10px;
+  }
+  .v103ScoreGrid{margin-left:10px;margin-right:10px;gap:7px}
+  .v103Decision{padding:13px}
+  .v103DecisionTop b{font-size:21px}
+  .v103DecisionTop>strong{width:44px;height:44px}
+  .v103Decision p{font-size:9px}
+  .v103DecisionMetrics b{font-size:9px}
+  .v103Trend{padding:12px}
+  .v103Ring{width:70px;height:70px}
+  .v103Ring b{font-size:21px}
+}
