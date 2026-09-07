@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 620">
+<defs>
+  <radialGradient id="bg" cx="50%" cy="42%" r="65%">
+    <stop offset="0" stop-color="#142d66"/>
+    <stop offset=".52" stop-color="#081426"/>
+    <stop offset="1" stop-color="#02050a"/>
+  </radialGradient>
+  <linearGradient id="skin" x1="0" x2="1">
+    <stop stop-color="#5f6774"/><stop offset=".48" stop-color="#2c3440"/><stop offset="1" stop-color="#11161e"/>
+  </linearGradient>
+  <linearGradient id="blue" x1="0" x2="1">
+    <stop stop-color="#2353ff"/><stop offset=".5" stop-color="#4d86ff"/><stop offset="1" stop-color="#1838b6"/>
+  </linearGradient>
+  <linearGradient id="abs" x1="0" x2="1">
+    <stop stop-color="#343f4d"/><stop offset=".5" stop-color="#171e28"/><stop offset="1" stop-color="#303b49"/>
+  </linearGradient>
+  <filter id="glow">
+    <feGaussianBlur stdDeviation="8" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<rect width="420" height="620" rx="36" fill="url(#bg)"/>
+<ellipse cx="210" cy="280" rx="155" ry="255" fill="#1f4dff" opacity=".10"/>
+<circle cx="210" cy="74" r="42" fill="url(#skin)"/>
+<path d="M148 119 Q210 92 272 119 L299 254 Q289 341 256 388 L249 533 H171 L164 388 Q131 341 121 254Z" fill="url(#skin)" stroke="#626f80" stroke-width="3"/>
+<path d="M148 133 L87 235 L105 263 L170 183 M272 133 L333 235 L315 263 L250 183" fill="none" stroke="#444f5f" stroke-width="31" stroke-linecap="round"/>
+<path d="M173 386 L143 544 M247 386 L277 544" fill="none" stroke="#465263" stroke-width="38" stroke-linecap="round"/>
+<!-- clavicles / chest -->
+<path d="M151 144 Q181 116 207 146 L207 211 Q177 229 151 202Z" fill="url(#blue)" opacity=".98" filter="url(#glow)"/>
+<path d="M269 144 Q239 116 213 146 L213 211 Q243 229 269 202Z" fill="url(#blue)" opacity=".98" filter="url(#glow)"/>
+<!-- shoulders -->
+<path d="M144 139 Q119 140 105 161 Q118 194 143 199 Q152 173 144 139Z" fill="#3975ff" opacity=".95" filter="url(#glow)"/>
+<path d="M276 139 Q301 140 315 161 Q302 194 277 199 Q268 173 276 139Z" fill="#3975ff" opacity=".95" filter="url(#glow)"/>
+<!-- abs -->
+<path d="M176 222 Q210 240 244 222 L243 264 Q210 280 177 264Z" fill="url(#abs)"/>
+<path d="M179 276 Q210 290 241 276 L238 317 Q210 331 182 317Z" fill="url(#abs)"/>
+<path d="M184 329 Q210 341 236 329 L231 365 Q210 376 189 365Z" fill="url(#abs)"/>
+<path d="M210 215 L210 375" stroke="#a7b4c6" stroke-opacity=".55" stroke-width="3"/>
+<!-- obliques -->
+<path d="M158 225 Q170 285 184 355" fill="none" stroke="#223247" stroke-width="17" stroke-linecap="round"/>
+<path d="M262 225 Q250 285 236 355" fill="none" stroke="#223247" stroke-width="17" stroke-linecap="round"/>
+<!-- neck -->
+<path d="M186 107 Q210 124 234 107" fill="none" stroke="#4d5968" stroke-width="16" stroke-linecap="round"/>
+<!-- subtle center glow -->
+<path d="M210 128 L210 370" stroke="#2acbff" stroke-width="3" opacity=".32" filter="url(#glow)"/>
+</svg>
