@@ -1,0 +1,24 @@
+{
+  "version": "10.1",
+  "name": "Food Vision Production Ready",
+  "base": "BODY-OS-PWA-V10.0.1-BUILD-FIX.zip",
+  "changes": [
+    "Production backend deployment blueprint",
+    "Server-only API secret",
+    "GitHub Pages CORS origin",
+    "Production endpoint template",
+    "No fake Food Vision fallback in production",
+    "Guarded production build script",
+    "Git ignore for Python cache and secrets",
+    "V10.0.1 session.length fix retained"
+  ],
+  "checks": {
+    "session_length_bug_absent": true,
+    "render_blueprint_present": true,
+    "production_env_template_present": true,
+    "production_build_guard_present": true,
+    "api_key_not_in_frontend": true,
+    "backend_endpoint_present": true
+  },
+  "remaining_external_step": "A public backend URL and OPENAI_API_KEY are required before real production Food Vision can operate."
+}

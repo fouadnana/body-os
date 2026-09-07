@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: body-os-food-vision
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: BODY_OS_VISION_MODEL
+        value: gpt-5.6-luna
+      - key: BODY_OS_ALLOWED_ORIGINS
+        value: https://fouadnana.github.io
+      - key: BODY_OS_MAX_IMAGE_MB
+        value: "8"

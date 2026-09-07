@@ -50,6 +50,15 @@ def _prepare(raw: bytes) -> bytes:
     out = io.BytesIO(); img.save(out, format="JPEG", quality=88, optimize=True)
     return out.getvalue()
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "service": "BODY OS Food Vision",
+        "status": "online",
+        "version": "10.1",
+    }
+
+
 @app.get("/health")
 def health(): return {"status":"ok","model":MODEL}
 

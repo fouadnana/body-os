@@ -2,3 +2,13 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# BODY OS backend/runtime
+backend/.env
+backend/.venv/
+**/__pycache__/
+*.py[cod]
+
+# Frontend secrets/config
+.env.local
+.env.production

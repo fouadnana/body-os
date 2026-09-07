@@ -1,0 +1,9 @@
+{
+  "version": "10.0.1",
+  "base": "V10.0 Real Food Vision Backend",
+  "fix": "Removed invalid session.length reference from Session header",
+  "replacement": "5 exercices · ~ 32 min",
+  "source_file": "src/V9App.tsx",
+  "static_fix_verified": true,
+  "container_build": "not run because node_modules are not packaged; run npm install && npm run build on target environment"
+}
