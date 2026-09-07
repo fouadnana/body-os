@@ -1,0 +1,16 @@
+{
+  "version": "10.2",
+  "name": "Free Food Vision / Gemini",
+  "provider": "Gemini Developer API",
+  "default_model": "gemini-2.5-flash-lite",
+  "checks": {
+    "openai_dependency_removed_from_backend": true,
+    "gemini_sdk_added": true,
+    "gemini_key_server_side": true,
+    "image_input_preserved": true,
+    "structured_output_preserved": true,
+    "human_review_forced": true,
+    "render_blueprint_updated": true,
+    "frontend_contract_unchanged": true
+  }
+}
