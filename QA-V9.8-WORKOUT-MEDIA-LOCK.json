@@ -1,0 +1,103 @@
+{
+  "version": "9.8",
+  "name": "Workout Media Lock",
+  "base": "V9.7 Nutrition Complete",
+  "downloaded_assets": [],
+  "download_failures": [
+    [
+      "v98-back-lat.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-back-machine-row.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-back-chest-row.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-back-onearm.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-back-reverse-fly.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-shoulder-press.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-cable-lateral.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-reverse-pec.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-front-raise.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-hack-squat.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-leg-press.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-leg-curl.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-leg-extension.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-calf.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-incline-curl.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-cable-curl.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ],
+    [
+      "v98-seated-curl.jpg",
+      "<urlopen error [Errno -3] Temporary failure in name resolution>"
+    ]
+  ],
+  "changes": [
+    "Removed demo SVG thumbnails from Dos session",
+    "Removed demo SVG thumbnails from remaining Shoulder exercises",
+    "Removed demo SVG thumbnails from Legs session",
+    "Removed demo SVG thumbnails from Biceps exercises",
+    "Exercise media now uses real gym photography or YouTube video thumbnails",
+    "Verified direct YouTube demonstrations added where identified",
+    "Remaining exercises open targeted YouTube tutorial searches",
+    "Exercise header now reflects selected muscle group instead of always PECTORAUX · TRICEPS",
+    "Image error fallback prevents broken media cards",
+    "V9.7 Nutrition Complete preserved"
+  ],
+  "verified_direct_videos": {
+    "Tirage vertical": "VXKfH6ciEBI",
+    "Rowing machine": "TeFo51Q_Nsc",
+    "Rowing poitrine": "0UBRfiO4zDs",
+    "Pulldown unilatéral": "iVfZB4YmLRM",
+    "Développé épaules": "WvLMauqrnK8",
+    "Reverse pec deck": "Z84HkxGCBqQ",
+    "Hack squat": "kVvT9zLMQwo",
+    "Leg extension": "m0FOpMEgero",
+    "Curl incliné": "HhHHBj3qTJ4"
+  },
+  "status": "Package generated; npm build and visual/video QA required on Mac",
+  "media_delivery": "Remote real-photo URLs / YouTube thumbnails, with local fallback on image load failure",
+  "note": "No main workout media for Dos/Jambes/Bras uses demo SVG; anatomy SVGs remain secondary muscle maps.",
+  "download_failures_removed": true
+}

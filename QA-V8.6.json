@@ -1,0 +1,15 @@
+{
+  "version": "8.6",
+  "name": "Unified Nutrition Modal UX",
+  "base": "V8.5",
+  "changes": [
+    "Meal adjustment now opens as immediate fixed popup/full-screen sheet like recipes",
+    "No adjustment content appended below the page",
+    "Sticky footer with Annuler + Enregistrer les modifications",
+    "Live kcal/macros summary retained",
+    "Per-food +/- quantity, replace, delete retained",
+    "Replacement flow moved to same popup interaction system",
+    "Unified visual language across Recipe and Meal Adjustment overlays"
+  ],
+  "status": "package generated; local build + screenshot review required before deploy"
+}

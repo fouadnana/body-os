@@ -430,482 +430,517 @@ const parseFoodQty=(qty:string|number)=>{
   return {qty:Number.isFinite(num)?num:1,unit}
 }
 const shoppingKey=(dayKey:string,session:string)=>`bodyos:shopping:${dayKey}:${session}`
+
 function NutritionScreen({activeDay,onSessionChange}:{activeDay:number;onSessionChange:(day:number)=>void}){
+  type Nv8Tab='dashboard'|'programme'|'journal'|'recipes'|'shopping'
+  type Goal='CUT'|'RECOMP'|'MAINTAIN'|'GAIN'
+  type Profile={weight:number;targetWeight:number;heightCm:number;age:number;sex:'male'|'female';activity:'low'|'moderate'|'high';goal:Goal;weeklyTargetKg:number;currentCalories:number;proteinTarget:number;fatTarget:number}
+  type WeightPoint={date:string;weight:number}
+  type EditableFood={name:string;qty:number;unit:string}
+  type MacroMini={kcal:number;p:number;c:number;f:number}
+  const defaultProfile:Profile={weight:105,targetWeight:100,heightCm:180,age:32,sex:'male',activity:'moderate',goal:'CUT',weeklyTargetKg:-0.5,currentCalories:2800,proteinTarget:190,fatTarget:78}
+  const [tab,setTab]=useState<Nv8Tab>('dashboard')
+  const [programmeView,setProgrammeView]=useState<'meals'|'overview'>('meals')
+  const [profile,setProfile]=useState<Profile>(()=>appRead<Profile>('bodyos:adaptive-profile',defaultProfile))
+  const [profileDraft,setProfileDraft]=useState<Profile>(()=>appRead<Profile>('bodyos:adaptive-profile',defaultProfile))
+  const [showProfile,setShowProfile]=useState(false)
+  const [weightHistory,setWeightHistory]=useState<WeightPoint[]>(()=>appRead<WeightPoint[]>('bodyos:weight-history',[
+    {date:'2026-08-18',weight:105.8},{date:'2026-08-21',weight:105.4},{date:'2026-08-24',weight:105.1},{date:'2026-08-27',weight:104.8},{date:'2026-08-30',weight:104.6}
+  ]))
+  const [showAdaptive,setShowAdaptive]=useState(false)
+  const [showCalorieExplain,setShowCalorieExplain]=useState(false)
+  const [showRecipe,setShowRecipe]=useState<Recipe|null>(null)
+  const [adjusting,setAdjusting]=useState<DailyMeal|null>(null)
+  const [adjustScale,setAdjustScale]=useState(1)
+  const [recipeSearch,setRecipeSearch]=useState('')
+  const [recipeFilter,setRecipeFilter]=useState<RecipeCategory|'TOUT'>('TOUT')
+  const [favorites,setFavorites]=useState<string[]>(()=>appRead<string[]>('bodyos:recipe-favorites',[]))
+  const [refresh,setRefresh]=useState(0)
+  const [mealEditor,setMealEditor]=useState<DailyMeal|null>(null)
+  const [mealDraft,setMealDraft]=useState<EditableFood[]>([])
+  const [replaceFoodIndex,setReplaceFoodIndex]=useState<number|null>(null)
+
   const now=new Date()
   const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-  const weekSeed=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/(86400000*7))
-  const weekKey=`${now.getFullYear()}-W${String(weekSeed%52+1).padStart(2,'0')}`
-  const currentSession=sessions[activeDay%sessions.length]
-  const rawSession=(currentSession?.title||'PUSH').toUpperCase()
-  const sessionId=(currentSession?.id||'push').toUpperCase()
-  const sessionKey=sessionId.includes('PULL')||rawSession.includes('PULL')?'PULL'
-    :sessionId.includes('LEG')||rawSession.includes('LEG')?'LEGS'
-    :sessionId.includes('UPPER')||rawSession.includes('UPPER')?'UPPER'
-    :sessionId.includes('LOWER')||rawSession.includes('LOWER')?'LOWER'
-    :rawSession.includes('REPOS')||rawSession.includes('REST')?'RECOVERY':'PUSH'
-
-  const [nutritionView,setNutritionView]=useState<'program'|'journal'|'recipes'|'shopping'>('program')
-  const consumedKey=`bodyos:nutrition:consumed:${dayKey}`
-  type MealState='planned'|'consumed'|'partial'|'skipped'
-  const [consumedMeals,setConsumedMeals]=useState<Record<string,MealState>>(()=>{try{return JSON.parse(localStorage.getItem(consumedKey)||'{}')}catch{return{}}})
-  const [dayClosed,setDayClosed]=useState(()=>localStorage.getItem(`bodyos:nutrition:closed:${dayKey}`)==='1')
-  const overrideKey=`bodyos:nutrition:weekly-override:${weekKey}:${sessionKey}`
-  const [regen,setRegen]=useState(()=>Number(localStorage.getItem(overrideKey)||0))
-  const targets={kcal:2800,protein:190,fat:85,carbs:319,water:3.0}
-  const journalKey=`bodyos:nutrition:${dayKey}`
-  const [entries,setEntries]=useState<NutritionEntry[]>(()=>{try{return JSON.parse(localStorage.getItem(journalKey)||'[]')}catch{return[]}})
-  const [water,setWater]=useState(()=>Number(localStorage.getItem(`bodyos:water:${dayKey}`)||0))
-  const [editorOpen,setEditorOpen]=useState(false)
-  const [editingId,setEditingId]=useState<string|null>(null)
-  const [adjustingMeal,setAdjustingMeal]=useState<DailyMeal|null>(null)
-  const [selectedRecipe,setSelectedRecipe]=useState<Recipe|null>(null)
-  const [recipeFilter,setRecipeFilter]=useState<'TOUT'|RecipeCategory>('TOUT')
-  const [shoppingTick,setShoppingTick]=useState(0)
-  const [recipeSearch,setRecipeSearch]=useState('')
-  const [favoriteRecipes,setFavoriteRecipes]=useState<string[]>(()=>appRead<string[]>('bodyos:recipe-favorites',[]))
-  const [expandedJournalMeal,setExpandedJournalMeal]=useState<string|null>(null)
-  const [lastAddedId,setLastAddedId]=useState<string|null>(null)
-
-  const [undoAction,setUndoAction]=useState<{label:string;restore:()=>void}|null>(null)
-  const undoTimer=useRef<number|undefined>(undefined)
-  const pushUndo=(label:string,restore:()=>void)=>{
-    if(undoTimer.current) window.clearTimeout(undoTimer.current)
-    setUndoAction({label,restore})
-    undoTimer.current=window.setTimeout(()=>setUndoAction(null),5000)
-  }
-  const toggleFavorite=(id:string)=>{
-    const next=favoriteRecipes.includes(id)?favoriteRecipes.filter(x=>x!==id):[...favoriteRecipes,id]
-    setFavoriteRecipes(next);appWrite('bodyos:recipe-favorites',next)
-  }
-
-
-  useEffect(()=>{
-    setRegen(Number(localStorage.getItem(overrideKey)||0))
-  },[overrideKey])
-
-  const protocolRaw=buildWeeklyProtocol(sessionKey,weekSeed+regen)
-  const protocol:NutritionProtocol={
-    ...protocolRaw,day:dayKey,
-    meals:protocolRaw.meals.map(m=>({...m,foods:m.foods.map(f=>({...f,icon:foodIcon(f.name)}))}))
-  }
-
-  const persistEntries=(next:NutritionEntry[])=>{
-    setEntries(next)
-    localStorage.setItem(journalKey,JSON.stringify(next))
-  }
-  const upsertProgrammeEntry=(meal:DailyMeal,status:'consumed'|'partial'|'skipped',foods:{name:string;plannedQty:string;actualQty:string}[],ratio=1)=>{
-    const id=`programme:${dayKey}:${meal.time}`
-    const factor=status==='skipped'?0:Math.max(0,Math.min(1.5,ratio))
-    const entry:NutritionEntry={
-      id,meal:meal.title,title:`${meal.title} • ${protocol.session}`,time:meal.time,
-      kcal:Math.round(meal.kcal*factor),
-      protein:Number((meal.p*factor).toFixed(1)),
-      carbs:Number((meal.c*factor).toFixed(1)),
-      fat:Number((meal.f*factor).toFixed(1)),
-      status,source:'programme',foods
-    }
-    const exists=entries.some(e=>e.id===id)
-    persistEntries(exists?entries.map(e=>e.id===id?entry:e):[...entries,entry])
-  }
-  const plannedFoods=(meal:DailyMeal)=>meal.foods.map(f=>({name:f.name,plannedQty:f.qty,actualQty:f.qty}))
-  const setMealState=(meal:DailyMeal,state:MealState)=>{
-    if(state==='partial'){ setAdjustingMeal(meal); return }
-    const next={...consumedMeals,[meal.time]:state}
-    setConsumedMeals(next);localStorage.setItem(consumedKey,JSON.stringify(next))
-    if(state==='consumed') upsertProgrammeEntry(meal,'consumed',plannedFoods(meal),1)
-    if(state==='skipped') upsertProgrammeEntry(meal,'skipped',meal.foods.map(f=>({name:f.name,plannedQty:f.qty,actualQty:'0'})),0)
-  }
-  const numberFromQty=(value:string)=>Number((value.replace(',','.').match(/\d+(?:\.\d+)?/)||['0'])[0])
-  const formatQty=(value?:string)=>{
-    if(!value)return ''
-    const match=value.replace(',','.').match(/-?\d+(?:\.\d+)?/)
-    if(!match)return value
-    const n=Number(match[0])
-    const clean=Number.isInteger(n)?String(n):String(Math.round(n*10)/10).replace('.',',')
-    return value.replace(match[0],clean)
-  }
-
-  const saveAdjustedMeal=(form:HTMLFormElement)=>{
-    if(!adjustingMeal)return
-    const fd=new FormData(form)
-    const foods=adjustingMeal.foods.map((f,i)=>({
-      name:f.name,plannedQty:f.qty,actualQty:String(fd.get(`actual-${i}`)||'0')
-    }))
-    const ratios=foods.map(f=>{
-      const planned=numberFromQty(f.plannedQty), actual=numberFromQty(f.actualQty)
-      return planned>0?Math.max(0,Math.min(1.5,actual/planned)):0
-    })
-    const ratio=ratios.length?ratios.reduce((a,b)=>a+b,0)/ratios.length:0
-    const next={...consumedMeals,[adjustingMeal.time]:'partial' as MealState}
-    setConsumedMeals(next);localStorage.setItem(consumedKey,JSON.stringify(next))
-    upsertProgrammeEntry(adjustingMeal,'partial',foods,ratio)
-    setAdjustingMeal(null)
-    setNutritionView('journal')
-  }
-
+  const entries=useMemo(()=>appRead<NutritionEntry[]>(`bodyos:nutrition:${dayKey}`,[]),[dayKey,refresh])
   const totals=entries.reduce((a,e)=>({kcal:a.kcal+e.kcal,protein:a.protein+e.protein,carbs:a.carbs+e.carbs,fat:a.fat+e.fat}),{kcal:0,protein:0,carbs:0,fat:0})
-  const saveEntry=(form:HTMLFormElement)=>{
-    const fd=new FormData(form); const n=(k:string)=>Number(fd.get(k)||0)
-    const id=editingId||crypto.randomUUID()
-    const currentTime=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
-    const entry:NutritionEntry={id,meal:String(fd.get('meal')||'Repas libre'),title:String(fd.get('title')||'Aliment'),time:String(fd.get('time')||currentTime),kcal:n('kcal'),protein:n('protein'),carbs:n('carbs'),fat:n('fat'),status:'manual',source:'manual'}
-    const next=editingId?entries.map(e=>e.id===editingId?entry:e):[...entries,entry]
-    persistEntries(next);setEditorOpen(false);setEditingId(null);setNutritionView('journal');setLastAddedId(id)
-    window.setTimeout(()=>setLastAddedId(current=>current===id?null:current),4200)
+  const session=sessions[activeDay%sessions.length]
+  const raw=(session?.title||'PUSH').toUpperCase()
+  const sid=(session?.id||'push').toUpperCase()
+  const sessionKey=sid.includes('PULL')||raw.includes('PULL')?'PULL':sid.includes('LEG')||raw.includes('LEG')?'LEGS':sid.includes('UPPER')||raw.includes('UPPER')?'UPPER':sid.includes('LOWER')||raw.includes('LOWER')?'LOWER':'PUSH'
+  const weekSeed=Math.floor(now.getTime()/(86400000*7))
+  const protocol=buildWeeklyProtocol(sessionKey,weekSeed)
+  const carbsTarget=Math.max(0,Math.round((profile.currentCalories-profile.proteinTarget*4-profile.fatTarget*9)/4))
+  const remaining=Math.max(0,profile.currentCalories-totals.kcal)
+  const pct=Math.min(100,Math.max(0,totals.kcal/profile.currentCalories*100))
+  const trend=(()=>{if(weightHistory.length<2)return 0;const p=[...weightHistory].sort((a,b)=>a.date.localeCompare(b.date));const days=Math.max(1,(new Date(p[p.length-1].date).getTime()-new Date(p[0].date).getTime())/86400000);return (p[p.length-1].weight-p[0].weight)/(days/7)})()
+  const targetTrend=profile.goal==='CUT'?-0.5:profile.goal==='GAIN'?0.25:0
+  const delta=profile.goal==='CUT'?(trend>-0.30?-120:trend<-0.75?120:0):profile.goal==='GAIN'?(trend<0.1?120:trend>0.4?-120:0):0
+  const recommended=Math.max(1600,profile.currentCalories+delta)
+  const bmr=Math.round(profile.sex==='male'
+    ? 10*profile.weight+6.25*profile.heightCm-5*profile.age+5
+    : 10*profile.weight+6.25*profile.heightCm-5*profile.age-161)
+  const activityFactor=profile.activity==='low'?1.35:profile.activity==='high'?1.7:1.5
+  const weeklyEnergyPerKg=7700
+  const goalWeeklyKg=(goal:Goal)=>goal==='CUT'?-0.5:goal==='GAIN'?0.25:0
+  const calcBaseCalories=(p:Profile)=>{
+    const b=Math.round(p.sex==='male'
+      ? 10*p.weight+6.25*p.heightCm-5*p.age+5
+      : 10*p.weight+6.25*p.heightCm-5*p.age-161)
+    const af=p.activity==='low'?1.35:p.activity==='high'?1.7:1.5
+    const tdee=Math.round(b*af)
+    const weeklyKg=goalWeeklyKg(p.goal)
+    const dailyAdjustment=Math.round((weeklyKg*weeklyEnergyPerKg)/7)
+    const target=Math.max(1600,Math.round((tdee+dailyAdjustment)/10)*10)
+    return {bmr:b,activityFactor:af,tdee,weeklyKg,dailyAdjustment,target}
   }
-  const removeEntry=(id:string)=>persistEntries(entries.filter(e=>e.id!==id))
-  const changeWater=(d:number)=>{const n=Math.max(0,water+d);setWater(n);localStorage.setItem(`bodyos:water:${dayKey}`,String(n))}
-  const regenerate=()=>{const n=regen+1;setRegen(n);localStorage.setItem(overrideKey,String(n))}
-  const resolvedCount=protocol.meals.filter(m=>consumedMeals[m.time]&&consumedMeals[m.time]!=='planned').length
-  const closeDay=()=>{
-    if(resolvedCount<protocol.meals.length){
-      alert(`Renseigne les ${protocol.meals.length-resolvedCount} repas restants avant de clôturer la journée.`); return
+  const calculatedProfileTarget=calcBaseCalories(profileDraft)
+  const maintenance=Math.round(bmr*activityFactor)
+  const targetWeeklyKg=goalWeeklyKg(profile.goal)
+  const goalAdjustment=Math.round((targetWeeklyKg*weeklyEnergyPerKg)/7)
+  const calculatedInitial=Math.max(1600,Math.round((maintenance+goalAdjustment)/10)*10)
+  const goalLabel:Record<Goal,string>={CUT:'SÈCHE',RECOMP:'RECOMPOSITION',MAINTAIN:'MAINTIEN',GAIN:'PRISE DE MASSE'}
+  const fmt=(v:number)=>Number.isInteger(v)?String(v):v.toFixed(1).replace('.',',')
+  const score=Math.round(Math.max(0,Math.min(100,87-Math.abs(profile.currentCalories-totals.kcal)/Math.max(1,profile.currentCalories)*18)))
+  const linePoints=weightHistory.slice(-7).map((p,i)=>({i,weight:p.weight}))
+
+  const saveProfile=()=>{
+    const normalized={...profileDraft,weight:Number(profileDraft.weight),targetWeight:Number(profileDraft.targetWeight)}
+    const calc=calcBaseCalories(normalized)
+    const next={...normalized,currentCalories:calc.target,weeklyTargetKg:calc.weeklyKg}
+    setProfile(next)
+    setProfileDraft(next)
+    appWrite('bodyos:adaptive-profile',next)
+    const history=[...weightHistory.filter(p=>p.date!==dayKey),{date:dayKey,weight:next.weight}].sort((a,b)=>a.date.localeCompare(b.date)).slice(-30)
+    setWeightHistory(history);appWrite('bodyos:weight-history',history)
+    setShowProfile(false)
+  }
+  const saveMeal=(meal:DailyMeal,status:'consumed'|'skipped',scale=1)=>{
+    const next=entries.filter(e=>e.id!==`programme:${dayKey}:${meal.time}`)
+    const plannedFoods=meal.foods.map(parseEditableFood)
+    const currentFoods=foodsFor(meal)
+    const currentMacros=mealMacros(currentFoods)
+    const factor=status==='skipped'?0:scale
+    const entry:NutritionEntry={
+      id:`programme:${dayKey}:${meal.time}`,meal:meal.title,title:meal.title,time:meal.time,
+      kcal:Math.round(currentMacros.kcal*factor),protein:Math.round(currentMacros.p*factor*10)/10,carbs:Math.round(currentMacros.c*factor*10)/10,fat:Math.round(currentMacros.f*factor*10)/10,
+      status:status==='skipped'?'skipped':scale===1?'consumed':'partial',source:'programme',
+      foods:currentFoods.map((f,i)=>({name:f.name,plannedQty:plannedFoods[i]?`${fmt(plannedFoods[i].qty)} ${plannedFoods[i].unit}`:'—',actualQty:status==='skipped'?'0':`${fmt(Math.round(f.qty*factor*10)/10)} ${f.unit}`}))
     }
-    localStorage.setItem(`bodyos:nutrition:closed:${dayKey}`,'1');setDayClosed(true)
+    next.push(entry);appWrite(`bodyos:nutrition:${dayKey}`,next);setRefresh(x=>x+1)
   }
-  const statusLabel=(s?:NutritionEntry['status'])=>s==='consumed'?'CONSOMMÉ':s==='partial'?'AJUSTÉ':s==='skipped'?'NON CONSOMMÉ':'SAISIE MANUELLE'
-  const pct=(value:number,max:number)=>Math.max(0,Math.min(100,Math.round(value/max*100)))
-  const plannedLoggedKcal=entries.filter(e=>e.source==='programme').reduce((sum,e)=>{
-    const planned=protocol.meals.find(m=>m.time===e.time)
-    return sum+(planned?.kcal||0)
-  },0)
-  const programmeActualKcal=entries.filter(e=>e.source==='programme').reduce((sum,e)=>sum+e.kcal,0)
-  const kcalDelta=Math.round(programmeActualKcal-plannedLoggedKcal)
-  const calorieScore=Math.max(0,100-Math.round(Math.abs(targets.kcal-totals.kcal)/targets.kcal*100))
-  const proteinScore=pct(totals.protein,targets.protein)
-  const hydrationScore=pct(water,targets.water)
-  const adherenceScore=Math.round(resolvedCount/protocol.meals.length*100)
-  const timingScore=resolvedCount?Math.min(100,78+resolvedCount*5):0
-  const nutritionScore=Math.round(calorieScore*.3+proteinScore*.3+timingScore*.15+hydrationScore*.1+adherenceScore*.15)
-  const sessionChoices=sessions.map((session,i)=>({i,label:session.title.replace(' A','').replace(' + BRAS','')}))
-
-  const weeklyProtocols=useMemo(()=>weeklySessionPlan.map((session,i)=>({
-    dayIndex:i,
-    session,
-    protocol:buildWeeklyProtocol(session,weekSeed+i)
-  })),[weekSeed])
-
-  const generatedShopping=useMemo(()=>{
-    const map=new Map<string,{name:string;qty:number;unit:string;category:RecipeIngredient['category'];days:Set<number>}>()
-    const add=(name:string,qty:number,unit:string,category:RecipeIngredient['category'],dayIndex:number)=>{
-      const k=`${name}|${unit}`
-      const prev=map.get(k)
-      if(prev){prev.qty+=qty;prev.days.add(dayIndex)}
-      else map.set(k,{name,qty,unit,category,days:new Set([dayIndex])})
-    }
-    weeklyProtocols.forEach(({dayIndex,session,protocol:weekProtocol})=>{
-      weekProtocol.meals.forEach(meal=>{
-        const currentDayReplacement=dayIndex===0?entries.find(e=>e.source==='programme'&&e.time===meal.time&&e.foods?.length):undefined
-        if(currentDayReplacement?.foods?.length){
-          currentDayReplacement.foods.forEach(food=>{
-            const parsed=parseFoodQty(food.actualQty||food.plannedQty||'0 g')
-            add(food.name,parsed.qty,parsed.unit,ingredientCategory(food.name),dayIndex)
-          })
-        }else{
-          meal.foods.forEach(food=>{
-            const parsed=parseFoodQty(food.qty)
-            add(food.name,parsed.qty,parsed.unit,ingredientCategory(food.name),dayIndex)
-          })
-        }
-      })
-    })
-    return Array.from(map.values()).map(i=>({...i,days:Array.from(i.days).sort()}))
-  },[weeklyProtocols,entries])
-
-  const shoppingState=appRead<Record<string,'todo'|'home'|'bought'>>(`bodyos:shopping:week:${weekSeed}`,{})
-  const setShoppingStatus=(name:string,status:'todo'|'home'|'bought')=>{
-    const next={...shoppingState,[name]:status}
-    appWrite(`bodyos:shopping:week:${weekSeed}`,next)
-    setShoppingTick(v=>v+1)
+  const saveAdjustment=()=>{if(adjusting){saveMeal(adjusting,'consumed',adjustScale);setAdjusting(null);setAdjustScale(1)}}
+  const deleteEntry=(id:string)=>{appWrite(`bodyos:nutrition:${dayKey}`,entries.filter(e=>e.id!==id));setRefresh(x=>x+1)}
+  const toggleFavorite=(id:string)=>{const next=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];setFavorites(next);appWrite('bodyos:recipe-favorites',next)}
+  const filteredRecipes=recipes.filter(r=>(recipeFilter==='TOUT'||r.category===recipeFilter)&&(!recipeSearch||`${r.title} ${r.category}`.toLowerCase().includes(recipeSearch.toLowerCase())))
+  const photoFor=(i:number)=>['/body-os/meal-breakfast-clean.webp','/body-os/meal-lunch-clean.webp','/body-os/meal-preworkout-clean.webp','/body-os/meal-dinner-clean.webp'][i%4]
+  const parseEditableFood=(f:DailyFood):EditableFood=>{
+    const raw=String(f.qty)
+    const gramMatches=[...raw.matchAll(/([\d.,]+)\s*g/g)]
+    const numeric=gramMatches.length?Number(gramMatches[gramMatches.length-1][1].replace(',','.')):Number((raw.match(/[\d.,]+/)?.[0]||'1').replace(',','.'))
+    const unit=raw.includes('g')?'g':raw.toLowerCase().includes('pièce')?'pièce':'g'
+    return {name:f.name,qty:Number.isFinite(numeric)?numeric:1,unit}
   }
-
-
-  const deleteNutritionEntry=(entry:NutritionEntry)=>{
-    const previous=[...entries]
-    const next=entries.filter(e=>e.id!==entry.id)
-    setEntries(next);appWrite(`bodyos:nutrition:${dayKey}`,next)
-    pushUndo('Repas supprimé',()=>{setEntries(previous);appWrite(`bodyos:nutrition:${dayKey}`,previous)})
+  const nutritionDb:Record<string,MacroMini>={
+    'flocons d’avoine':{kcal:370,p:13,c:60,f:7},'skyr 0%':{kcal:59,p:10.3,c:3.6,f:.2},
+    'fromage blanc':{kcal:55,p:8,c:4,f:1},'fromage blanc 0%':{kcal:45,p:8,c:4,f:.2},
+    'yaourt grec 0%':{kcal:59,p:10,c:3.6,f:.4},'œufs':{kcal:143,p:13,c:1.1,f:10},
+    'œufs entiers':{kcal:143,p:13,c:1.1,f:10},'banane':{kcal:89,p:1.1,c:23,f:.3},
+    'amandes':{kcal:579,p:21,c:22,f:50},'poulet':{kcal:165,p:31,c:0,f:3.6},
+    'blanc de poulet':{kcal:165,p:31,c:0,f:3.6},'dinde':{kcal:135,p:29,c:0,f:1.5},
+    'steak haché 5%':{kcal:137,p:21,c:0,f:5},'saumon':{kcal:208,p:20,c:0,f:13},
+    'cabillaud':{kcal:82,p:18,c:0,f:.7},'poisson blanc':{kcal:90,p:19,c:0,f:1},
+    'riz basmati (cru)':{kcal:350,p:7.5,c:78,f:.8},'quinoa (cru)':{kcal:368,p:14,c:64,f:6},
+    'pommes de terre':{kcal:77,p:2,c:17,f:.1},'patate douce':{kcal:86,p:1.6,c:20,f:.1},
+    'pain complet':{kcal:247,p:13,c:41,f:4.2},'galettes de riz':{kcal:387,p:8,c:81,f:3},
+    'brocolis':{kcal:34,p:2.8,c:7,f:.4},'haricots verts':{kcal:31,p:1.8,c:7,f:.2},
+    'légumes':{kcal:35,p:2,c:6,f:.3},'légumes verts':{kcal:30,p:2,c:5,f:.3},
+    'myrtilles':{kcal:57,p:.7,c:14,f:.3},'fruits rouges':{kcal:50,p:1,c:12,f:.4},
+    'pomme':{kcal:52,p:.3,c:14,f:.2},'kiwi':{kcal:61,p:1.1,c:15,f:.5},
+    'huile d’olive':{kcal:884,p:0,c:0,f:100},'beurre de cacahuète':{kcal:588,p:25,c:20,f:50},
+    'miel':{kcal:304,p:.3,c:82,f:0},'avocat':{kcal:160,p:2,c:9,f:15}
   }
-  const resetMealToPlanned=(entry:NutritionEntry)=>{
-    const previous=[...entries]
-    const next=entries.filter(e=>e.id!==entry.id)
-    setEntries(next);appWrite(`bodyos:nutrition:${dayKey}`,next)
-    pushUndo('Retour au repas planifié',()=>{setEntries(previous);appWrite(`bodyos:nutrition:${dayKey}`,previous)})
+  const normalizeFood=(n:string)=>n.toLowerCase().trim()
+  const macroOf=(food:EditableFood):MacroMini=>{
+    const base=nutritionDb[normalizeFood(food.name)]||{kcal:100,p:5,c:10,f:3}
+    const factor=food.unit==='pièce'?food.qty:food.qty/100
+    return {kcal:base.kcal*factor,p:base.p*factor,c:base.c*factor,f:base.f*factor}
   }
-
-  const replaceMealWithRecipe=(recipe:Recipe)=>{
-    const candidates=protocol.meals.map(m=>{
-      const target={kcal:m.kcal,protein:m.p,carbs:m.c,fat:m.f}
-      const fitted=fitRecipeToMeal(recipe,target)
-      return {meal:m,fitted,score:macroDistance({kcal:fitted.kcal,protein:fitted.protein,carbs:fitted.carbs,fat:fitted.fat},target)}
-    }).sort((a,b)=>a.score-b.score)
-    const {meal:candidate,fitted}=candidates[0]
-    const entry: NutritionEntry={
-      id:`recipe:${dayKey}:${candidate.time}`,
-      meal:candidate.title,
-      time:candidate.time,
-      title:fitted.title,
-      kcal:fitted.kcal,protein:fitted.protein,carbs:fitted.carbs,fat:fitted.fat,
-      status:'partial',source:'programme',
-      foods:fitted.ingredients.map(i=>({name:i.name,plannedQty:`${i.qty} ${i.unit}`,actualQty:`${i.qty} ${i.unit}`}))
-    }
-    const without=entries.filter(e=>!(e.source==='programme'&&e.time===candidate.time))
-    const next=[...without,entry]
-    setEntries(next)
-    appWrite(`bodyos:nutrition:${dayKey}`,next)
-    localStorage.setItem(`bodyos:recipe-fit:${dayKey}:${candidate.time}`,JSON.stringify({
-      recipeId:fitted.id,fitScore:fitted.fitScore,target:{kcal:candidate.kcal,p:candidate.p,c:candidate.c,f:candidate.f},
-      actual:{kcal:fitted.kcal,p:fitted.protein,c:fitted.carbs,f:fitted.fat}
+  const mealMacros=(foods:EditableFood[])=>foods.reduce((a,f)=>{const m=macroOf(f);return{kcal:a.kcal+m.kcal,p:a.p+m.p,c:a.c+m.c,f:a.f+m.f}},{kcal:0,p:0,c:0,f:0})
+  const substituteMap:Record<string,string[]>={
+    'skyr 0%':['Fromage blanc 0%','Yaourt grec 0%'],
+    'fromage blanc 0%':['Skyr 0%','Yaourt grec 0%'],
+    'fromage blanc':['Skyr 0%','Fromage blanc 0%','Yaourt grec 0%'],
+    'flocons d’avoine':['Pain complet','Galettes de riz'],
+    'riz basmati (cru)':['Quinoa (cru)','Pommes de terre','Patate douce'],
+    'quinoa (cru)':['Riz basmati (cru)','Pommes de terre'],
+    'pommes de terre':['Riz basmati (cru)','Patate douce','Quinoa (cru)'],
+    'patate douce':['Pommes de terre','Riz basmati (cru)'],
+    'poulet':['Dinde','Steak haché 5%','Poisson blanc'],
+    'blanc de poulet':['Dinde','Steak haché 5%','Poisson blanc'],
+    'cabillaud':['Poisson blanc','Poulet','Saumon'],
+    'poisson blanc':['Cabillaud','Poulet','Saumon'],
+    'saumon':['Cabillaud','Poisson blanc','Poulet'],
+    'banane':['Pomme','Kiwi','Fruits rouges'],
+    'myrtilles':['Fruits rouges','Pomme','Kiwi'],
+    'fruits rouges':['Myrtilles','Pomme','Kiwi'],
+    'brocolis':['Haricots verts','Légumes verts'],
+    'haricots verts':['Brocolis','Légumes verts']
+  }
+  const substitutesFor=(name:string)=>substituteMap[normalizeFood(name)]||['Skyr 0%','Fromage blanc 0%','Poulet','Riz basmati (cru)','Pommes de terre']
+  const overrideKey=(meal:DailyMeal)=>`bodyos:meal-override:${dayKey}:${sessionKey}:${meal.time}`
+  const foodsFor=(meal:DailyMeal)=>appRead<EditableFood[]>(overrideKey(meal),meal.foods.map(parseEditableFood))
+  const openMealEditor=(meal:DailyMeal)=>{setMealEditor(meal);setMealDraft(foodsFor(meal));setReplaceFoodIndex(null)}
+  const setFoodQty=(idx:number,qty:number)=>setMealDraft(v=>v.map((f,i)=>i===idx?{...f,qty:Math.max(f.unit==='pièce'?1:5,Math.round(qty*10)/10)}:f))
+  const removeFood=(idx:number)=>setMealDraft(v=>v.filter((_,i)=>i!==idx))
+  const replaceFood=(idx:number,nextName:string)=>{
+    setMealDraft(v=>v.map((f,i)=>{
+      if(i!==idx)return f
+      const oldM=macroOf(f),base=nutritionDb[normalizeFood(nextName)]||{kcal:100,p:5,c:10,f:3}
+      const nextQty=f.unit==='pièce'?f.qty:Math.max(5,Math.round((oldM.kcal/Math.max(1,base.kcal))*100/5)*5)
+      return {name:nextName,qty:nextQty,unit:'g'}
     }))
-    setSelectedRecipe(null)
-    setNutritionView('journal')
+    setReplaceFoodIndex(null)
   }
+  const saveMealComposition=()=>{
+    if(!mealEditor)return
+    appWrite(overrideKey(mealEditor),mealDraft)
+    setRefresh(x=>x+1)
+    setMealEditor(null)
+  }
+  const shopping=useMemo(()=>{
+    const m=new Map<string,{qty:number;unit:string;category:string}>()
+    for(const meal of protocol.meals)for(const f of meal.foods){
+      const rawQty=String(f.qty),qty=Number((rawQty.match(/[\d.,]+/)?.[0]||'1').replace(',','.')),unit=rawQty.replace(/[\d.,\s]/g,'')||'g',n=f.name.toLowerCase()
+      const category=n.match(/poulet|dinde|steak|saumon|cabillaud|œuf|thon/)?'PROTÉINES':n.match(/riz|pâte|pain|avoine|semoule|patate|galette|muesli/)?'GLUCIDES':n.match(/skyr|fromage|yaourt/)?'PRODUITS LAITIERS':n.match(/huile|miel|amande|cacahu/)?'ÉPICERIE':'FRUITS & LÉGUMES'
+      const hit=m.get(f.name);if(hit)hit.qty+=qty;else m.set(f.name,{qty,unit,category})
+    }
+    return [...m.entries()]
+  },[protocol])
+  const categories=['PROTÉINES','GLUCIDES','FRUITS & LÉGUMES','PRODUITS LAITIERS','ÉPICERIE']
 
+  const subnav=<nav className="nv8Subnav">
+    <button className={tab==='dashboard'?'active':''} onClick={()=>setTab('dashboard')}>AUJOURD'HUI</button>
+    <button className={tab==='programme'?'active':''} onClick={()=>setTab('programme')}>PROGRAMME</button>
+    <button className={tab==='journal'?'active':''} onClick={()=>setTab('journal')}>JOURNAL</button>
+    <button className={tab==='recipes'?'active':''} onClick={()=>setTab('recipes')}>RECETTES</button>
+    <button className={tab==='shopping'?'active':''} onClick={()=>setTab('shopping')}>COURSES</button>
+  </nav>
 
-  return <main className="screen nutritionScreen adaptiveNutrition">
-    <header className="nutritionTopbar"><button aria-label="Menu">☰</button><div><h1>NUTRITION</h1><p>Adaptive Nutrition Engine</p></div><button aria-label="Réglages">☷</button></header>
-    <div className="nutritionTabs nutritionTabsFour">
-      <button className={nutritionView==='program'?'active':''} onClick={()=>setNutritionView('program')}>PROGRAMME</button>
-      <button className={nutritionView==='journal'?'active':''} onClick={()=>setNutritionView('journal')}>JOURNAL</button>
-      <button className={nutritionView==='recipes'?'active':''} onClick={()=>setNutritionView('recipes')}>RECETTES</button>
-      <button className={nutritionView==='shopping'?'active':''} onClick={()=>setNutritionView('shopping')}>COURSES</button>
-    </div>
-    <section className="nutritionSessionSwitch glass">
-      <div><small>SÉANCE DU JOUR</small><b>{protocol.session}</b></div>
-      <div className="nutritionSessionChoices">
-        {sessionChoices.map(choice=><button key={choice.i} className={choice.i===activeDay%sessions.length?'active':''} onClick={()=>onSessionChange(choice.i)}>{choice.label}</button>)}
-      </div>
-    </section><div className="nutritionContextHint"><b>{protocol.session}</b><span>modifie le programme proposé. Le Journal conserve ce que tu as réellement enregistré aujourd’hui.</span></div>
+  return <main className="nutritionV8">
+    <header className="nv8Header">
+      <div><small>9:41</small><h1>{tab==='dashboard'?"Aujourd'hui":tab==='programme'?'Programme':tab==='journal'?'Journal':tab==='recipes'?'Recettes':'Courses'}</h1></div>
+      <button onClick={()=>{setProfileDraft(profile);setShowProfile(true)}} aria-label="modifier profil">◎</button>
+    </header>
+    {subnav}
 
-    {nutritionView==='program'&&<>
-      <section className="protocolHero glass">
-        <div><small>✦ TODAY'S NUTRITION PROTOCOL</small><strong>2 800 <em>KCAL</em></strong><b>{protocol.mode} • {protocol.session}</b><span>Rotation hebdo • {weekKey}</span></div>
-        <div className="adaptColumn"><div className="adaptScore"><i>{protocol.score}</i><small>OPTIMAL</small></div><div className="adaptSignals"><span>⚡ ÉNERGIE <b>✓</b></span><span>▥ MACROS <b>✓</b></span><span>◷ TIMING <b>✓</b></span></div></div>
+    {tab==='dashboard'&&<>
+      <section className="nv8GoalCard" onClick={()=>{setProfileDraft(profile);setShowProfile(true)}}>
+        <div className="nv8GoalIcon">◎</div>
+        <div className="nv8GoalText"><small>OBJECTIF</small><strong>{goalLabel[profile.goal]}</strong></div>
+        <div className="nv8Weight"><b>{fmt(profile.weight)} kg</b><span>→</span><b>{fmt(profile.targetWeight)} kg</b><small>Modifier ›</small></div>
       </section>
-      <section className="macroStrip glass">
-        <div><b>2 800</b><small>KCAL</small></div><div><b>190 g</b><small>PROTÉINES</small></div><div><b>319 g</b><small>GLUCIDES</small></div><div><b>85 g</b><small>LIPIDES</small></div>
+
+      <section className="nv8Calories">
+        <div className="nv8CalCopy"><small>CIBLE CALORIQUE DU JOUR</small><h2>{profile.currentCalories.toLocaleString('fr-FR')} <em>kcal</em></h2><span className={delta===0?'optimal':'adjust'}>{delta===0?'✓ Trajectoire optimale':'✦ Ajustement recommandé'}</span></div>
+        <div className="nv8Ring" style={{background:`conic-gradient(#31e8a2 ${pct}%,rgba(76,100,119,.28) 0)`}}><div><b>{Math.round(totals.kcal)}</b><small>consommées</small><strong>{Math.round(remaining)}</strong><small>restantes</small></div></div>
       </section>
-      <section className="mealTimeline">
-        {protocol.meals.map((m,i)=>{const moment=mealMoment(m.time);return <article className={`adaptiveMeal glass ${moment.tone}`} key={m.time}>
-          <div className="mealMoment"><strong>{m.time}</strong><i>{moment.icon}</i><small>{moment.label==='SUNSET'?'SOIR':moment.label}</small></div>
-          <div className="mealBody"><header><b>0{i+1} • {m.title}</b><span>≈ {m.kcal} kcal</span></header>
-          <div className="mealStateBar">
-            <button className={consumedMeals[m.time]==='consumed'?'active consumed':''} onClick={()=>setMealState(m,'consumed')}>✓ CONSOMMÉ</button>
-            <button className={consumedMeals[m.time]==='partial'?'active partial':''} onClick={()=>setMealState(m,'partial')}>✎ AJUSTER</button>
-            <button className={consumedMeals[m.time]==='skipped'?'active skipped':''} onClick={()=>setMealState(m,'skipped')}>× NON CONSOMMÉ</button>
+
+      <section className="nv8MacroGrid">
+        <article><span>Protéines</span><b>{Math.round(totals.protein)}<small> / {profile.proteinTarget} g</small></b><i><u style={{width:`${Math.min(100,totals.protein/profile.proteinTarget*100)}%`}}/></i></article>
+        <article><span>Glucides</span><b>{Math.round(totals.carbs)}<small> / {carbsTarget} g</small></b><i><u style={{width:`${Math.min(100,totals.carbs/Math.max(1,carbsTarget)*100)}%`}}/></i></article>
+        <article><span>Lipides</span><b>{Math.round(totals.fat)}<small> / {profile.fatTarget} g</small></b><i><u style={{width:`${Math.min(100,totals.fat/profile.fatTarget*100)}%`}}/></i></article>
+      </section>
+
+      <button className="nv8AdaptiveCard" onClick={()=>setShowAdaptive(true)}>
+        <header><div><span>ADAPTIVE CALORIE ENGINE</span><i>ⓘ</i></div><b>Détails ›</b></header>
+        <div className="nv8Trend">
+          <div className="nv8Spark">
+            {linePoints.map((p,i)=>{const min=Math.min(...linePoints.map(x=>x.weight)),max=Math.max(...linePoints.map(x=>x.weight));const y=46-((p.weight-min)/Math.max(.1,max-min))*26;return <span key={i} style={{left:`${8+i*(84/Math.max(1,linePoints.length-1))}%`,top:`${y}%`}}/>})}
+            <i/>
           </div>
-          <div className="mealContent"><div className="foodList">{m.foods.map(f=><div className="foodRow" key={f.name}><span className="foodThumb">{f.icon}</span><span className="foodName">{f.name}</span><b>{f.qty}</b></div>)}</div>
-          <div className="mealMacroViz"><div className="macroDonut"></div><span>P <b>{m.p}g</b></span><span>G <b>{m.c}g</b></span><span>L <b>{m.f}g</b></span></div></div>
-          </div>
-        </article>})}
-      </section>
-      <section className="dailyMemory glass">
-        <div><small>DAILY MEMORY</small><b>{resolvedCount}/{protocol.meals.length} repas renseignés</b><span>{dayClosed?'Journée clôturée ✓':'Tous les repas doivent être qualifiés'}</span></div>
-        <button disabled={dayClosed} onClick={closeDay}>{dayClosed?'ARCHIVÉE ✓':'CLÔTURER LA JOURNÉE'}</button>
-      </section>
-      <section className="whyPlan glass"><header><b>◈ POURQUOI CE PLAN AUJOURD'HUI ?</b><span>AI RATIONALE</span></header><div>{protocol.why.map((w,i)=><article key={w}>{i===0?'🏋️':i===1?'📈':'🧠'} <b>{i===0?`Séance ${protocol.session}`:i===1?'Objectif cut':'Rotation'}</b><small>{w}</small></article>)}</div></section>
-      <section className="recipeIdeas glass">
-        <header><div><small>✦ INSPIRATION DU JOUR</small><b>RECETTES PROTÉINÉES</b></div><button onClick={()=>setNutritionView('recipes')}>VOIR TOUT</button></header>
-        <div className="recipeCards">
-          <article><div className="recipeVisual">🥞</div><small>PETIT-DÉJEUNER</small><b>Pancakes protéinés</b><span>≈ 520 kcal • P 42 g</span><button onClick={()=>setSelectedRecipe(recipes.find(r=>r.id==='protein-pancakes')||null)}>VOIR LA RECETTE</button></article>
-          <article><div className="recipeVisual">🍲</div><small>PLAT</small><b>Chicken bowl</b><span>≈ 690 kcal • P 55 g</span><button onClick={()=>setSelectedRecipe(recipes.find(r=>r.id==='chicken-bowl')||null)}>VOIR LA RECETTE</button></article>
-          <article><div className="recipeVisual">🍰</div><small>DESSERT</small><b>Cheesecake skyr</b><span>≈ 280 kcal • P 26 g</span><button onClick={()=>setSelectedRecipe(recipes.find(r=>r.id==='skyr-cheesecake')||null)}>VOIR LA RECETTE</button></article>
+          <div><small>Tendance 14 jours</small><strong>{trend>0?'+':''}{trend.toFixed(1).replace('.',',')} kg / semaine</strong><small>Trajectoire de sèche cible</small><b>{targetTrend.toFixed(1).replace('.',',')} kg / semaine</b><em>{delta===0?'✓ Dans la zone optimale':'✦ À optimiser'}</em></div>
         </div>
-      </section>
-      <div className="nutritionActions"><button onClick={regenerate}>↻ AUTRE MENU POUR {protocol.session}</button><button onClick={()=>setNutritionView('journal')}>✓ OUVRIR LE JOURNAL</button></div>
-    </>}
+      </button>
 
-    {nutritionView==='journal'&&<>
-      <section className="journalCommand glass">
-        <div className="journalCommandTop">
-          <div><small>AUJOURD'HUI • {protocol.session}</small><strong>{Math.max(0,targets.kcal-Math.round(totals.kcal))}</strong><span>kcal restantes</span></div>
-          <div className="journalMiniRing" style={{'--journal-pct':`${pct(totals.kcal,targets.kcal)*3.6}deg`} as React.CSSProperties}><b>{pct(totals.kcal,targets.kcal)}%</b><small>{Math.round(totals.kcal)} / {targets.kcal}</small></div>
-        </div>
-        <div className="journalCommandMacros">
-          {[
-            ['P',totals.protein,targets.protein],['G',totals.carbs,targets.carbs],['L',totals.fat,targets.fat]
-          ].map(([label,value,max])=><div key={String(label)}><span>{label}</span><b>{Math.round(Number(value))}<i>/ {max}g</i></b><em>{Math.max(0,Number(max)-Math.round(Number(value)))}g restants</em></div>)}
-        </div>
-        <div className="journalSignalRow"><span className="liveDot"/> <b>{resolvedCount}/{protocol.meals.length}</b> repas du programme renseignés <i>•</i> <b>{entries.filter(e=>e.source==='manual').length}</b> saisie(s) libre(s)</div>
+      <section className="nv8BottomCards">
+        <article className="nv8Hydration"><header><span>💧 HYDRATATION</span><b>›</b></header><div><span>▰ ▰ ▰ ▰ ▱</span><small>1,8 / 2,5 L</small><button>＋</button></div></article>
+        <article className="nv8Score"><span>SCORE DU JOUR</span><div><b>{score}</b><small>{score>=85?'Excellent':'Bien'}</small></div></article>
       </section>
 
-      <section className="journalFlowHeader">
-        <div><small>FLUX DU JOUR</small><b>Ce que tu as réellement mangé</b></div>
-        <button onClick={()=>{setEditingId(null);setEditorOpen(true)}}>＋ AJOUTER</button>
-      </section>
-
-      <section className="journalFlow">
-        {protocol.meals.map((meal)=>{
-          const entry=entries.find(e=>e.source==='programme'&&e.time===meal.time)
-          const moment=mealMoment(meal.time)
-          const delta=entry?Math.round(entry.kcal-meal.kcal):0
-          const expanded=expandedJournalMeal===meal.time
-          return <article className={`flowMeal ${entry?.status||'planned'} ${expanded?'expanded':''}`} key={meal.time}>
-            <div className="flowRail"><span>{meal.time}</span><i>{moment.icon}</i><em/></div>
-            <div className="flowCard glass">
-              <button className="flowSummary" onClick={()=>setExpandedJournalMeal(expanded?null:meal.time)}>
-                <div className="flowSummaryText"><small>{entry?statusLabel(entry.status):'PLANIFIÉ'}</small><b>{meal.title}</b><span>{entry?`${Math.round(entry.kcal)} kcal consommées`:`≈ ${meal.kcal} kcal prévues`}</span></div>
-                <div className="flowSummaryRight"><strong>{entry?`${delta>0?'+':''}${delta}`:'—'}<small>{entry?' kcal':' '}</small></strong><i>{expanded?'⌃':'⌄'}</i></div>
-              </button>
-              {!expanded&&<div className="flowPreview">
-                <div className="flowMacroChips"><span>P {Math.round(entry?.protein??meal.p)}g</span><span>G {Math.round(entry?.carbs??meal.c)}g</span><span>L {Math.round(entry?.fat??meal.f)}g</span></div>
-                <div className="flowFoodPeek">{(entry?.foods?.length?entry.foods.map(f=>({name:f.name,qty:f.actualQty})):meal.foods.map(f=>({name:f.name,qty:f.qty}))).slice(0,4).map(f=><span key={f.name}><i>{foodIcon(f.name)}</i><small>{formatQty(f.qty)}</small></span>)}</div>
-              </div>}
-              {expanded&&<div className="flowDetails">
-                {entry?<div className="flowCompare">
-                  <div><small>PRÉVU</small><b>{meal.kcal} kcal</b><span>P {meal.p} • G {meal.c} • L {meal.f}</span></div>
-                  <div><small>RÉEL</small><b>{Math.round(entry.kcal)} kcal</b><span>P {Math.round(entry.protein)} • G {Math.round(entry.carbs)} • L {Math.round(entry.fat)}</span></div>
-                  <div className={delta>0?'over':delta<0?'under':''}><small>ÉCART</small><b>{delta>0?'+':''}{delta} kcal</b><span>{Math.abs(delta)<=50?'Dans la cible':'À surveiller'}</span></div>
-                </div>:<p className="flowPlannedCopy">Ce repas est prévu mais n’a pas encore été enregistré.</p>}
-                <div className="flowFoods">{(entry?.foods?.length?entry.foods.map(f=>({name:f.name,qty:f.actualQty})):meal.foods.map(f=>({name:f.name,qty:f.qty}))).map(f=><span key={f.name}><i>{foodIcon(f.name)}</i><b>{f.name}</b><small>{formatQty(f.qty)}</small></span>)}</div>
-                <div className="flowActions">
-                  {!entry&&<><button onClick={()=>setMealState(meal,'consumed')}>✓ CONSOMMÉ</button><button onClick={()=>setMealState(meal,'partial')}>✎ AJUSTER</button></>}
-                  {entry&&<button onClick={()=>resetMealToPlanned(entry)}>↺ RETOUR AU PLAN</button>}
-                  {entry&&<button className="danger" onClick={()=>deleteNutritionEntry(entry)}>SUPPRIMER</button>}
-                </div>
-              </div>}
-            </div>
-          </article>
-        })}
-
-        {entries.filter(e=>e.source==='manual').sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(entry=><article className={`flowMeal manual ${lastAddedId===entry.id?'justAdded':''}`} key={entry.id}>
-          <div className="flowRail"><span>{entry.time||'—'}</span><i>＋</i><em/></div>
-          <div className="flowCard freeMealCard glass">
-            <div className="freeMealTag">{lastAddedId===entry.id?'NOUVEAU':'SAISIE LIBRE'}</div>
-            <div className="freeMealMain"><div><small>{entry.meal||'REPAS LIBRE'}</small><b>{entry.title}</b><span>P {Math.round(entry.protein)}g • G {Math.round(entry.carbs)}g • L {Math.round(entry.fat)}g</span></div><strong>{Math.round(entry.kcal)}<small>kcal</small></strong></div>
-            <div className="freeMealActions"><button onClick={()=>{setEditingId(entry.id);setEditorOpen(true)}}>MODIFIER</button><button className="danger" onClick={()=>deleteNutritionEntry(entry)}>SUPPRIMER</button></div>
-          </div>
-        </article>)}
-      </section>
-
-      {kcalDelta!==0&&<section className="nutritionAdaptation fluidAdapt glass">
-        <div><small>ADAPTATION INTELLIGENTE</small><b>{kcalDelta>0?`+${kcalDelta}`:kcalDelta} kcal vs protocole</b><span>Le plan restant peut être ajusté sans toucher à ce qui est déjà consommé.</span></div>
-        <button onClick={()=>alert(`Écart actuel : ${kcalDelta>0?'+':''}${kcalDelta} kcal.`)}>ADAPTER ›</button>
-      </section>}
-
-      <section className="journalHealthStrip glass">
-        <div><small>HYDRATATION</small><b>{water.toFixed(2)} L</b><span>/ {targets.water.toFixed(1)} L</span></div>
-        <div className="healthWaterActions"><button onClick={()=>changeWater(-.25)}>−</button><button onClick={()=>changeWater(.25)}>＋</button></div>
-        <div className="healthScore"><small>SCORE</small><b>{nutritionScore}</b><span>/100</span></div>
-      </section>
-
-      <button className="nutritionFab" onClick={()=>{setEditingId(null);setEditorOpen(true)}}><span>＋</span><b>Ajouter</b></button>
-    </>}
-
-
-    {nutritionView==='recipes'&&<>
-      <section className="recipeHero glass">
-        <div><small>BODY OS RECIPE ENGINE</small><h2>Recettes compatibles avec ton protocole</h2><p>Choisis une recette selon ton envie. BODY OS te montre ses macros et peut la rattacher au repas du jour le plus proche.</p></div>
-        <div className="recipeHeroScore"><b>{protocol.session}</b><span>{protocol.kcal} kcal</span></div>
-      </section><div className="recipeSearchBar glass"><span>⌕</span><input value={recipeSearch} onChange={e=>setRecipeSearch(e.target.value)} placeholder="Rechercher poulet, rapide, dessert…"/>{recipeSearch&&<button onClick={()=>setRecipeSearch('')}>×</button>}</div><div className="recipeLibraryMeta"><b>{recipes.length} RECETTES</b><span>{favoriteRecipes.length} favorites</span></div>
-      <div className="recipeFilters">
-        {(['TOUT','PETIT-DÉJEUNER','PLAT','DESSERT','RAPIDE','HIGH PROTEIN'] as const).map(f=><button key={f} className={recipeFilter===f?'active':''} onClick={()=>setRecipeFilter(f)}>{f}</button>)}
-      </div>
-      <section className="recipeCatalog">
-        {recipes.filter(r=>(recipeFilter==='TOUT'||r.category===recipeFilter)&&(!recipeSearch||`${r.title} ${r.category} ${(r.tags||[]).join(' ')}`.toLowerCase().includes(recipeSearch.toLowerCase()))).map(recipe=><article className="recipeCatalogCard glass" key={recipe.id}>
-          <div className="recipeVisual">{recipe.emoji}<button className={`recipeFav ${favoriteRecipes.includes(recipe.id)?'active':''}`} onClick={()=>toggleFavorite(recipe.id)}>{favoriteRecipes.includes(recipe.id)?'♥':'♡'}</button></div>
-          <div className="recipeCatalogContent">
-            <small>{recipe.category}</small><h3>{recipe.title}</h3>
-            <p>⏱ {recipe.prep} min · {recipe.kcal} kcal · P {recipe.protein} g</p>
-            <div className="recipeMacroMini"><span>G {recipe.carbs} g</span><span>L {recipe.fat} g</span></div>
-            <button onClick={()=>setSelectedRecipe(recipe)}>VOIR LA RECETTE ›</button>
-          </div>
-        </article>)}
+      <section className="nv8Launchers">
+        <button onClick={()=>setTab('programme')}><span>01</span><div><b>Programme nutritionnel</b><small>Ton plan, clair et flexible</small></div><em>›</em></button>
+        <button onClick={()=>setTab('journal')}><span>02</span><div><b>Journal nutritionnel</b><small>Saisis, visualise, comprends</small></div><em>›</em></button>
+        <button onClick={()=>setTab('recipes')}><span>03</span><div><b>Recettes intelligentes</b><small>Adaptées à tes macros</small></div><em>›</em></button>
+        <button onClick={()=>setTab('shopping')}><span>04</span><div><b>Courses automatiques</b><small>Générées depuis ton plan</small></div><em>›</em></button>
       </section>
     </>}
 
-    {nutritionView==='shopping'&&<>
-      <section className="shoppingHero glass">
-        <div><small>LISTE DE COURSES</small><h2>Courses • semaine complète</h2><p>7 jours agrégés : PUSH, PULL, LEGS, UPPER, LOWER + 2 jours récupération. La journée en cours tient compte des recettes remplacées.</p></div>
-        <div><b>{generatedShopping.length}</b><span>articles / 7 j</span></div>
-      </section>
-      <section className="shoppingProgress glass">
-        <div><small>PROGRESSION</small><b>{generatedShopping.filter(i=>shoppingState[i.name]==='bought'||shoppingState[i.name]==='home').length} / {generatedShopping.length} couverts</b></div>
-        <i><span style={{width:`${generatedShopping.length?Math.round(generatedShopping.filter(i=>shoppingState[i.name]==='bought'||shoppingState[i.name]==='home').length/generatedShopping.length*100):0}%`}}/></i>
-      </section>
-      <section className="shoppingGroups">
-        {(['PROTÉINES','FÉCULENTS','FRUITS & LÉGUMES','PRODUITS LAITIERS','ÉPICERIE'] as const).map(cat=>{
-          const items=generatedShopping.filter(i=>i.category===cat)
-          if(!items.length)return null
-          return <article className="shoppingGroup glass" key={cat}>
-            <header><b>{cat}</b><span>{items.length}</span></header>
-            {items.map(item=>{
-              const state=shoppingState[item.name]||'todo'
-              return <div className={`shoppingRow ${state}`} key={`${item.name}-${shoppingTick}`}>
-                <div><b>{item.name}</b><small>{Math.round(item.qty*10)/10} {item.unit} · {item.days.length} j</small><em className="shoppingDayDots">{item.days.map(d=><i key={d}>{['L','M','M','J','V','S','D'][d]}</i>)}</em></div>
-                <div className="shoppingActions">
-                  <button className={state==='home'?'active':''} onClick={()=>setShoppingStatus(item.name,'home')}>MAISON</button>
-                  <button className={state==='bought'?'active':''} onClick={()=>setShoppingStatus(item.name,'bought')}>ACHETÉ</button>
-                  {(state==='home'||state==='bought')&&<button onClick={()=>setShoppingStatus(item.name,'todo')}>↺</button>}
-                </div>
+    {tab==='programme'&&<section className="nv8Page">
+      <div className="nv8PageTop"><div className="nv8Modes">
+        <button className={programmeView==='meals'?'active':''} onClick={()=>setProgrammeView('meals')}>Repas</button>
+        <button className={programmeView==='overview'?'active':''} onClick={()=>setProgrammeView('overview')}>Vue d'ensemble</button>
+        <button onClick={()=>{setProfileDraft(profile);setShowProfile(true)}}>Réglages</button>
+      </div></div>
+      <button className="nv8DayBanner" onClick={()=>setTab('dashboard')}><div><small>JOUR TYPE • ENTRAÎNEMENT</small><b>{profile.currentCalories} kcal · {profile.proteinTarget}P / {carbsTarget}G / {profile.fatTarget}L</b></div><span>›</span></button>
+      <div className="nv82InfoStrip"><span>✦</span><p><b>Programme prescrit</b><small>Tu peux modifier chaque quantité ou remplacer un aliment. BODY OS recalcule le repas.</small></p></div>
+      {programmeView==='meals'?<>
+      <div className="nv8MealList">{protocol.meals.map((meal,idx)=>{
+        const entry=entries.find(e=>e.id===`programme:${dayKey}:${meal.time}`)
+        const foods=foodsFor(meal)
+        const mm=mealMacros(foods)
+        return <article className="nv8MealRow nv82MealRow" key={meal.time}>
+          <button className="nv82MealImage" onClick={()=>openMealEditor(meal)}><img src={photoFor(idx)} alt=""/><span>MODIFIER</span></button>
+          <div className="nv8MealMain"><div className="nv8MealTitleBlock"><small>{mealMoment(meal.time).label} • {meal.time}</small><h3>{meal.title}</h3><span>{Math.round(mm.kcal)} kcal</span></div><div className="nv8MealNumbers"><b>{Math.round(mm.p)}P</b><small>{Math.round(mm.c)}G · {Math.round(mm.f)}L</small></div></div>
+          <div className="nv82FoodPreview">
+            {foods.map((f,fi)=><button key={`${f.name}-${fi}`} onClick={()=>openMealEditor(meal)}><span>{foodIcon(f.name)}</span><div><b>{f.name}</b><small>{fmt(f.qty)} {f.unit}</small></div><em>›</em></button>)}
+          </div>
+          <div className="nv8MealButtons"><button aria-label="Marquer comme consommé" className={entry?.status==='consumed'?'done':''} onClick={()=>saveMeal(meal,'consumed')}>✓</button><button className="adjust" onClick={()=>openMealEditor(meal)}>AJUSTER LE REPAS</button><button aria-label="Marquer comme non consommé" onClick={()=>saveMeal(meal,'skipped')}>×</button></div>
+        </article>
+      })}</div>
+      </>:<section className="nv84Overview">
+        <div className="nv84OverviewHero">
+          <div><small>VUE D'ENSEMBLE</small><h3>{profile.currentCalories} kcal</h3><span>{profile.proteinTarget}P · {carbsTarget}G · {profile.fatTarget}L</span></div>
+          <div className="nv84OverviewBadge"><b>{protocol.meals.length}</b><small>repas</small></div>
+        </div>
+        <div className="nv84OverviewGrid">
+          {protocol.meals.map((meal,idx)=>{
+            const foods=foodsFor(meal)
+            const mm=mealMacros(foods)
+            return <button key={meal.time} onClick={()=>{setProgrammeView('meals');setTimeout(()=>openMealEditor(meal),0)}}>
+              <img src={photoFor(idx)} alt=""/>
+              <div className="nv84OverviewCopy">
+                <small>{mealMoment(meal.time).label} • {meal.time}</small>
+                <b>{meal.title}</b>
+                <span>{foods.slice(0,4).map(f=>`${f.name} ${fmt(f.qty)}${f.unit}`).join(' · ')}</span>
               </div>
-            })}
-          </article>
-        })}
-      </section>
-    </>}
+              <div className="nv84OverviewMacros"><b>{Math.round(mm.kcal)} kcal</b><small>{Math.round(mm.p)}P · {Math.round(mm.c)}G · {Math.round(mm.f)}L</small></div>
+              <em>›</em>
+            </button>
+          })}
+        </div>
+      </section>}
+      <button className="nv8Primary">＋ Ajouter un repas</button>
+    </section>}
 
-    {selectedRecipe&&<div className="recipeModalBackdrop" onClick={()=>setSelectedRecipe(null)}>
-      <section className="recipeModal glass" onClick={e=>e.stopPropagation()}>
-        <button className="recipeClose" onClick={()=>setSelectedRecipe(null)}>×</button>
-        <div className="recipeModalVisual">{selectedRecipe.emoji}</div>
-        <small>{selectedRecipe.category}</small>
-        <h2>{selectedRecipe.title}</h2>
-        <div className="recipeStats">
-          <span><b>{selectedRecipe.prep}</b><small>min</small></span>
-          <span><b>{selectedRecipe.kcal}</b><small>kcal</small></span>
-          <span><b>{selectedRecipe.protein}</b><small>P g</small></span>
-          <span><b>{selectedRecipe.carbs}</b><small>G g</small></span>
-          <span><b>{selectedRecipe.fat}</b><small>L g</small></span>
+    {tab==='journal'&&<section className="nv8Page">
+      <div className="nv8JournalTop"><article><b>{Math.round(totals.kcal)}</b><small>kcal consommées</small></article><article><b>{Math.round(remaining)}</b><small>restantes</small></article><article><b>{score}</b><small>score</small></article></div>
+      <div className="nv8JournalTimeline">{entries.length===0?<div className="nv8Empty">Aucun repas enregistré aujourd'hui.</div>:entries.sort((a,b)=>a.time.localeCompare(b.time)).map((e,i)=><article key={e.id}>
+        <div className="nv8JournalLine"><span>{i+1}</span></div><img src={photoFor(i)} alt=""/><div><small>{e.time}</small><h3>{e.meal}</h3><p>{Math.round(e.kcal)} kcal · {Math.round(e.protein)}P · {Math.round(e.carbs)}G · {Math.round(e.fat)}L</p></div><button onClick={()=>deleteEntry(e.id)}>•••</button>
+      </article>)}</div>
+      <button className="nv8FreeEntry"><div><span>⌁</span><p><b>Saisie libre</b><small>Ajouter un aliment ou un repas</small></p></div><strong>＋</strong></button>
+    </section>}
+
+    {tab==='recipes'&&<section className="nv8Page">
+      <div className="nv8RecipeSearch"><span>⌕</span><input value={recipeSearch} onChange={e=>setRecipeSearch(e.target.value)} placeholder="Rechercher une recette…"/></div>
+      <div className="nv8RecipeFilters">{(['TOUT','PETIT-DÉJEUNER','PLAT','DESSERT','RAPIDE','HIGH PROTEIN'] as const).map(f=><button key={f} className={recipeFilter===f?'active':''} onClick={()=>setRecipeFilter(f)}>{f}</button>)}</div>
+      <div className="nv8RecipeGrid">{filteredRecipes.slice(0,40).map((r,i)=><article key={r.id} onClick={()=>setShowRecipe(r)}><div className="nv8RecipePhoto"><img src={photoFor(i)} alt=""/><button onClick={e=>{e.stopPropagation();toggleFavorite(r.id)}}>{favorites.includes(r.id)?'♥':'♡'}</button></div><div className="nv8RecipeCopy"><small>{r.prep} min · {r.category}</small><h3>{r.title}</h3><p><b>{r.kcal} kcal</b><span>{r.protein}P · {r.carbs}G · {r.fat}L</span></p></div></article>)}</div>
+    </section>}
+
+    {tab==='shopping'&&<section className="nv8Page">
+      <div className="nv8ShopSummary"><div><small>CETTE SEMAINE</small><h2>{shopping.length} / {shopping.length+12} <span>articles</span></h2></div><div className="nv8ShopRing">67%</div></div>
+      <div className="nv8ShopModes"><button className="active">Par catégories</button><button>Par recettes</button></div>
+      {categories.map(cat=>{const its=shopping.filter(([,v])=>v.category===cat);return its.length?<section className="nv8ShopCat" key={cat}><header><div><h3>{cat}</h3><small>{its.length} articles</small></div><span>⌃</span></header>{its.map(([name,v])=><label key={name}><input type="checkbox"/><span>{name}</span><b>{fmt(v.qty)} {v.unit}</b></label>)}</section>:null})}
+      <button className="nv8Primary">↗ Partager la liste</button>
+    </section>}
+
+    {showProfile&&<div className="nv87Overlay" onClick={()=>setShowProfile(false)}>
+      <section className="nv87Sheet" onClick={e=>e.stopPropagation()}>
+        <header className="nv87Header">
+          <button onClick={()=>setShowProfile(false)} aria-label="Fermer">×</button>
+          <div><small>PROFIL & OBJECTIF</small><b>Adapte BODY OS à toi.</b></div>
+          <span/>
+        </header>
+        <div className="nv87Body">
+          <div className="nv87GoalChoices">{(['CUT','RECOMP','MAINTAIN','GAIN'] as Goal[]).map(g=><button className={profileDraft.goal===g?'active':''} onClick={()=>setProfileDraft({...profileDraft,goal:g,weeklyTargetKg:g==='CUT'?-0.5:g==='GAIN'?0.25:0})} key={g}>{goalLabel[g]}</button>)}</div>
+          {profileDraft.goal==='CUT'&&<section className="nv89SecheIntent">
+            <span>OBJECTIF SÈCHE</span>
+            <b>Réduire la masse grasse en préservant au maximum les muscles et les performances.</b>
+            <small>BODY OS pilotera la progression avec le poids, le tour de taille, la performance, la récupération et l'adhérence alimentaire.</small>
+          </section>}
+          <label className="nv87Field"><span>Poids actuel</span><div><input type="number" step="0.1" value={profileDraft.weight} onChange={e=>setProfileDraft({...profileDraft,weight:Number(e.target.value)})}/><b>kg</b></div></label>
+          <label className="nv87Field"><span>Poids cible</span><div><input type="number" step="0.1" value={profileDraft.targetWeight} onChange={e=>setProfileDraft({...profileDraft,targetWeight:Number(e.target.value)})}/><b>kg</b></div></label>
+          <label className="nv87Field nv881Derived"><span>Cible calorique calculée</span><div><input type="number" readOnly value={calculatedProfileTarget.target}/><b>kcal</b></div></label>
+          <div className="nv881CalcPreview"><span>Poids {fmt(profileDraft.weight)} kg</span><span>{profileDraft.activity==='low'?'activité faible':profileDraft.activity==='high'?'activité élevée':'activité modérée'}</span><span>{goalLabel[profileDraft.goal]}</span></div>
+          <button className="nv88WhyButton" onClick={()=>setShowCalorieExplain(true)}>ⓘ Pourquoi {calculatedProfileTarget.target} kcal ?</button>
+          <p className="nv87Hint">Le poids enregistré aujourd'hui alimente la tendance utilisée par l'Adaptive Calorie Engine.</p>
         </div>
-        <div className="recipeFitInfo">
-          <b>MACRO FIT</b>
-          <span>BODY OS ajuste les quantités ingrédient par ingrédient puis choisit le repas du jour offrant la meilleure correspondance calories / protéines / glucides / lipides.</span>
-        </div>
-        <h3>INGRÉDIENTS</h3>
-        <div className="recipeIngredients">
-          {selectedRecipe.ingredients.map(i=><div key={i.name}><span>{i.name}</span><b>{i.qty} {i.unit}</b></div>)}
-        </div>
-        <h3>PRÉPARATION</h3>
-        <ol className="recipeSteps">{selectedRecipe.steps.map((step,i)=><li key={step}><span>{i+1}</span>{step}</li>)}</ol>
-        <button className="recipeReplace" onClick={()=>replaceMealWithRecipe(selectedRecipe)}>ADAPTER LA RECETTE AUX MACROS DU REPAS</button>
+        <footer className="nv87Footer">
+          <button onClick={()=>setShowProfile(false)}>ANNULER</button>
+          <button className="primary" onClick={saveProfile}>ENREGISTRER</button>
+        </footer>
       </section>
     </div>}
 
-    {undoAction&&<div className="nutritionUndo"><span>{undoAction.label}</span><button onClick={()=>{undoAction.restore();setUndoAction(null)}}>ANNULER</button></div>}
-    {adjustingMeal&&<div className="nutritionEditorBackdrop"><form className="nutritionEditor glass adjustMealEditor" onSubmit={e=>{e.preventDefault();saveAdjustedMeal(e.currentTarget)}}>
-      <header><div><b>AJUSTER LE REPAS</b><small>{adjustingMeal.time} • {adjustingMeal.title}</small></div><button type="button" onClick={()=>setAdjustingMeal(null)}>×</button></header>
-      <p className="adjustHelp">Indique précisément ce que tu as réellement consommé. Les macros du journal seront recalculées proportionnellement aux quantités déclarées.</p>
-      <div className="adjustFoodList">{adjustingMeal.foods.map((f,i)=><label key={f.name}><span><b>{f.name}</b><small>Prévu : {f.qty}</small></span><input name={`actual-${i}`} defaultValue={f.qty}/></label>)}</div>
-      <div className="nutritionEditorActions"><button type="button" onClick={()=>setAdjustingMeal(null)}>ANNULER</button><button type="submit" className="primary">ENREGISTRER DANS JOURNAL</button></div>
-    </form></div>}
+    {showCalorieExplain&&<div className="nv88Overlay" onClick={()=>setShowCalorieExplain(false)}>
+      <section className="nv88Sheet" onClick={e=>e.stopPropagation()}>
+        <header className="nv88Header">
+          <button onClick={()=>setShowCalorieExplain(false)} aria-label="Fermer">×</button>
+          <div><small>TA CIBLE EXPLIQUÉE</small><b>Pourquoi {calculatedInitial} kcal ?</b></div>
+          <span/>
+        </header>
 
-    {editorOpen&&<div className="nutritionEditorBackdrop"><form className="nutritionEditor glass" onSubmit={e=>{e.preventDefault();saveEntry(e.currentTarget)}}>
-      <header><div><small>JOURNAL NUTRITION</small><b>{editingId?'MODIFIER LA SAISIE':"AJOUTER CE QUE J'AI MANGÉ"}</b></div><button type="button" onClick={()=>setEditorOpen(false)}>×</button></header>
-      <label>Repas<input name="meal" defaultValue={editingId?entries.find(e=>e.id===editingId)?.meal:'Repas libre'}/></label>
-      <label>Aliment / repas<input name="title" required defaultValue={editingId?entries.find(e=>e.id===editingId)?.title:''}/></label>
-      <label>Heure<input name="time" type="time" defaultValue={editingId?entries.find(e=>e.id===editingId)?.time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}/></label>
-      <div className="nutritionEditorGrid"><label>Kcal<input name="kcal" type="number" min="0" required defaultValue={editingId?entries.find(e=>e.id===editingId)?.kcal:''}/></label><label>Protéines<input name="protein" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.protein:''}/></label><label>Glucides<input name="carbs" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.carbs:''}/></label><label>Lipides<input name="fat" type="number" min="0" step=".1" defaultValue={editingId?entries.find(e=>e.id===editingId)?.fat:''}/></label></div>
-      <div className="nutritionEditorActions">{editingId&&<button type="button" className="danger" onClick={()=>{removeEntry(editingId);setEditorOpen(false)}}>SUPPRIMER</button>}<button type="submit" className="primary">ENREGISTRER</button></div>
-    </form></div>}
+        <div className="nv88Body">
+          <section className="nv88Hero">
+            <small>CIBLE ACTUELLE</small>
+            <strong>{calculatedInitial.toLocaleString('fr-FR')} kcal</strong>
+            <span>{goalLabel[profile.goal]} · {fmt(profile.weight)} kg → {fmt(profile.targetWeight)} kg</span>
+          </section>
+
+          <section className="nv88Calc">
+            <h3>1. Estimation de départ</h3>
+            <div><span>Métabolisme de base</span><b>{bmr.toLocaleString('fr-FR')} kcal</b></div>
+            <small>Mifflin-St Jeor · {profile.sex==='male'?'homme':'femme'} · {profile.age} ans · {profile.heightCm} cm · {fmt(profile.weight)} kg</small>
+            <div><span>Facteur d'activité</span><b>× {activityFactor.toFixed(2).replace('.',',')}</b></div>
+            <small>{profile.activity==='low'?'activité faible':profile.activity==='high'?'activité élevée':'activité modérée'}</small>
+            <div className="total"><span>Dépense quotidienne estimée</span><b>{maintenance.toLocaleString('fr-FR')} kcal</b></div>
+          </section>
+
+          <section className="nv88Calc">
+            <h3>2. Ajustement selon l'objectif de sèche</h3>
+            <div><span>Objectif</span><b>{goalLabel[profile.goal]}</b></div>
+            <div><span>{profile.goal==='CUT'?'Déficit de sèche appliqué':profile.goal==='GAIN'?'Surplus appliqué':'Ajustement'}</span><b>{goalAdjustment>0?'+ ':goalAdjustment<0?'− ':''}{Math.abs(goalAdjustment)} kcal</b></div>
+            <small>Basé sur {Math.abs(targetWeeklyKg).toFixed(2).replace('.',',')} kg / semaine</small>
+            <div className="total"><span>Cible initiale calculée</span><b>{calculatedInitial.toLocaleString('fr-FR')} kcal</b></div>
+          </section>
+
+          <section className="nv88Calc">
+            <h3>3. Validation par tes données réelles</h3>
+            <div><span>Tendance observée</span><b>{trend>0?'+':''}{trend.toFixed(2).replace('.',',')} kg / semaine</b></div>
+            <div><span>Trajectoire de sèche cible</span><b>{targetTrend.toFixed(2).replace('.',',')} kg / semaine</b></div>
+            <div className={delta===0?'nv88Status ok':'nv88Status adjust'}>
+              <span>{delta===0?'✓':'✦'}</span>
+              <div><b>{delta===0?'Trajectoire cohérente':'Ajustement recommandé'}</b><small>{delta===0?`${calculatedInitial} kcal calculées pour ce profil`:`Nouvelle cible proposée : ${recommended} kcal`}</small></div>
+            </div>
+          </section>
+
+          <section className="nv88Method">
+            <h3>Méthode BODY OS</h3>
+            <p>La formule sert seulement de point de départ. BODY OS réévalue ensuite la cible avec la tendance réelle du poids afin d'éviter de figer une estimation théorique.</p>
+          </section>
+        </div>
+
+        <footer className="nv88Footer">
+          <button onClick={()=>setShowCalorieExplain(false)}>FERMER</button>
+          {delta!==0&&<button className="primary" onClick={()=>{const next={...profile,currentCalories:recommended};setProfile(next);setProfileDraft(next);appWrite('bodyos:adaptive-profile',next);setShowCalorieExplain(false)}}>APPLIQUER {recommended} KCAL</button>}
+        </footer>
+      </section>
+    </div>}
+
+    {showAdaptive&&<div className="nv87Overlay" onClick={()=>setShowAdaptive(false)}>
+      <section className="nv87Sheet" onClick={e=>e.stopPropagation()}>
+        <header className="nv87Header">
+          <button onClick={()=>setShowAdaptive(false)} aria-label="Fermer">×</button>
+          <div><small>ADAPTIVE CALORIE ENGINE</small><b>{delta===0?'Tout est sous contrôle':'BODY OS recommande'}</b></div>
+          <span/>
+        </header>
+        <div className="nv87Body">
+          {delta===0?<div className="nv87Ok">✓ Aucune modification nécessaire</div>:<>
+            <div className="nv87Recommendation"><small>NOUVELLE CIBLE</small><b>{recommended.toLocaleString('fr-FR')} kcal</b><span>{delta>0?'+':''}{delta} kcal / jour</span></div>
+            <p className="nv87Hint">La tendance observée s'écarte de la trajectoire de sèche visée.</p>
+            <div className="nv87Compare"><div><span>Tendance actuelle</span><b>{trend.toFixed(2).replace('.',',')} kg / semaine</b></div><div><span>Trajectoire de sèche cible</span><b>{targetTrend.toFixed(2).replace('.',',')} kg / semaine</b></div></div>
+          </>}
+          <div className="nv87Impact"><h3>Impact de ce changement</h3><div><span>Calories</span><b>{profile.currentCalories} → {recommended} kcal</b></div><div><span>Protéines</span><b>{profile.proteinTarget} g</b></div><div><span>Menus & recettes</span><b>recalculés</b></div></div>
+        </div>
+        <footer className="nv87Footer">
+          <button onClick={()=>setShowAdaptive(false)}>{delta===0?'FERMER':'PLUS TARD'}</button>
+          {delta!==0&&<button className="primary" onClick={()=>{const next={...profile,currentCalories:recommended};setProfile(next);setProfileDraft(next);appWrite('bodyos:adaptive-profile',next);setShowAdaptive(false)}}>APPLIQUER</button>}
+        </footer>
+      </section>
+    </div>}
+
+    {mealEditor&&<div className="nv86Overlay" onClick={()=>setMealEditor(null)}>
+      <section className="nv86Sheet nv86MealSheet" onClick={e=>e.stopPropagation()}>
+        <header className="nv86Header">
+          <button onClick={()=>setMealEditor(null)} aria-label="Fermer">×</button>
+          <div><small>COMPOSITION DU REPAS</small><b>{mealEditor.title}</b></div>
+          <span/>
+        </header>
+
+        <div className="nv86Body">
+          <div className="nv86MealSummary">{(()=>{const m=mealMacros(mealDraft);return <>
+            <article><b>{Math.round(m.kcal)}</b><small>kcal</small></article>
+            <article><b>{Math.round(m.p)}P</b><small>protéines</small></article>
+            <article><b>{Math.round(m.c)}G</b><small>glucides</small></article>
+            <article><b>{Math.round(m.f)}L</b><small>lipides</small></article>
+          </>})()}</div>
+
+          <p className="nv86Hint">Modifie une quantité, remplace un aliment ou supprime-le. Les calories et macros sont recalculées immédiatement.</p>
+
+          <div className="nv86FoodList">
+            {mealDraft.map((f,i)=><article key={`${f.name}-${i}`} className="nv86FoodCard">
+              <div className="nv86FoodTop">
+                <span className="nv86FoodIcon">{foodIcon(f.name)}</span>
+                <div><b>{f.name}</b><small>{Math.round(macroOf(f).kcal)} kcal</small></div>
+                <button className="nv86More" aria-label="Options">•••</button>
+              </div>
+
+              <div className="nv86Qty">
+                <button onClick={()=>setFoodQty(i,f.qty-(f.unit==='pièce'?1:5))}>−</button>
+                <div><b>{fmt(f.qty)}</b><small>{f.unit}</small></div>
+                <button onClick={()=>setFoodQty(i,f.qty+(f.unit==='pièce'?1:5))}>＋</button>
+              </div>
+
+              <div className="nv86FoodActions">
+                <button onClick={()=>setReplaceFoodIndex(i)}>REMPLACER</button>
+                <button className="danger" onClick={()=>removeFood(i)}>SUPPRIMER</button>
+              </div>
+            </article>)}
+          </div>
+        </div>
+
+        <footer className="nv86Footer">
+          <button onClick={()=>setMealEditor(null)}>ANNULER</button>
+          <button className="primary" onClick={saveMealComposition}>ENREGISTRER LES MODIFICATIONS</button>
+        </footer>
+      </section>
+    </div>}
+
+    {mealEditor&&replaceFoodIndex!==null&&mealDraft[replaceFoodIndex]&&<div className="nv86Overlay nv86OverlayFront" onClick={()=>setReplaceFoodIndex(null)}>
+      <section className="nv86Sheet nv86ReplaceSheet" onClick={e=>e.stopPropagation()}>
+        <header className="nv86Header">
+          <button onClick={()=>setReplaceFoodIndex(null)} aria-label="Retour">‹</button>
+          <div><small>REMPLACER</small><b>{mealDraft[replaceFoodIndex].name}</b></div>
+          <span/>
+        </header>
+        <div className="nv86Body">
+          <p className="nv86Hint">BODY OS propose une quantité proche des calories de l'aliment remplacé.</p>
+          <div className="nv86Search"><span>⌕</span><input placeholder="Rechercher un aliment ou un équivalent…"/></div>
+          <div className="nv86SubList">{substitutesFor(mealDraft[replaceFoodIndex].name).map(name=>{
+            const old=mealDraft[replaceFoodIndex],oldM=macroOf(old),base=nutritionDb[normalizeFood(name)]||{kcal:100,p:5,c:10,f:3}
+            const qty=Math.max(5,Math.round((oldM.kcal/Math.max(1,base.kcal))*100/5)*5)
+            return <button key={name} onClick={()=>replaceFood(replaceFoodIndex,name)}>
+              <span>{foodIcon(name)}</span>
+              <div><b>{name}</b><small>{qty} g ≈ {Math.round(base.kcal*qty/100)} kcal</small></div>
+              <em>CHOISIR</em>
+            </button>
+          })}</div>
+        </div>
+        <footer className="nv86Footer single">
+          <button onClick={()=>setReplaceFoodIndex(null)}>ANNULER</button>
+        </footer>
+      </section>
+    </div>}
+
+    {showRecipe&&<div className="nv85RecipeOverlay" onClick={()=>setShowRecipe(null)}>
+      <section className="nv85RecipeSheet" onClick={e=>e.stopPropagation()}>
+        <header className="nv85RecipeHeader">
+          <button onClick={()=>setShowRecipe(null)} aria-label="Fermer">×</button>
+          <div><small>RECETTE INTELLIGENTE</small><b>{showRecipe.category}</b></div>
+          <button aria-label="Favori" onClick={()=>toggleFavorite(showRecipe.id)}>{favorites.includes(showRecipe.id)?'♥':'♡'}</button>
+        </header>
+        <img className="nv85RecipeHero" src={photoFor(recipes.findIndex(r=>r.id===showRecipe.id))} alt=""/>
+        <div className="nv85RecipeBody">
+          <small>{showRecipe.prep} min · {showRecipe.category}</small>
+          <h2>{showRecipe.title}</h2>
+          <div className="nv85RecipeMacros"><b>{showRecipe.kcal}<small>kcal</small></b><span>{showRecipe.protein}P</span><span>{showRecipe.carbs}G</span><span>{showRecipe.fat}L</span></div>
+          <section className="nv85RecipeSection"><h3>Ingrédients</h3>{showRecipe.ingredients.map(i=><div className="nv8Ingredient" key={i.name}><span>{i.name}</span><b>{fmt(i.qty)} {i.unit}</b></div>)}</section>
+          <section className="nv85RecipeSection"><h3>Préparation</h3>{showRecipe.steps.map((st,i)=><p key={i}><b>{i+1}</b><span>{st}</span></p>)}</section>
+        </div>
+        <div className="nv85RecipeActions"><button>REMPLACER UN REPAS</button><button className="primary">AJOUTER AU PROGRAMME</button></div>
+      </section>
+    </div>}
   </main>
-}
-
-
-const weeklyVolume=()=>{
-  const out:Record<string,{direct:number;secondary:number}>= {}
-  sessions.forEach(session=>session.exercises.forEach(ex=>{
-    const roleFactor = ex.optional ? 0.85 : 1
-    ex.media.primaryMuscles.forEach(m=>{
-      out[m] ||= {direct:0,secondary:0}
-      out[m].direct += ex.sets*roleFactor
-    })
-    ;(ex.media.secondaryMuscles??[]).forEach(m=>{
-      out[m] ||= {direct:0,secondary:0}
-      out[m].secondary += ex.sets*.5
-    })
-  }))
-  return out
 }
 
 export default function App(){

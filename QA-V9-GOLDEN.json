@@ -1,0 +1,8 @@
+{
+  "version":"9.0",
+  "name":"Adaptive Body Interface — Golden Rebuild",
+  "visual_source_of_truth":"Validated 2026-09-01 mockup: teal/titanium adaptive body interface",
+  "included":["Today body-centric trajectory cockpit","Workout session list","Immersive exercise screen","Rest timer","Exercise history","Nutrition dashboard","Meal detail sheet","Progress dashboard","AI Coach demo shell","AI weekly plan"],
+  "architecture_notes":["V9 is isolated in V9App.tsx + v9.css","legacy V8.9 files are preserved","LLM is not required for deterministic BODY OS logic","AI Coach is demo/local-engine UI until a secure backend/LLM connector is chosen"],
+  "status":"build required; visual review required before production deploy"
+}

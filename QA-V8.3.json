@@ -1,0 +1,24 @@
+{
+  "version": "8.3",
+  "name": "Golden Media + Layout Lock",
+  "source_of_truth": "validated dual-screen nutrition mockup",
+  "changes": [
+    "4 dedicated compressed WebP meal assets cropped from validated mockup food regions only",
+    "Uniform 4:5 image pipeline and cover positioning",
+    "Programme cards locked to validated proportions",
+    "Ingredient composition preserved",
+    "Per-food quantity edit / replace / delete preserved",
+    "Meal editor converted to mobile bottom sheet",
+    "Zero horizontal overflow target",
+    "Macros use responsive 4-column grid",
+    "Quantity controls use 46px / 1fr / 46px grid",
+    "Replace/Delete stay fully inside card"
+  ],
+  "asset_sizes_bytes": {
+    "meal-breakfast-golden.webp": 28182,
+    "meal-lunch-golden.webp": 28906,
+    "meal-preworkout-golden.webp": 19278,
+    "meal-dinner-golden.webp": 28364
+  },
+  "status": "package generated; local build and screenshot review required before deploy"
+}

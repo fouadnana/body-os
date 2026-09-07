@@ -1,0 +1,15 @@
+{
+  "version": "10.0",
+  "name": "Real Food Vision Backend",
+  "checks": {
+    "backend_python_syntax": true,
+    "foodvision_rendered_inside_nutrition": true,
+    "no_foodvision_reference_inside_exercise": true,
+    "frontend_endpoint_hook": true,
+    "frontend_error_surface": true,
+    "structured_output": true,
+    "image_input": true,
+    "human_validation": true
+  },
+  "status": "package built; live API call requires user OPENAI_API_KEY; frontend npm build should be run on Mac"
+}

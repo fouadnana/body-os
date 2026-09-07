@@ -1,0 +1,19 @@
+{
+  "version": "7.1",
+  "name": "Nutrition Golden Rebuild",
+  "status": "package generated / not deployed",
+  "change": "NutritionScreen fully replaced to match golden mockup instead of layering legacy UI",
+  "screens": [
+    "Programme",
+    "Journal",
+    "Recettes",
+    "Courses",
+    "Adaptive Calorie Engine"
+  ],
+  "preserved": [
+    "weekly menu engine",
+    "recipes",
+    "journal localStorage",
+    "session synchronization"
+  ]
+}

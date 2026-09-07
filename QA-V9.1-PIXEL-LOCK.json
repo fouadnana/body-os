@@ -1,0 +1,32 @@
+{
+  "version": "9.1",
+  "name": "Golden Pixel Lock",
+  "source_of_truth": "docs/reference/V9-GOLDEN-MOCKUP.png",
+  "status": "package generated; local npm build + screenshot validation required",
+  "locked_changes": [
+    "iPhone viewport proportions tightened to 390x844 reference",
+    "iOS-like status bar added",
+    "Today composition reduced to Golden hero + trajectory + four daily KPIs",
+    "Workout navigation removed during active session/exercise/rest/history",
+    "Workout list proportions and exercise immersion tightened",
+    "Exercise load/reps/RIR hierarchy aligned to Golden",
+    "Rest timer and history density aligned to Golden",
+    "Nutrition macro ring and meal timeline tightened",
+    "Lunch detail aligned to Golden salmon meal",
+    "Meal detail rendered as full mobile sheet",
+    "Progress cards/chart/body impact tightened",
+    "AI Coach navigation removed and orbital presentation tightened",
+    "Plan IA week composition tightened",
+    "Titanium/teal depth and border contrast adjusted globally"
+  ],
+  "acceptance": [
+    "npm run build passes",
+    "375-430px viewport shows no horizontal overflow",
+    "Today first viewport visually matches Golden proportions",
+    "Workout session/exercise/rest/history have no bottom nav",
+    "Nutrition/Progress retain bottom nav",
+    "AI Coach has no bottom nav",
+    "Meal detail opens as sheet and uses salmon image",
+    "No legacy purple dominant surfaces"
+  ]
+}

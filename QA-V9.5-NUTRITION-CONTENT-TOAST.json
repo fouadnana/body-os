@@ -1,0 +1,23 @@
+{
+  "version": "9.5",
+  "name": "Nutrition Content + Toast Fix",
+  "base": "V9.4 Muscle Navigation + Image Upgrade",
+  "changes": [
+    "Meal composition visible directly in every Nutrition row",
+    "Detailed ingredient composition visible in meal detail sheet",
+    "Quick-add feedback shortened to 'Ajout rapide prêt'",
+    "Quick-add toast auto-hides after 1.8 seconds",
+    "Toast no longer intercepts clicks",
+    "Toast positioned above bottom navigation",
+    "Workout muscle navigation and Progress muscle navigation preserved",
+    "Golden Today preserved"
+  ],
+  "acceptance": [
+    "Each Nutrition meal visibly states what the user should eat",
+    "Long meal descriptions wrap to two lines without overflowing",
+    "Quick-add toast disappears automatically",
+    "Bottom navigation remains clickable while toast is visible",
+    "No regression on Workout/Progress muscle switching"
+  ],
+  "status": "package generated; npm run build on Mac required before deployment"
+}

@@ -1,0 +1,17 @@
+{
+  "version": "8.8.1",
+  "name": "Dynamic Calorie Recalculation Fix",
+  "base": "V8.8",
+  "fixes": [
+    "Calorie target recalculates when current weight changes",
+    "Calorie target recalculates when goal changes",
+    "Corrected CUT deficit sign in explanation",
+    "Target derived from BMR + activity factor + weekly weight target",
+    "Profile calorie field is now derived/read-only",
+    "Saving profile stores recalculated calorie target",
+    "Weight history still updates on save",
+    "Explainability sheet shows corrected initial target"
+  ],
+  "formula": "Mifflin-St Jeor -> activity factor -> TDEE -> weekly weight target converted with 7700 kcal/kg -> daily target",
+  "status": "package generated; run npm build + local functional review before deploy"
+}

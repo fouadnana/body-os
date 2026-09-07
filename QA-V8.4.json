@@ -1,0 +1,13 @@
+{
+  "version": "8.4",
+  "name": "Card Overlap + Functional Overview Fix",
+  "base": "V8.3 Golden Media Layout Lock",
+  "fixes": [
+    "Removed MODIFY text leakage/overlap from meal image cards",
+    "Hardened image clipping and z-index",
+    "Made Repas/Vue d'ensemble functional",
+    "Added overview with daily totals and per-meal summaries",
+    "Overview rows open meal editor"
+  ],
+  "status": "package generated; local build + visual review required before deployment"
+}

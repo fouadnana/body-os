@@ -1,0 +1,18 @@
+{
+  "version": "9.9",
+  "name": "AI Food Vision",
+  "base": "V9.8.2",
+  "features": [
+    "camera/photo capture",
+    "preview",
+    "vision endpoint adapter",
+    "confidence",
+    "editable detected foods",
+    "editable gram portions",
+    "automatic macro recalculation",
+    "target meal selection",
+    "validation before add"
+  ],
+  "limit": "Real arbitrary-photo recognition requires VITE_FOOD_VISION_ENDPOINT. The no-backend fallback is visibly labelled demo estimation.",
+  "security": "No AI API key stored in client."
+}

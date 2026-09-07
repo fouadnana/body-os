@@ -1,0 +1,19 @@
+{
+  "version": "8.2",
+  "name": "Meal Composition & Smart Substitution",
+  "base": "V8.1",
+  "features": [
+    "Programme shows prescribed foods and quantities again",
+    "Per-food quantity +/- editing",
+    "Per-food delete",
+    "Smart substitution with calorie-equivalent proposed quantity",
+    "Example supported: Skyr 0% -> Fromage blanc 0%",
+    "Meal kcal/macros update live inside editor",
+    "Meal composition persisted locally per day/session/meal",
+    "Clean dedicated card assets: 2 optimized WebP + 2 resolution-independent SVG",
+    "No screenshot text embedded in meal images",
+    "Image containers use fixed cover geometry",
+    "Journal consumption now uses edited meal composition and recalculated macros"
+  ],
+  "validation": "npm build + local visual review required before deployment"
+}

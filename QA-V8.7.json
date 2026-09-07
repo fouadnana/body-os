@@ -1,0 +1,13 @@
+{
+  "version": "8.7",
+  "name": "Global Modal Interaction System",
+  "base": "V8.6",
+  "changes": [
+    "Profile & Objective converted to overlay/sheet",
+    "Adaptive Calorie Engine converted to overlay/sheet",
+    "Recipe and Meal Adjustment retain the same modal pattern",
+    "Unified header/body/footer interaction language",
+    "No contextual panel should render inline below main page"
+  ],
+  "rule": "Primary navigation changes screen; contextual action opens overlay/sheet"
+}

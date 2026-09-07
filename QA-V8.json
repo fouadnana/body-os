@@ -1,0 +1,21 @@
+{
+  "version": "8.0",
+  "name": "Nutrition Golden Rebuild",
+  "status": "package generated",
+  "golden_reference": "a_high_fidelity_dark_ui_mockup_app_concept_poste.png",
+  "changes": [
+    "Nutrition dashboard rebuilt to mirror validated Golden composition",
+    "Editable current weight, target weight, goal and calorie target",
+    "Weight update feeds persisted weight history",
+    "Functional AJUSTER modal with portion percentage and macro recalculation",
+    "Programme redesigned as photo-based compact rows",
+    "Journal redesigned as timeline",
+    "Recipes use food photography cropped from validated Golden reference",
+    "Shopping list redesigned to match Golden",
+    "Adaptive Calorie Engine card/modal retained and visually rebuilt"
+  ],
+  "do_not_deploy_before": [
+    "npm run build",
+    "local visual review at /body-os/"
+  ]
+}

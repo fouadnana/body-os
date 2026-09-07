@@ -1,0 +1,15 @@
+{
+  "version": "8.8",
+  "name": "Calorie Explainability Engine",
+  "base": "V8.7",
+  "features": [
+    "Profile shows 'Pourquoi X kcal ?'",
+    "Explains BMR via Mifflin-St Jeor",
+    "Explains activity factor and estimated maintenance",
+    "Explains goal adjustment",
+    "Compares observed weight trend with target trend",
+    "Shows whether current calories are retained or a change is recommended",
+    "Allows applying the adaptive recommendation from the explanation sheet"
+  ],
+  "status": "package generated; local build + visual/function review required before deploy"
+}

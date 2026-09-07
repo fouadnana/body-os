@@ -1,0 +1,23 @@
+{
+  "version": "9.8.1",
+  "name": "Golden Workout Pixel Lock",
+  "source_of_truth": "a_detailed_ui_design_mockup_app_dashboard_collag.png",
+  "screens_locked": [
+    "Session",
+    "Exercise",
+    "Rest",
+    "History"
+  ],
+  "changes": [
+    "Session cards resized to Golden proportions",
+    "Muscle selector compressed to Golden icon rail",
+    "Exercise header, anatomy, media, load panel and validation controls aligned to Golden hierarchy",
+    "Extra prescription and YouTube badge hidden because absent from Golden mockup",
+    "Bench press uses a local crop from the validated Golden mockup for exact visual parity",
+    "Rest timer resized and simplified to Golden screen",
+    "History tabs, chart container and rows resized to Golden proportions",
+    "V9.7 Nutrition Complete preserved",
+    "V9.8 muscle media mappings preserved for non-pectorals"
+  ],
+  "status": "artifact built; run npm build on Mac before deployment"
+}

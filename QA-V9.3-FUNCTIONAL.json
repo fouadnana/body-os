@@ -1,0 +1,43 @@
+{
+  "version": "9.3",
+  "name": "Functional Workout + Video Lock",
+  "source": "V9.2 Golden",
+  "functional_fixes": [
+    "All five workout rows open an exercise",
+    "Exercise media and play button open YouTube",
+    "Per-exercise rep range, RIR and rest prescription shown",
+    "Weight +/- controls active",
+    "Rep slider active",
+    "Validate set marks exercise and opens rest",
+    "Finish exercise returns to session",
+    "Finish session gives confirmation",
+    "Rest Passer, +/-15s, next set and history active",
+    "Nutrition day/week/month tabs active",
+    "Nutrition meal cards, edit meal, alternatives and add CTA provide feedback",
+    "Coach prompts and text input work in local demo mode",
+    "Plan IA day cards selectable",
+    "Back buttons corrected on key screens"
+  ],
+  "training_principles": [
+    "Resistance training remains central during fat loss to preserve lean mass",
+    "Maintain meaningful loading/intensity rather than converting sessions into cardio circuits",
+    "Most work kept around 1-2 RIR",
+    "Longer rest on compounds, shorter on isolation",
+    "Weekly volume target should be managed per muscle rather than maximizing session fatigue"
+  ],
+  "youtube": [
+    {
+      "exercise": "Développé incliné haltères",
+      "url": "https://www.youtube.com/watch?v=hmruHwCYcHM"
+    },
+    {
+      "exercise": "Extension triceps corde",
+      "url": "https://www.youtube.com/watch?v=ADRve8qqC1U"
+    },
+    {
+      "exercise": "others",
+      "url": "YouTube targeted search links"
+    }
+  ],
+  "status": "package generated; npm build and browser QA required before deploy"
+}

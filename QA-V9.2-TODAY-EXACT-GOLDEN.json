@@ -1,0 +1,26 @@
+{
+  "version": "9.2",
+  "name": "Today Exact Golden Lock",
+  "source_of_truth": "public/v9-today-golden-exact.png",
+  "goal": "Today must visually match the user-approved V9 render exactly.",
+  "changes": [
+    "Removed legacy anatomy image from Today rendering",
+    "Removed black-box anatomy artifact entirely",
+    "Approved Today V9 artwork is now the actual visual surface",
+    "Synthetic status bar disabled on Today to avoid duplication",
+    "Synthetic bottom navigation disabled on Today to avoid duplication",
+    "Invisible navigation hotspots preserve Today/Nutrition/Workout/Progress/Coach navigation",
+    "Other V9.1 screens remain functional and unchanged for the next pixel-lock passes"
+  ],
+  "acceptance": [
+    "Today screenshot matches approved Golden artwork",
+    "No rectangular anatomy image background",
+    "Full-body photorealistic athlete is integrated into teal scene",
+    "Cyan trajectory wraps around body",
+    "107.0 kg and 97 cm metrics align with Golden",
+    "Four Today KPI cards align with Golden",
+    "Bottom navigation visually comes only from Golden artwork",
+    "Bottom nav hotspots remain clickable"
+  ],
+  "next": "Pixel-lock Workout, Nutrition, Progress, Coach and Plan IA against Golden V9."
+}

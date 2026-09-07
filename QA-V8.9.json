@@ -1,0 +1,23 @@
+{
+  "version": "8.9",
+  "name": "Sèche Product Language Lock",
+  "nutrition_changes": [
+    "CUT renamed to SÈCHE in user-facing interface",
+    "Internal CUT identifier preserved for compatibility",
+    "Sèche intent explains fat-loss + muscle/performance preservation",
+    "Calorie explanation wording aligned with controlled sèche"
+  ],
+  "next_major_workstream": {
+    "name": "Workout Rebuild for Sèche",
+    "status": "planned, not included in V8.9",
+    "principles": [
+      "preserve performance during deficit",
+      "track effective volume by muscle",
+      "maintain sufficient intensity and proximity to failure",
+      "manage fatigue/recovery and L5-S1 constraints",
+      "keep isolation work where useful",
+      "adjust cardio and training volume from recovery and loss rate",
+      "base progression decisions on real performance data"
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "version": "9.7",
+  "name": "Complete Nutrition Experience",
+  "base": "V9.5",
+  "features": [
+    "Programme / Recettes navigation",
+    "Functional Nutrition settings sheet",
+    "Explicit gram portions for every ingredient",
+    "Meal editor with +/- quantity control",
+    "Direct quantity typing",
+    "Remove ingredient",
+    "Add ingredient from food bank",
+    "Save edited meal into current plan",
+    "Alternative recipes can replace meal composition",
+    "Recipe catalogue with 6 structured recipes",
+    "Recipe detail sheet with ingredients and steps",
+    "Add recipe to Nutrition programme",
+    "Non-blocking auto-hide quick-add toast"
+  ],
+  "preserved": [
+    "Golden Today",
+    "Workout muscle navigation",
+    "Progress muscle navigation",
+    "Existing meal images and macro presentation"
+  ],
+  "status": "Package generated; npm build and functional browser QA required"
+}

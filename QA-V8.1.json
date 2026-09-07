@@ -1,0 +1,15 @@
+{
+  "version": "8.1",
+  "name": "Nutrition UI Alignment Pass",
+  "base": "V8 Nutrition Golden Rebuild",
+  "scope": [
+    "Programme card geometry fixed",
+    "Text overflow and wrapping hardened",
+    "Typography scale normalized",
+    "Journal alignment tightened",
+    "Recipes and shopping spacing normalized",
+    "Profile modal converted to bottom-sheet style",
+    "Ajuster action kept functional and visually reinforced"
+  ],
+  "visual_status": "requires local screenshot review before deployment"
+}

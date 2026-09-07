@@ -1,0 +1,22 @@
+{
+  "version": "8.5",
+  "name": "UX Interaction Lock",
+  "base": "V8.4",
+  "fixes": [
+    "Removed embedded MODIFY labels by rebuilding clean meal-photo assets",
+    "Compressed/standardized all 4 meal photos as WebP",
+    "Meal composition editor made more compact and phone-width constrained",
+    "2x2 macro summary retained for readability",
+    "Quantity controls and replace/delete actions compressed to fit mobile",
+    "Recipe details now open immediately in a fixed full-screen/bottom-sheet overlay",
+    "Recipe detail no longer appears appended at the bottom of the page",
+    "Recipe sheet includes macros, ingredients, preparation steps, favorite, close, and actions"
+  ],
+  "asset_sizes_bytes": {
+    "meal-breakfast-clean.webp": 28398,
+    "meal-lunch-clean.webp": 28610,
+    "meal-preworkout-clean.webp": 14588,
+    "meal-dinner-clean.webp": 23680
+  },
+  "status": "package generated; run npm build + local visual review before deploy"
+}

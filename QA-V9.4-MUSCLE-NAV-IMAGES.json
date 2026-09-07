@@ -1,0 +1,18 @@
+{
+  "version": "9.4",
+  "name": "Muscle Navigation + Image Upgrade",
+  "status": "package generated; local npm build + browser QA required",
+  "fixes": [
+    "Workout muscle tabs are now real buttons: Pectoraux, Dos, Épaules, Jambes, Bras",
+    "Changing a muscle group loads a different session and exercise list",
+    "Progress top tabs SÈCHE / PHYSIQUE / PERF are functional",
+    "Progress PHYSIQUE adds selectable muscle groups with changing measurements/chart",
+    "Progress PERF changes selected muscle and preserves performance metrics",
+    "Progress old cartoon body replaced by premium athlete crop with dynamic region glow",
+    "Evolution photos use premium athlete visuals instead of anatomy placeholders",
+    "Pectoraux workout thumbnails use real YouTube video thumbnails",
+    "Exercise detail anatomy changes with the exercise instead of being stuck on chest press"
+  ],
+  "science_guardrail": "During a cut, resistance training is programmed to preserve strength/lean mass; no fake fat-burning muscle session logic.",
+  "visual_source": "V9 Golden + latest Progress/Workout direction"
+}

@@ -1,0 +1,24 @@
+{
+  "version": "9.8.2",
+  "name": "Progress Photo Upload + Session Muscle",
+  "base": "V9.8.1 Golden Workout Pixel Lock",
+  "features": [
+    "Selected muscle name displayed directly below SÉANCE",
+    "Session exercise count and approximate duration displayed",
+    "Photos d’évolution no longer static",
+    "Upload one or multiple photos from phone/computer",
+    "Client-side JPEG resize/compression before storage",
+    "Photo timeline with selected state",
+    "Replace selected photo",
+    "Delete selected photo",
+    "Edit photo date",
+    "Before vs current comparison",
+    "Uploaded photos reused in Progress preview and PHYSIQUE gallery",
+    "Photos persisted locally with localStorage"
+  ],
+  "limits": [
+    "Photos are stored locally in the current browser/PWA, not yet synced to a cloud account",
+    "localStorage quota depends on browser; images are compressed and the timeline is capped to 8 photos"
+  ],
+  "status": "Package generated; npm run build/browser QA required"
+}
