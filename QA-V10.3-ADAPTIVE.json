@@ -1,0 +1,15 @@
+{
+  "version": "10.3",
+  "checks": {
+    "adaptive_screen_type": true,
+    "adaptive_component": true,
+    "coach_routes_to_adaptive": true,
+    "weekly_decision": true,
+    "muscle_preservation": true,
+    "daily_checkin": true,
+    "human_guardrail": true,
+    "food_vision_preserved": true,
+    "gemini_backend_preserved": true
+  },
+  "known_limit": "Adaptive metrics are seeded/demo until persistence and the longitudinal rules engine are implemented."
+}

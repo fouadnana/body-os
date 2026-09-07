@@ -3,7 +3,7 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart } fro
 import './v9.css'
 import FoodVision, { type FoodVisionPayload } from './FoodVision'
 
-type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'
+type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'
 type WorkoutView='session'|'exercise'|'rest'|'history'
 
 type Ingredient={name:string,qty:number,unit:string}
@@ -453,9 +453,60 @@ function Progress({setScreen}:{setScreen:(s:Screen)=>void}){
  </main>
 }
 
+
+function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
+ const [checkinOpen,setCheckinOpen]=useState(false)
+ const [decisionOpen,setDecisionOpen]=useState(false)
+ const [checkin,setCheckin]=useState({weight:'107.0',waist:'97',sleep:7,energy:4,hunger:3,recovery:4})
+ const trend=[{d:'J-13',w:108.2},{d:'J-11',w:108.0},{d:'J-9',w:107.8},{d:'J-7',w:107.6},{d:'J-5',w:107.5},{d:'J-3',w:107.2},{d:'Auj.',w:107.0}]
+ const preservation=94
+ const adherence=91
+ return <main className="v9Page v103Adaptive">
+  <header className="v9TitleBar"><button onClick={()=>setScreen('coach')}>‹</button><div><b>ADAPTIVE SÈCHE</b><small>INTELLIGENCE · SEMAINE 7</small></div><span className="v103Live">● ACTIF</span></header>
+
+  <section className="v103Decision">
+   <div className="v103DecisionTop"><span><small>DÉCISION DE LA SEMAINE</small><b>MAINTENIR</b></span><strong>✓</strong></div>
+   <p>La trajectoire est cohérente : poids et taille diminuent, performances stables et adhérence élevée.</p>
+   <div className="v103DecisionMetrics"><span><small>POIDS 7J</small><b>−0,48 kg</b></span><span><small>TAILLE</small><b>−0,7 cm</b></span><span><small>PERF.</small><b>STABLE</b></span></div>
+   <button onClick={()=>setDecisionOpen(true)}>2 510 KCAL MAINTENUES <b>›</b></button>
+  </section>
+
+  <section className="v103Trend">
+   <header><div><small>TRAJECTOIRE 14 JOURS</small><b>107,0 kg</b></div><span>OPTIMALE</span></header>
+   <ResponsiveContainer width="100%" height={180}><LineChart data={trend}><Line type="monotone" dataKey="w" stroke="#77eff0" strokeWidth={3} dot={{r:4,fill:'#d9ffff'}}/><XAxis dataKey="d" tick={{fill:'#829ca7',fontSize:9}} axisLine={false}/><YAxis domain={[106.5,108.6]} hide/></LineChart></ResponsiveContainer>
+   <div className="v103Trajectory"><span>RÉEL</span><i></i><span>OBJECTIF −0,5 kg/sem.</span></div>
+  </section>
+
+  <div className="v103ScoreGrid">
+   <section><small>MUSCLE PRESERVATION</small><div className="v103Ring"><b>{preservation}</b><em>/100</em></div><strong>EXCELLENT</strong><p>Force stable · protéines hautes · rythme de perte maîtrisé.</p></section>
+   <section><small>ADHÉRENCE NUTRITION</small><div className="v103Ring"><b>{adherence}</b><em>%</em></div><strong>TRÈS BON</strong><p>Calories 87% · protéines 94% · repas enregistrés 6/7.</p></section>
+  </div>
+
+  <section className="v103Signals"><header><b>SIGNAUX DU MOTEUR</b><span>5/5 FAVORABLES</span></header>
+   {[['PERFORMANCES','92','Stable sur les mouvements repères'],['VOLUME','90','Volume hebdomadaire maintenu'],['PROTÉINES','96','Objectif presque toujours atteint'],['VITESSE DE PERTE','88','Dans la zone cible'],['RÉCUPÉRATION','91','Aucun signal de fatigue excessive']].map(x=><div key={x[0]}><span><small>{x[0]}</small><em>{x[2]}</em></span><b>{x[1]}</b><i><strong style={{width:x[1]+'%'}}></strong></i></div>)}
+  </section>
+
+  <section className="v103Checkin"><div><small>CHECK-IN DU JOUR</small><b>2 minutes pour fiabiliser la décision</b><p>Poids · taille · sommeil · énergie · faim · récupération</p></div><button onClick={()=>setCheckinOpen(true)}>COMPLÉTER</button></section>
+
+  <section className="v103Guard"><b>GARDE-FOU BODY OS</b><p>Aucun changement de calories ou d'entraînement n'est appliqué automatiquement. Le moteur propose, explique et attend ta validation.</p></section>
+
+  {checkinOpen&&<div className="v9SheetBack" onClick={()=>setCheckinOpen(false)}><section className="v103Sheet" onClick={e=>e.stopPropagation()}>
+   <header><button onClick={()=>setCheckinOpen(false)}>×</button><div><b>CHECK-IN DU JOUR</b><small>Les données restent modifiables</small></div><span></span></header>
+   <label>POIDS (KG)<input value={checkin.weight} onChange={e=>setCheckin({...checkin,weight:e.target.value})}/></label>
+   <label>TOUR DE TAILLE (CM)<input value={checkin.waist} onChange={e=>setCheckin({...checkin,waist:e.target.value})}/></label>
+   {[['SOMMEIL','sleep'],['ÉNERGIE','energy'],['FAIM','hunger'],['RÉCUPÉRATION','recovery']].map(([label,key])=><div className="v103Scale" key={key}><small>{label}</small><span>{[1,2,3,4,5].map(n=><button className={(checkin as any)[key]===n?'active':''} onClick={()=>setCheckin({...checkin,[key]:n})} key={n}>{n}</button>)}</span></div>)}
+   <button className="v9Primary" onClick={()=>setCheckinOpen(false)}>ENREGISTRER LE CHECK-IN</button>
+  </section></div>}
+
+  {decisionOpen&&<InfoSheet title="POURQUOI MAINTENIR ?" close={()=>setDecisionOpen(false)}>
+   <div className="v103Why"><b>Décision proposée : maintenir 2 510 kcal</b><p>La moyenne de poids baisse au rythme cible, le tour de taille diminue et les performances restent stables. Réduire davantage les calories n'apporte pas de bénéfice évident aujourd'hui.</p><small>CONFIANCE DU MOTEUR</small><strong>ÉLEVÉE · 92%</strong><p>Cette recommandation est une aide à la décision, pas un diagnostic médical.</p></div>
+  </InfoSheet>}
+ </main>
+}
+
 function Coach({setScreen}:{setScreen:(s:Screen)=>void}){
  const [answer,setAnswer]=useState(''); const [q,setQ]=useState('')
- const ask=(kind:string)=>setAnswer(kind==='progression'?'Trajectoire cohérente : conserve les calories et vise la stabilité de tes performances.':kind==='adjust'?'Aucun ajustement majeur aujourd’hui. Priorité : protéines, sommeil et performance sur les mouvements de base.':'Conseil récupération : garde 1–2 RIR sur la majorité des séries et évite d’augmenter simultanément cardio et volume musculation.')
+ const ask=(kind:string)=>{if(kind==='progression'){setScreen('adaptive');return} setAnswer(kind==='progression'?'Trajectoire cohérente : conserve les calories et vise la stabilité de tes performances.':kind==='adjust'?'Aucun ajustement majeur aujourd’hui. Priorité : protéines, sommeil et performance sur les mouvements de base.':'Conseil récupération : garde 1–2 RIR sur la majorité des séries et évite d’augmenter simultanément cardio et volume musculation.')}
  return <main className="v9Page v9Coach"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>AI COACH</b></div><span className="v9Online">● DÉMO</span></header><div className="v9Orb"><i></i><i></i><b>✦</b></div><section className="v9CoachHello"><b>Salut Fouad 👋</b><span>Que veux-tu optimiser aujourd'hui ?</span></section><div className="v9CoachPrompts"><button onClick={()=>ask('progression')}>◉ <span>Analyse de ma progression</span>›</button><button onClick={()=>ask('adjust')}>◎ <span>Que dois-je ajuster ?</span>›</button><button onClick={()=>setScreen('plan')}>◌ <span>Planifie ma semaine</span>›</button><button onClick={()=>ask('recovery')}>♙ <span>Conseil récupération</span>›</button></div>{answer&&<div className="v93CoachAnswer">{answer}</div>}<label className="v9Ask"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Pose une question…"/><button onClick={()=>{if(q.trim()){setAnswer('Mode démo : ta question est enregistrée. Le moteur LLM sera branché séparément.');setQ('')}}}>➤</button></label><div className="v9CoachNote">Mode démo : moteur BODY OS local. Aucun token OpenAI requis.</div></main>
 }
 
@@ -467,7 +518,7 @@ function Plan(){
 
 export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
- const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen}/>:screen==='nutrition'?<Nutrition/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:<Plan/>,[screen,workoutView])
+ const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen}/>:screen==='nutrition'?<Nutrition/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:<Plan/>,[screen,workoutView])
  const showNav=screen==='nutrition'||screen==='progress'
  return <div className="v9Shell"><div className={'v9Phone '+(screen==='today'?'v92PhoneToday':'')}>{screen!=='today'&&<StatusBar/>}{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
 }
