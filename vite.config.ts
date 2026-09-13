@@ -8,6 +8,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType:'autoUpdate',
+      injectRegister:false,
+      workbox:{cleanupOutdatedCaches:true,clientsClaim:true,skipWaiting:true},
       manifest:{
         name:'BODY OS — AI CUT',
         short_name:'BODY OS',
