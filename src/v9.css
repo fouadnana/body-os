@@ -1438,7 +1438,7 @@ body{
   width:100%;height:100%;object-fit:cover;object-position:50% 48%;
   filter:saturate(.96) contrast(1.04);
 }
-.v104Metric{position:absolute;z-index:4;top:48%;display:flex;flex-direction:column}
+.v104Metric{position:absolute;z-index:4;top:48%;display:flex;flex-direction:column;border:0;background:transparent;padding:0;cursor:pointer;font:inherit;color:inherit}
 .v104Metric small{font-size:8px;color:#adc1c6}
 .v104Metric b{font-size:25px;line-height:1.05;margin-top:4px;font-weight:650}
 .v104Metric b em{font-size:12px;font-style:normal;font-weight:500;color:#d5e3e6}
@@ -1470,7 +1470,8 @@ body{
 .v104Kpis .fire{color:#ff6243}.v104Kpis .protein{color:#4ae9e8}.v104Kpis .train{color:#42cdec}.v104Kpis .steps{color:#bbec49}
 .v104Kpis small{font-size:6px;color:#a9bdc2;margin:7px 0 8px;white-space:nowrap}
 .v104Kpis b{font-size:17px;line-height:1.35;font-weight:650}
-.v104Kpis button b{font-size:11px;margin-top:2px}
+.v104Kpis .v104Train b{font-size:11px;margin-top:2px}
+.v104Kpis button{font:inherit;cursor:pointer}
 .v104Kpis span{font-size:8px;color:#b5c5c8;margin-top:auto}
 .v104AdaptiveCard{
   width:calc(100% - 28px);height:58px;margin:12px 14px 8px;padding:0 15px;

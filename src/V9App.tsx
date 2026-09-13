@@ -10,8 +10,21 @@ const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
 const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
 const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
 const WORKOUT_LOG_KEY='bodyos.workout.log.v1'
+const DAILY_LOG_KEY='bodyos.daily.log.v1'
+const SCHEDULE_KEY='bodyos.schedule.v1'
 const readJSON=<T,>(key:string,fallback:T):T=>{try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch{return fallback}}
 const writeJSON=(key:string,value:unknown)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
+
+type DailyEntry={date:string,weight?:number,waist?:number,steps?:number}
+const todayISO=()=>new Date().toISOString().slice(0,10)
+const mondayIndex=(d=new Date())=>(d.getDay()+6)%7
+const readDailyLog=()=>readJSON<DailyEntry[]>(DAILY_LOG_KEY,[]).slice().sort((a,b)=>a.date.localeCompare(b.date))
+const upsertDailyEntry=(patch:Partial<DailyEntry>)=>{
+ const log=readDailyLog(); const date=todayISO()
+ const idx=log.findIndex(e=>e.date===date)
+ if(idx===-1) log.push({date,...patch}); else log[idx]={...log[idx],...patch}
+ writeJSON(DAILY_LOG_KEY,log); return log
+}
 
 type Ingredient={name:string,qty:number,unit:string}
 type Meal={name:string,time:string,kcal:number,img:string,details:string,protein:number,carbs:number,fat:number,ingredients:Ingredient[]}
@@ -46,6 +59,11 @@ const strengthData=[92.5,95,95,97.5,100,100,97.5,100,102.5,105].map((v,i)=>({i,v
 type MuscleGroup='Pectoraux'|'Dos'|'Épaules'|'Jambes'|'Bras'
 type ExerciseItem={name:string,equipment:string,sets:string,img:string,video:string,target:string,secondary:string,reps:string,rir:string,rest:string,anatomy:string}
 const muscleGroups:MuscleGroup[]=['Pectoraux','Dos','Épaules','Jambes','Bras']
+type DayPlan=MuscleGroup|'Repos'|'Cardio'
+const WEEKDAYS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
+const DEFAULT_SCHEDULE:DayPlan[]=['Pectoraux','Cardio','Dos','Repos','Épaules','Cardio','Jambes']
+const readSchedule=():DayPlan[]=>{const s=readJSON<DayPlan[]>(SCHEDULE_KEY,DEFAULT_SCHEDULE);return s.length===7?s:DEFAULT_SCHEDULE}
+const dayIcon=(d:DayPlan)=>d==='Pectoraux'?'♜':d==='Dos'?'♙':d==='Épaules'?'✣':d==='Jambes'?'♧':d==='Bras'?'◉':d==='Cardio'?'◌':'☾'
 const sessionData:Record<MuscleGroup,ExerciseItem[]>={
  Pectoraux:[
   {name:'Développé incliné',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/5CECBjd7HLQ/hqdefault.jpg',video:'https://www.youtube.com/watch?v=5CECBjd7HLQ',target:'Haut des pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'6–10',rir:'1–2',rest:'2:30–3:00',anatomy:'/body-os/anatomy-incline-db.svg'},
@@ -109,28 +127,84 @@ function BottomNav({screen,setScreen}:{screen:Screen,setScreen:(s:Screen)=>void}
  return <nav className="v9Bottom">{items.map(([id,ic,l])=><button key={id} className={screen===id?'active':''} onClick={()=>setScreen(id)}><Icon>{ic}</Icon><small>{l}</small></button>)}</nav>
 }
 
+const fmt1=(n:number)=>n.toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})
+const fmtDelta=(curr:number,prev:number|undefined,unit:string,decimals=1)=>{
+ if(prev==null||prev===curr) return null
+ const diff=Math.round((curr-prev)*Math.pow(10,decimals))/Math.pow(10,decimals)
+ return `${diff>0?'+':''}${diff.toLocaleString('fr-FR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals})} ${unit}`
+}
+
+function QuickLogSheet({latest,close,onSave}:{latest:DailyEntry|undefined,close:()=>void,onSave:(patch:Partial<DailyEntry>)=>void}){
+ const [weight,setWeight]=useState(latest?.weight!=null?String(latest.weight):'')
+ const [waist,setWaist]=useState(latest?.waist!=null?String(latest.waist):'')
+ const [steps,setSteps]=useState(latest?.steps!=null?String(latest.steps):'')
+ const save=()=>{
+  const patch:Partial<DailyEntry>={}
+  if(weight.trim()) patch.weight=Math.round(parseFloat(weight.replace(',','.'))*10)/10
+  if(waist.trim()) patch.waist=Math.round(parseFloat(waist.replace(',','.'))*10)/10
+  if(steps.trim()) patch.steps=Math.round(parseFloat(steps.replace(',','.')))
+  onSave(patch); close()
+ }
+ return <div className="v9SheetBack" onClick={close}><section className="v103Sheet" onClick={e=>e.stopPropagation()}>
+  <header><button onClick={close}>×</button><div><b>MESURE DU JOUR</b><small>Les données restent modifiables</small></div><span></span></header>
+  <label>POIDS (KG)<input inputMode="decimal" value={weight} onChange={e=>setWeight(e.target.value)} placeholder="ex. 107,0"/></label>
+  <label>TOUR DE TAILLE (CM)<input inputMode="decimal" value={waist} onChange={e=>setWaist(e.target.value)} placeholder="ex. 97"/></label>
+  <label>PAS<input inputMode="numeric" value={steps} onChange={e=>setSteps(e.target.value)} placeholder="ex. 8000"/></label>
+  <button className="v9Primary" onClick={save}>ENREGISTRER</button>
+ </section></div>
+}
+
+function ProgramSheet({schedule,close,onSave}:{schedule:DayPlan[],close:()=>void,onSave:(s:DayPlan[])=>void}){
+ const [draft,setDraft]=useState<DayPlan[]>(schedule)
+ const options:DayPlan[]=['Repos','Cardio',...muscleGroups]
+ const setDay=(i:number,v:DayPlan)=>setDraft(d=>d.map((x,j)=>j===i?v:x))
+ return <div className="v9SheetBack" onClick={close}><section className="v96NutritionSettings" onClick={e=>e.stopPropagation()}>
+  <header><button onClick={close}>×</button><div><small>MON PROGRAMME</small><b>Séance par jour</b></div><span></span></header>
+  <div className="v96SettingsBody">
+   {WEEKDAYS.map((w,i)=><label key={w}><span>{w}</span><select value={draft[i]} onChange={e=>setDay(i,e.target.value as DayPlan)}>{options.map(o=><option key={o} value={o}>{o}</option>)}</select></label>)}
+  </div>
+  <footer><button onClick={close}>ANNULER</button><button className="primary" onClick={()=>{onSave(draft);close()}}>ENREGISTRER</button></footer>
+ </section></div>
+}
+
 function Today({setScreen}:{setScreen:(s:Screen)=>void}){
+ const [log,setLog]=useState<DailyEntry[]>(()=>readDailyLog())
+ const [schedule,setSchedule]=useState<DayPlan[]>(()=>readSchedule())
+ const [logOpen,setLogOpen]=useState(false)
+ const [programOpen,setProgramOpen]=useState(false)
+ const nutrition=useMemo(()=>({
+  meals:readJSON<Meal[]>(NUTRITION_MEALS_KEY,meals),
+  settings:readJSON(NUTRITION_SETTINGS_KEY,{goal:'SÈCHE',calories:2510,protein:180,carbs:210,fat:70,water:2.5,weeklyRate:-0.5})
+ }),[])
+ const consumedKcal=nutrition.meals.reduce((s,m)=>s+m.kcal,0)
+ const consumedProtein=Math.round(nutrition.meals.reduce((s,m)=>s+m.protein,0))
+ const latest=log.at(-1); const previous=log.at(-2)
+ const weightDelta=latest?.weight!=null?fmtDelta(latest.weight,previous?.weight,'kg'):null
+ const waistDelta=latest?.waist!=null?fmtDelta(latest.waist,previous?.waist,'cm'):null
+ const plan=schedule[mondayIndex()]
+ const saveLog=(patch:Partial<DailyEntry>)=>setLog(upsertDailyEntry(patch))
+ const saveSchedule=(s:DayPlan[])=>{writeJSON(SCHEDULE_KEY,s);setSchedule(s)}
  return <main className="v104Today" aria-label="BODY OS Today">
    <header className="v104Top">
     <div className="v104Brand"><i></i><span><b>BODY OS</b><small>TON CORPS. TON SYSTÈME.</small></span></div>
-    <button aria-label="Adaptive Sèche" onClick={()=>setScreen('adaptive')}>S7</button>
+    <button aria-label="Modifier mon programme" onClick={()=>setProgramOpen(true)}>⚙</button>
    </header>
 
    <section className="v104Hero">
-    <div className="v104Mode"><b>SÈCHE <i></i></b><small>JOUR 38</small></div>
+    <div className="v104Mode"><b>{nutrition.settings.goal} <i></i></b><small>{log.length} mesure{log.length>1?'s':''} enregistrée{log.length>1?'s':''}</small></div>
     <div className="v104HeroArt"><img src="/body-os/v9-progress-athlete.png" alt="Athlète BODY OS"/></div>
-    <div className="v104Metric v104Weight"><small>POIDS</small><b>107,0 <em>kg</em></b><strong>−0,4 kg</strong><span>vs hier</span></div>
-    <div className="v104Metric v104Waist"><small>TOUR DE TAILLE</small><b>97 <em>cm</em></b><strong>−1,2 cm</strong><span>vs hier</span></div>
-    <button className="v104Trajectory" onClick={()=>setScreen('adaptive')}><span>TRAJECTOIRE</span><i></i><b>OPTIMALE</b><strong>›</strong></button>
+    <button className="v104Metric v104Weight" onClick={()=>setLogOpen(true)}><small>POIDS</small><b>{latest?.weight!=null?fmt1(latest.weight):'—'} <em>kg</em></b>{weightDelta&&<strong>{weightDelta}</strong>}<span>{latest?.weight!=null?'toucher pour mettre à jour':'ajouter une mesure'}</span></button>
+    <button className="v104Metric v104Waist" onClick={()=>setLogOpen(true)}><small>TOUR DE TAILLE</small><b>{latest?.waist!=null?latest.waist:'—'} <em>cm</em></b>{waistDelta&&<strong>{waistDelta}</strong>}<span>{latest?.waist!=null?'toucher pour mettre à jour':'ajouter une mesure'}</span></button>
+    <button className="v104Trajectory" onClick={()=>setScreen('adaptive')}><span>TRAJECTOIRE</span><i></i><b>{previous&&latest&&latest.weight!=null&&previous.weight!=null?(latest.weight<=previous.weight?'OPTIMALE':'À SURVEILLER'):'EN ATTENTE'}</b><strong>›</strong></button>
    </section>
 
    <section className="v104TodayBlock">
     <h2>AUJOURD'HUI</h2>
     <div className="v104Kpis">
-     <article><i className="fire">♨</i><small>CALORIES</small><b>2 510</b><span>kcal</span></article>
-     <article><i className="protein">◯</i><small>PROTÉINES</small><b>180</b><span>g sur 180 g</span></article>
-     <button onClick={()=>setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>Pectoraux<br/>Triceps</b></button>
-     <article><i className="steps">♧</i><small>ACTIVITÉ</small><b>8 000</b><span>pas</span></article>
+     <button onClick={()=>setScreen('nutrition')}><i className="fire">♨</i><small>CALORIES</small><b>{consumedKcal}</b><span>sur {nutrition.settings.calories} kcal</span></button>
+     <button onClick={()=>setScreen('nutrition')}><i className="protein">◯</i><small>PROTÉINES</small><b>{consumedProtein}</b><span>g sur {nutrition.settings.protein} g</span></button>
+     <button className="v104Train" onClick={()=>setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>{plan}</b></button>
+     <button onClick={()=>setLogOpen(true)}><i className="steps">♧</i><small>ACTIVITÉ</small><b>{latest?.steps!=null?latest.steps.toLocaleString('fr-FR'):'—'}</b><span>pas</span></button>
     </div>
    </section>
 
@@ -139,12 +213,14 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
    </button>
 
    <BottomNav screen="today" setScreen={setScreen}/>
+   {logOpen&&<QuickLogSheet latest={latest} close={()=>setLogOpen(false)} onSave={saveLog}/>}
+   {programOpen&&<ProgramSheet schedule={schedule} close={()=>setProgramOpen(false)} onSave={saveSchedule}/>}
  </main>
 }
 
-function Workout({view,setView,setScreen}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void}){
+function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void,initialGroup:MuscleGroup}){
  const doneDefault:Record<MuscleGroup,boolean[]>={Pectoraux:Array(5).fill(false),Dos:Array(5).fill(false),Épaules:Array(5).fill(false),Jambes:Array(5).fill(false),Bras:Array(5).fill(false)}
- const [group,setGroup]=useState<MuscleGroup>('Pectoraux'); const [selected,setSelected]=useState(0)
+ const [group,setGroup]=useState<MuscleGroup>(initialGroup); const [selected,setSelected]=useState(0)
  const [done,setDoneState]=useState<Record<MuscleGroup,boolean[]>>(()=>({...doneDefault,...readJSON(WORKOUT_DONE_KEY,{})}))
  const setDone=(next:Record<MuscleGroup,boolean[]>)=>{setDoneState(next);writeJSON(WORKOUT_DONE_KEY,next)}
  const [toast,setToast]=useState(''); const exercises=sessionData[group]
@@ -495,7 +571,14 @@ function Progress({setScreen}:{setScreen:(s:Screen)=>void}){
 function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const [checkinOpen,setCheckinOpen]=useState(false)
  const [decisionOpen,setDecisionOpen]=useState(false)
- const [checkin,setCheckin]=useState({weight:'107.0',waist:'97',sleep:7,energy:4,hunger:3,recovery:4})
+ const latestDaily=readDailyLog().at(-1)
+ const [checkin,setCheckin]=useState({weight:latestDaily?.weight!=null?String(latestDaily.weight):'',waist:latestDaily?.waist!=null?String(latestDaily.waist):'',sleep:7,energy:4,hunger:3,recovery:4})
+ const saveCheckin=()=>{
+  const patch:Partial<DailyEntry>={}
+  if(checkin.weight.trim()) patch.weight=Math.round(parseFloat(checkin.weight.replace(',','.'))*10)/10
+  if(checkin.waist.trim()) patch.waist=Math.round(parseFloat(checkin.waist.replace(',','.'))*10)/10
+  upsertDailyEntry(patch); setCheckinOpen(false)
+ }
  const trend=[{d:'J-13',w:108.2},{d:'J-11',w:108.0},{d:'J-9',w:107.8},{d:'J-7',w:107.6},{d:'J-5',w:107.5},{d:'J-3',w:107.2},{d:'Auj.',w:107.0}]
  const preservation=94
  const adherence=91
@@ -533,7 +616,7 @@ function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
    <label>POIDS (KG)<input value={checkin.weight} onChange={e=>setCheckin({...checkin,weight:e.target.value})}/></label>
    <label>TOUR DE TAILLE (CM)<input value={checkin.waist} onChange={e=>setCheckin({...checkin,waist:e.target.value})}/></label>
    {[['SOMMEIL','sleep'],['ÉNERGIE','energy'],['FAIM','hunger'],['RÉCUPÉRATION','recovery']].map(([label,key])=><div className="v103Scale" key={key}><small>{label}</small><span>{[1,2,3,4,5].map(n=><button className={(checkin as any)[key]===n?'active':''} onClick={()=>setCheckin({...checkin,[key]:n})} key={n}>{n}</button>)}</span></div>)}
-   <button className="v9Primary" onClick={()=>setCheckinOpen(false)}>ENREGISTRER LE CHECK-IN</button>
+   <button className="v9Primary" onClick={saveCheckin}>ENREGISTRER LE CHECK-IN</button>
   </section></div>}
 
   {decisionOpen&&<InfoSheet title="POURQUOI MAINTENIR ?" close={()=>setDecisionOpen(false)}>
@@ -549,14 +632,24 @@ function Coach({setScreen}:{setScreen:(s:Screen)=>void}){
 }
 
 function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
- const [selected,setSelected]=useState(0)
- const days=[['LUN','7','Pectoraux\nTriceps','Musculation\n45 min'],['MAR','8','Cardio LISS\nZone 2','45 min'],['MER','9','Dos\nBiceps','Musculation\n50 min'],['JEU','10','Repos actif\nMobilité','20 min'],['VEN','11','Épaules\nAbdos','Musculation\n45 min'],['SAM','12','Cardio HIIT','45 min'],['DIM','13','Jambes\nMollets','Musculation\n50 min']]
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('coach')}>‹</button><div><b>PLAN IA — SEMAINE</b><small>07 – 13 JUILLET</small></div><span>◫</span></header><section className="v9Week">{days.map((d,i)=><article onClick={()=>setSelected(i)} className={i===selected?'active':''} key={d[0]}><b>{d[0]}</b><strong>{d[1]}</strong><span>{d[2].split('\n').map(x=><i key={x}>{x}</i>)}</span><em>{d[3].split('\n').map(x=><i key={x}>{x}</i>)}</em><small>◌ 10 000 pas</small></article>)}</section><section className="v9WeekGoal"><div><small>OBJECTIF DE LA SEMAINE</small><p>Continuer la sèche en préservant le muscle.<br/>Déficit modéré.<br/>Protéines hautes.<br/>Performances stables.</p></div><aside><b>Tes progrès sont excellents.</b><span>Aucun ajustement calorique nécessaire cette semaine.</span><strong>92%</strong></aside></section></main>
+ const [selected,setSelected]=useState(mondayIndex())
+ const schedule=readSchedule()
+ const monday=useMemo(()=>{const d=new Date();d.setDate(d.getDate()-mondayIndex());return d},[])
+ const fmtDate=(d:Date)=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`
+ const sunday=useMemo(()=>{const d=new Date(monday);d.setDate(d.getDate()+6);return d},[monday])
+ const days=WEEKDAYS.map((w,i)=>{
+  const d=new Date(monday); d.setDate(monday.getDate()+i)
+  const plan=schedule[i]
+  return {abbr:w.slice(0,3).toUpperCase(),date:d.getDate(),plan,kind:plan==='Repos'?'Repos':plan==='Cardio'?'Cardio':'Musculation'}
+ })
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('coach')}>‹</button><div><b>PLAN — SEMAINE</b><small>{fmtDate(monday)} – {fmtDate(sunday)}</small></div><span>◫</span></header><section className="v9Week">{days.map((d,i)=><article onClick={()=>setSelected(i)} className={i===selected?'active':''} key={d.abbr}><b>{d.abbr}</b><strong>{d.date}</strong><span><i>{d.plan}</i></span><em><i>{d.kind}</i></em><small>◌ 10 000 pas</small></article>)}</section><section className="v9WeekGoal"><div><small>OBJECTIF DE LA SEMAINE</small><p>Continuer la sèche en préservant le muscle.<br/>Déficit modéré.<br/>Protéines hautes.<br/>Performances stables.</p></div><aside><b>Tes progrès sont excellents.</b><span>Aucun ajustement calorique nécessaire cette semaine.</span><strong>92%</strong></aside></section></main>
 }
 
 export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
- const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
+ const todayPlan=readSchedule()[mondayIndex()]
+ const initialGroup=(muscleGroups as string[]).includes(todayPlan)?todayPlan as MuscleGroup:'Pectoraux'
+ const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
  const showNav=screen==='nutrition'||screen==='progress'
  return <div className="v9Shell"><div className="v9Phone">{screen!=='today'&&<StatusBar/>}{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
 }
