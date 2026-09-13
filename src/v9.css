@@ -154,7 +154,7 @@ body{
 .v9ExerciseHead span small{font-size:7px}
 .v9ExerciseHead span b{font-size:17px}
 .v9ExerciseHead span em{font-size:9px}
-.v9ExerciseHead img{width:59px;height:84px}
+.v9ExerciseHead .v9MuscleMap{width:76px;height:114px}
 .v9Media{
   height:246px;
   border-radius:12px;
@@ -750,11 +750,10 @@ body{
   color:#8cf1f0!important;
   font-weight:700!important;
 }
-.v9ExerciseHead img{
-  width:57px!important;
-  height:78px!important;
-  object-fit:contain!important;
-  opacity:.92!important;
+.v9ExerciseHead .v9MuscleMap{
+  width:74px!important;
+  height:111px!important;
+  overflow:visible!important;
   filter:drop-shadow(0 0 8px rgba(112,232,234,.15))!important;
 }
 
