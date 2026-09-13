@@ -68,9 +68,14 @@ type ExerciseItem={name:string,equipment:string,sets:string,img:string,video:str
 const muscleGroups:MuscleGroup[]=['Pectoraux','Dos','Épaules','Jambes','Bras']
 type DayPlan=MuscleGroup|'Repos'|'Cardio'
 const WEEKDAYS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
-const DEFAULT_SCHEDULE:DayPlan[]=['Pectoraux','Dos','Épaules','Cardio','Jambes','Bras','Repos']
+const DEFAULT_SCHEDULE:DayPlan[]=['Pectoraux','Dos','Jambes','Épaules','Bras','Bras','Repos']
 const readSchedule=():DayPlan[]=>{const s=readJSON<DayPlan[]>(SCHEDULE_KEY,DEFAULT_SCHEDULE);return s.length===7?s:DEFAULT_SCHEDULE}
 const dayIcon=(d:DayPlan)=>d==='Pectoraux'?'♜':d==='Dos'?'♙':d==='Épaules'?'✣':d==='Jambes'?'♧':d==='Bras'?'◉':d==='Cardio'?'◌':'☾'
+const isRappelDay=(schedule:DayPlan[],idx:number)=>{
+ const g=schedule[idx]
+ if(g==='Repos'||g==='Cardio') return false
+ return schedule.indexOf(g)!==idx
+}
 const DEFAULT_NUTRITION_SETTINGS={goal:'SÈCHE',calories:2600,protein:200,carbs:280,fat:75,water:3,weeklyRate:-0.55}
 const sessionData:Record<MuscleGroup,ExerciseItem[]>={
  Pectoraux:[
@@ -193,6 +198,7 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
  const weightDelta=latest?.weight!=null?fmtDelta(latest.weight,previous?.weight,'kg'):null
  const waistDelta=latest?.waist!=null?fmtDelta(latest.waist,previous?.waist,'cm'):null
  const plan=schedule[mondayIndex()]
+ const planIsRappel=isRappelDay(schedule,mondayIndex())
  const saveLog=(patch:Partial<DailyEntry>)=>setLog(upsertDailyEntry(patch))
  const saveSchedule=(s:DayPlan[])=>{writeJSON(SCHEDULE_KEY,s);setSchedule(s)}
  return <main className="v104Today" aria-label="BODY OS Today">
@@ -214,7 +220,7 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
     <div className="v104Kpis">
      <button onClick={()=>setScreen('nutrition')}><i className="fire">♨</i><small>CALORIES</small><b>{consumedKcal}</b><span>sur {nutrition.settings.calories} kcal</span></button>
      <button onClick={()=>setScreen('nutrition')}><i className="protein">◯</i><small>PROTÉINES</small><b>{consumedProtein}</b><span>g sur {nutrition.settings.protein} g</span></button>
-     <button className="v104Train" onClick={()=>setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>{plan}</b></button>
+     <button className="v104Train" onClick={()=>setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>{plan}</b>{planIsRappel&&<span className="v104Rappel">RAPPEL</span>}</button>
      <button onClick={()=>setLogOpen(true)}><i className="steps">♧</i><small>ACTIVITÉ</small><b>{latest?.steps!=null?latest.steps.toLocaleString('fr-FR'):'—'}</b><span>pas</span></button>
     </div>
    </section>
@@ -676,7 +682,8 @@ function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
  const days=WEEKDAYS.map((w,i)=>{
   const d=new Date(monday); d.setDate(monday.getDate()+i)
   const plan=schedule[i]
-  return {abbr:w.slice(0,3).toUpperCase(),date:d.getDate(),plan,kind:plan==='Repos'?'Repos':plan==='Cardio'?'Cardio':'Musculation'}
+  const kind=plan==='Repos'?'Repos':plan==='Cardio'?'Cardio':isRappelDay(schedule,i)?'Rappel':'Musculation'
+  return {abbr:w.slice(0,3).toUpperCase(),date:d.getDate(),plan,kind}
  })
  return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('coach')}>‹</button><div><b>PLAN — SEMAINE</b><small>{fmtDate(monday)} – {fmtDate(sunday)}</small></div><span>◫</span></header><section className="v9Week">{days.map((d,i)=><article onClick={()=>setSelected(i)} className={i===selected?'active':''} key={d.abbr}><b>{d.abbr}</b><strong>{d.date}</strong><span><i>{d.plan}</i></span><em><i>{d.kind}</i></em><small>◌ 10 000 pas</small></article>)}</section><section className="v9WeekGoal"><div><small>OBJECTIF DE LA SEMAINE</small><p>Continuer la sèche en préservant le muscle.<br/>Déficit modéré.<br/>Protéines hautes.<br/>Performances stables.</p></div><aside><b>Tes progrès sont excellents.</b><span>Aucun ajustement calorique nécessaire cette semaine.</span><strong>92%</strong></aside></section></main>
 }

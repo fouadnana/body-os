@@ -1478,6 +1478,7 @@ body{
 .v104Kpis small{font-size:6px;color:#a9bdc2;margin:7px 0 8px;white-space:nowrap}
 .v104Kpis b{font-size:17px;line-height:1.35;font-weight:650}
 .v104Kpis .v104Train b{font-size:11px;margin-top:2px}
+.v104Rappel{margin-top:4px;font-size:6px;letter-spacing:.06em;color:#b8ef4f;background:rgba(184,239,79,.14);border-radius:5px;padding:2px 6px}
 .v104Kpis button{font:inherit;cursor:pointer}
 .v104Kpis span{font-size:8px;color:#b5c5c8;margin-top:auto}
 .v104AdaptiveCard{
