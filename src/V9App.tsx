@@ -15,7 +15,15 @@ const SCHEDULE_KEY='bodyos.schedule.v1'
 const readJSON=<T,>(key:string,fallback:T):T=>{try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch{return fallback}}
 const writeJSON=(key:string,value:unknown)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
 
-type DailyEntry={date:string,weight?:number,waist?:number,steps?:number}
+type DailyEntry={date:string,weight?:number,waist?:number,steps?:number,bodyFat?:number}
+const WORKOUT_HISTORY_KEY='bodyos.workout.history.v1'
+type WorkoutHistoryEntry={date:string,group:string,exercise:string,weight:number,reps:number}
+const readWorkoutHistory=()=>readJSON<WorkoutHistoryEntry[]>(WORKOUT_HISTORY_KEY,[])
+const logWorkoutSet=(entry:WorkoutHistoryEntry)=>{
+ const log=readWorkoutHistory()
+ log.push(entry)
+ writeJSON(WORKOUT_HISTORY_KEY,log.slice(-500))
+}
 const todayISO=()=>new Date().toISOString().slice(0,10)
 const mondayIndex=(d=new Date())=>(d.getDay()+6)%7
 const readDailyLog=()=>readJSON<DailyEntry[]>(DAILY_LOG_KEY,[]).slice().sort((a,b)=>a.date.localeCompare(b.date))
@@ -54,7 +62,6 @@ const recipes:Recipe[]=[
  {id:'r6',name:'Omelette protéinée',category:'Petit déjeuner',time:'12 min',kcal:495,protein:44,carbs:38,fat:18,img:'/body-os/meal-breakfast-clean.webp',ingredients:[{name:'Œufs',qty:3,unit:''},{name:'Blancs d’œufs',qty:150,unit:' g'},{name:'Pain complet',qty:70,unit:' g'},{name:'Tomates',qty:120,unit:' g'}],steps:['Cuire les œufs et blancs.','Griller le pain.','Servir avec les tomates.']}
 ]
 
-const weightData=[{d:'08/05',w:109.5},{d:'22/05',w:108.7},{d:'05/06',w:108.0},{d:'19/06',w:106.8},{d:'02/07',w:105.5},{d:'',w:104.8}]
 const strengthData=[92.5,95,95,97.5,100,100,97.5,100,102.5,105].map((v,i)=>({i,v}))
 type MuscleGroup='Pectoraux'|'Dos'|'Épaules'|'Jambes'|'Bras'
 type ExerciseItem={name:string,equipment:string,sets:string,img:string,video:string,target:string,secondary:string,reps:string,rir:string,rest:string,anatomy:string}
@@ -139,17 +146,20 @@ function QuickLogSheet({latest,close,onSave}:{latest:DailyEntry|undefined,close:
  const [weight,setWeight]=useState(latest?.weight!=null?String(latest.weight):'')
  const [waist,setWaist]=useState(latest?.waist!=null?String(latest.waist):'')
  const [steps,setSteps]=useState(latest?.steps!=null?String(latest.steps):'')
+ const [bodyFat,setBodyFat]=useState(latest?.bodyFat!=null?String(latest.bodyFat):'')
  const save=()=>{
   const patch:Partial<DailyEntry>={}
   if(weight.trim()) patch.weight=Math.round(parseFloat(weight.replace(',','.'))*10)/10
   if(waist.trim()) patch.waist=Math.round(parseFloat(waist.replace(',','.'))*10)/10
   if(steps.trim()) patch.steps=Math.round(parseFloat(steps.replace(',','.')))
+  if(bodyFat.trim()) patch.bodyFat=Math.round(parseFloat(bodyFat.replace(',','.'))*10)/10
   onSave(patch); close()
  }
  return <div className="v9SheetBack" onClick={close}><section className="v103Sheet" onClick={e=>e.stopPropagation()}>
   <header><button onClick={close}>×</button><div><b>MESURE DU JOUR</b><small>Les données restent modifiables</small></div><span></span></header>
   <label>POIDS (KG)<input inputMode="decimal" value={weight} onChange={e=>setWeight(e.target.value)} placeholder="ex. 107,0"/></label>
   <label>TOUR DE TAILLE (CM)<input inputMode="decimal" value={waist} onChange={e=>setWaist(e.target.value)} placeholder="ex. 97"/></label>
+  <label>MASSE GRASSE (%) — optionnel<input inputMode="decimal" value={bodyFat} onChange={e=>setBodyFat(e.target.value)} placeholder="ex. 18,5"/></label>
   <label>PAS<input inputMode="numeric" value={steps} onChange={e=>setSteps(e.target.value)} placeholder="ex. 8000"/></label>
   <button className="v9Primary" onClick={save}>ENREGISTRER</button>
  </section></div>
@@ -227,7 +237,7 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
  const [toast,setToast]=useState(''); const exercises=sessionData[group]
  if(view==='exercise') return <Exercise item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})}/>
  if(view==='rest') return <Rest setView={setView}/>
- if(view==='history') return <History setView={setView}/>
+ if(view==='history') return <History setView={setView} item={exercises[selected]} group={group}/>
  const changeGroup=(g:MuscleGroup)=>{setGroup(g);setSelected(0)}
  const finish=()=>{const count=done[group].filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
  return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>5 exercices · ~ 32 min</em></div><button className="v93Dots" onClick={()=>setToast('Options de séance')}>•••</button></header>
@@ -244,14 +254,19 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
  const setReps=(v:number)=>{setRepsState(v);persistSet(weight,v)}
  const setWeight=(v:number)=>{setWeightState(v);persistSet(v,reps)}
  const [toast,setToast]=useState('')
+ const lastSet=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).at(-1)
  const openVideo=()=>window.open(item.video,'_blank','noopener,noreferrer')
- const validate=()=>{onDone();setToast('Série validée ✓');setTimeout(()=>{setToast('');setView('rest')},650)}
+ const validate=()=>{
+  onDone()
+  logWorkoutSet({date:todayISO(),group,exercise:item.name,weight,reps})
+  setToast('Série validée ✓');setTimeout(()=>{setToast('');setView('rest')},650)
+ }
  return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><button className="v93Dots" onClick={()=>setToast('Options exercice')}>•••</button></header>
   <div className="v9ExerciseHead"><span><small>EXERCICE {index+1}/{total}</small><b>{item.name}</b><em>{item.equipment.toUpperCase()} · {group.toUpperCase()}</em></span><img src={item.anatomy}/></div>
   <section className="v9Media v93VideoMedia v98Media" onClick={openVideo} role="button" tabIndex={0} onKeyDown={e=>e.key==='Enter'&&openVideo()}><img src={item.img} onError={ev=>{(ev.currentTarget as HTMLImageElement).src='/body-os/workout-incline-demo-golden.jpg'}}/><button onClick={e=>{e.stopPropagation();openVideo()}}>▶</button><div><span>CIBLE&nbsp; {item.target}</span><span>SECONDAIRE&nbsp; {item.secondary}</span></div></section>
   <section className="v93Prescription"><span><small>ZONE REPS</small><b>{item.reps}</b></span><span><small>RIR CIBLE</small><b>{item.rir}</b></span><span><small>REPOS</small><b>{item.rest}</b></span></section>
   <section className="v9SetPanel"><small>SÉRIE EN COURS</small><div className="v9Load"><button onClick={()=>setWeight(Math.max(0,weight-2.5))}>−</button><b>{weight}</b><em>KG</em><button onClick={()=>setWeight(weight+2.5)}>+</button></div><div className="v9RepLine"><span>6</span><span>7</span><strong>{reps}</strong><span>9</span><span>10</span></div><input type="range" min="5" max="15" value={reps} onChange={e=>setReps(+e.target.value)}/><div className="v9SetMeta"><span><small>RÉPÉTITIONS</small><b>{reps} REPS</b></span><span><small>RIR</small><b>2</b></span></div></section>
-  <button className="v9LastSet" onClick={()=>setView('history')}><span><small>DERNIÈRE SÉRIE</small><b>95 kg × 8 reps</b></span><em>RIR 2</em><strong>↗</strong></button>
+  <button className="v9LastSet" onClick={()=>setView('history')}><span><small>DERNIÈRE SÉRIE</small><b>{lastSet?`${lastSet.weight} kg × ${lastSet.reps} reps`:'Pas encore de série enregistrée'}</b></span>{lastSet&&<em>{lastSet.date}</em>}<strong>↗</strong></button>
   <div className="v9ExerciseActions"><button onClick={()=>setView('session')}>ANNULER</button><button className="pulse" onClick={validate}>✓</button><button onClick={()=>{onDone();setView('session')}}>TERMINER<br/>EXERCICE</button></div>
   {toast&&<Toast text={toast}/>}
  </main>
@@ -262,8 +277,18 @@ function Rest({setView}:{setView:(v:WorkoutView)=>void}){
  return <main className="v9Page v9Rest"><header className="v9TitleBar"><button onClick={()=>setView('exercise')}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={()=>setView('exercise')}>Passer</button></header><section className="v9Timer"><div><b>00:{String(sec).padStart(2,'0')}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>setSec(Math.max(0,sec-15))}>−15 s</button><button onClick={()=>setSec(sec+15)}>+15 s</button></div><button className="v9NextSet" onClick={()=>setView('exercise')}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={()=>setView('history')}>VOIR HISTORIQUE</button></main>
 }
 
-function History({setView}:{setView:(v:WorkoutView)=>void}){
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setView('exercise')}>‹</button><div><b>HISTORIQUE EXERCICE</b><small>Développé couché · Barre</small></div><span>•••</span></header><div className="v9Segments"><b>CHARGE</b><span>VOLUME</span><span>1RM</span></div><section className="v9HistoryChart"><ResponsiveContainer width="100%" height={210}><BarChart data={strengthData}><Bar dataKey="v" fill="#bdeff2" radius={[4,4,0,0]}/><YAxis hide domain={[80,120]}/><XAxis hide/></BarChart></ResponsiveContainer></section><div className="v9HistoryRows">{[['02/07/25','100 kg × 8','RIR 2'],['19/06/25','97,5 kg × 8','RIR 2'],['05/06/25','95 kg × 8','RIR 2'],['22/05/25','95 kg × 7','RIR 2'],['08/05/25','92,5 kg × 6','RIR 2']].map((r,i)=><div className={i===0?'active':''} key={r[0]}><b>{r[0]}</b><span>{r[1]}</span><em>{r[2]}</em><strong>›</strong></div>)}</div></main>
+const fmtHistoryDate=(iso:string)=>new Date(iso+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})
+
+function History({setView,item,group}:{setView:(v:WorkoutView)=>void,item:ExerciseItem,group:MuscleGroup}){
+ const entries=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).slice(-20)
+ const chartData=entries.map((e,i)=>({i,v:e.weight}))
+ const rows=entries.slice().reverse()
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setView('exercise')}>‹</button><div><b>HISTORIQUE EXERCICE</b><small>{item.name} · {item.equipment}</small></div><span>•••</span></header>
+  <div className="v9Segments"><b>CHARGE</b><span>VOLUME</span><span>1RM</span></div>
+  {entries.length?<section className="v9HistoryChart"><ResponsiveContainer width="100%" height={210}><BarChart data={chartData}><Bar dataKey="v" fill="#bdeff2" radius={[4,4,0,0]} maxBarSize={32}/><YAxis hide domain={['dataMin - 5','dataMax + 5']}/><XAxis hide/></BarChart></ResponsiveContainer></section>
+  :<section className="v9HistoryChart v9HistoryEmpty"><p>Aucune série enregistrée pour cet exercice.<br/>Valide une série pendant ta séance pour commencer l'historique.</p></section>}
+  <div className="v9HistoryRows">{rows.map((r,i)=><div className={i===0?'active':''} key={r.date+i}><b>{fmtHistoryDate(r.date)}</b><span>{r.weight} kg × {r.reps}</span><em>RIR {item.rir}</em><strong>›</strong></div>)}</div>
+ </main>
 }
 
 function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
@@ -559,9 +584,19 @@ function Progress({setScreen}:{setScreen:(s:Screen)=>void}){
   try{localStorage.setItem('body-os-evolution-photos-v1',JSON.stringify(evolutionPhotos))}catch{}
  },[evolutionPhotos])
  const m=progressMuscles[muscle]; const muscleTrend=[0.1,0.5,0.2,0.4,-0.1].map((v,i)=>({d:['08/05','22/05','05/06','19/06','02/07'][i],v}))
+ const dailyLog=readDailyLog()
+ const latestDay=dailyLog.at(-1); const previousDay=dailyLog.at(-2)
+ const weightPoints=dailyLog.filter(e=>e.weight!=null).slice(-14).map(e=>({d:fmtHistoryDate(e.date).slice(0,5),w:e.weight!}))
+ const weightWeekDelta=latestDay?.weight!=null?fmtDelta(latestDay.weight,previousDay?.weight,'kg'):null
+ const waistDelta=latestDay?.waist!=null?fmtDelta(latestDay.waist,previousDay?.waist,'cm'):null
+ const bodyFatDelta=latestDay?.bodyFat!=null?fmtDelta(latestDay.bodyFat,previousDay?.bodyFat,'%'):null
+ const nutritionSettings=readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS)
+ const weighedDays=dailyLog.filter(e=>e.weight!=null)
+ const spanDays=weighedDays.length>=2?(new Date(weighedDays.at(-1)!.date).getTime()-new Date(weighedDays[0].date).getTime())/86400000:0
+ const realWeeklyRate=spanDays>=3?(weighedDays.at(-1)!.weight!-weighedDays[0].weight!)/spanDays*7:null
  return <main className="v9Page v94Progress"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>PROGRESS</b></div><button className="v93Dots">☷</button></header>
   <div className="v9Segments v94MainSegments"><button className={tab==='cut'?'active':''} onClick={()=>setTab('cut')}>SÈCHE</button><button className={tab==='physique'?'active':''} onClick={()=>setTab('physique')}>PHYSIQUE</button><button className={tab==='perf'?'active':''} onClick={()=>setTab('perf')}>PERF.</button></div>
-  {tab==='cut'&&<><section className="v9WeightCard"><div><small>POIDS</small><strong>-0,4 kg</strong><i>vs semaine dernière</i><b>107,0 <em>kg</em></b></div><ResponsiveContainer width="100%" height={180}><LineChart data={weightData}><Line dataKey="w" stroke="#75eef0" strokeWidth={3} dot={{r:4,fill:'#d8fcff'}}/><XAxis dataKey="d" tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/><YAxis domain={[102,110]} tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/></LineChart></ResponsiveContainer></section><div className="v9ProgressGrid"><article><small>TOUR DE TAILLE</small><b>97 <em>cm</em></b><strong>-1,2 cm</strong></article><article><small>MASSE GRASSE</small><b>18,6 <em>%</em></b><strong>-0,7 %</strong></article><article onClick={()=>setPhotos(true)}><small>PHOTOS</small><b>Voir</b><div className="v94PhotoPair"><img src={evolutionPhotos[0]?.src||"/body-os/v9-progress-athlete.png"}/><img src={evolutionPhotos.at(-1)?.src||"/body-os/v9-progress-athlete.png"}/></div></article></div><section className="v9Impact"><span><small>IMPACT CORPS</small><b>74%</b><em>Déficit en moyenne</em><i><strong></strong></i></span><div className={'v94AthleteMini '+m.overlay}><img src="/body-os/v9-progress-athlete.png"/><i></i><i></i></div></section></>}
+  {tab==='cut'&&<><section className="v9WeightCard"><div><small>POIDS</small>{weightWeekDelta&&<strong>{weightWeekDelta}</strong>}<i>vs mesure précédente</i><b>{latestDay?.weight!=null?fmt1(latestDay.weight):'—'} <em>kg</em></b></div>{weightPoints.length?<ResponsiveContainer width="100%" height={180}><LineChart data={weightPoints}><Line dataKey="w" stroke="#75eef0" strokeWidth={3} dot={{r:4,fill:'#d8fcff'}}/><XAxis dataKey="d" tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/><YAxis domain={['dataMin - 1','dataMax + 1']} tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/></LineChart></ResponsiveContainer>:<p className="v94NoData">Pas encore de mesure. Ajoute ton poids depuis Today pour voir ta courbe.</p>}</section><div className="v9ProgressGrid"><article><small>TOUR DE TAILLE</small><b>{latestDay?.waist!=null?latestDay.waist:'—'} <em>cm</em></b>{waistDelta&&<strong>{waistDelta}</strong>}</article><article><small>MASSE GRASSE</small><b>{latestDay?.bodyFat!=null?latestDay.bodyFat:'—'} <em>%</em></b>{bodyFatDelta&&<strong>{bodyFatDelta}</strong>}</article><article onClick={()=>setPhotos(true)}><small>PHOTOS</small><b>Voir</b><div className="v94PhotoPair"><img src={evolutionPhotos[0]?.src||"/body-os/v9-progress-athlete.png"}/><img src={evolutionPhotos.at(-1)?.src||"/body-os/v9-progress-athlete.png"}/></div></article></div><section className="v94RateCard"><div><small>RYTHME DE PERTE RÉEL</small><b>{realWeeklyRate!=null?`${realWeeklyRate>0?'+':''}${realWeeklyRate.toFixed(2).replace('.',',')} kg/sem`:'—'}</b></div><span>Objectif {String(nutritionSettings.weeklyRate).replace('.',',')} kg/sem · {weighedDays.length} mesure{weighedDays.length>1?'s':''}</span></section></>}
   {tab==='physique'&&<><section className="v94Photos v982ProgressPhotos"><h3>PHOTOS D'ÉVOLUTION <button onClick={()=>setPhotos(true)}>＋ AJOUTER</button></h3><div>{evolutionPhotos.slice(-4).map((p,i)=><button key={p.id} onClick={()=>setPhotos(true)}><img src={p.src}/><small>{i===evolutionPhotos.slice(-4).length-1?'Aujourd’hui':p.label}</small></button>)}</div></section><section className="v9Impact"><span><small>IMPACT CORPS</small><b>{m.score}%</b><em>{muscle} suivi</em><i><strong style={{width:m.score+'%'}}></strong></i></span><div className={'v94AthleteMini '+m.overlay}><img src="/body-os/v9-progress-athlete.png"/><i></i><i></i></div></section><h3 className="v94Sub">ÉVOLUTION PAR MUSCLE</h3><div className="v94MuscleChips">{muscleGroups.map(g=><button className={muscle===g?'active':''} onClick={()=>setMuscle(g)} key={g}>{g}</button>)}</div><section className="v94MuscleDetail"><div><small>{muscle.toUpperCase()}</small><b>{m.measure} {m.unit}</b><strong>{m.delta}</strong><em>vs semaine dernière</em></div><ResponsiveContainer width="100%" height={115}><LineChart data={muscleTrend}><Line dataKey="v" stroke="#78eff0" strokeWidth={2} dot={{r:3,fill:'#baffff'}}/><XAxis dataKey="d" tick={{fill:'#8ba6ad',fontSize:7}} axisLine={false}/><YAxis hide domain={[-1,1]}/></LineChart></ResponsiveContainer></section></>}
   {tab==='perf'&&<><section className="v94PerfHero"><small>PERFORMANCE EN SÈCHE</small><b>STABLE</b><strong>+2,8 %</strong><p>La force est maintenue malgré le déficit : bon signal pour la préservation musculaire.</p></section><div className="v94MuscleChips">{muscleGroups.map(g=><button className={muscle===g?'active':''} onClick={()=>setMuscle(g)} key={g}>{g}</button>)}</div><section className="v9HistoryChart"><ResponsiveContainer width="100%" height={210}><BarChart data={strengthData}><Bar dataKey="v" fill="#8feef0" radius={[4,4,0,0]}/><YAxis hide domain={[80,120]}/><XAxis hide/></BarChart></ResponsiveContainer></section><section className="v94PerfStats"><span><small>VOLUME</small><b>{muscle==='Jambes'?'12':'10'} séries</b></span><span><small>RIR MOYEN</small><b>1,7</b></span><span><small>ADHÉRENCE</small><b>94%</b></span></section></>}
   {photos&&<EvolutionPhotosSheet photos={evolutionPhotos} close={()=>setPhotos(false)} onChange={setEvolutionPhotos}/>}

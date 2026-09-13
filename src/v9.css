@@ -203,9 +203,15 @@ body{
 .v9Timer b{font-size:51px;font-weight:420}
 
 /* History */
-.v9HistoryChart,.v9WeightCard{
+.v9HistoryChart,.v9WeightCard,.v94RateCard{
   background:linear-gradient(155deg,rgba(35,73,83,.69),rgba(23,58,68,.70));
 }
+.v94RateCard{margin:9px 0 0;padding:14px 16px;border-radius:13px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.v94RateCard small{display:block;font-size:8px;color:#9fb8bd;letter-spacing:.04em}
+.v94RateCard b{display:block;font-size:19px;margin-top:4px;font-weight:650}
+.v94RateCard span{font-size:9px;color:#a5b8bd;text-align:right;max-width:140px}
+.v9HistoryChart.v9HistoryEmpty{display:flex;align-items:center;justify-content:center;text-align:center}
+.v9HistoryChart.v9HistoryEmpty p{color:#9fb8bd;font-size:11px;line-height:1.5;margin:0}
 .v9HistoryRows div{padding:10px 11px;border-radius:10px}
 
 /* Nutrition */
@@ -258,6 +264,7 @@ body{
 /* Progress */
 .v9WeightCard{padding:12px}
 .v9WeightCard b{font-size:28px;font-weight:500}
+.v94NoData{color:#9fb8bd;font-size:11px;line-height:1.5;text-align:center;padding:28px 10px}
 .v9ProgressGrid article{min-height:97px;border-radius:12px}
 .v9Impact{border-radius:13px}
 .v9Impact img{height:117px}
