@@ -6,6 +6,13 @@ import FoodVision, { type FoodVisionPayload } from './FoodVision'
 type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'
 type WorkoutView='session'|'exercise'|'rest'|'history'
 
+const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
+const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
+const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
+const WORKOUT_LOG_KEY='bodyos.workout.log.v1'
+const readJSON=<T,>(key:string,fallback:T):T=>{try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch{return fallback}}
+const writeJSON=(key:string,value:unknown)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
+
 type Ingredient={name:string,qty:number,unit:string}
 type Meal={name:string,time:string,kcal:number,img:string,details:string,protein:number,carbs:number,fat:number,ingredients:Ingredient[]}
 const mealDetails=(ingredients:Ingredient[])=>ingredients.map(i=>`${i.name} ${i.qty}${i.unit}`).join(' · ')
@@ -111,7 +118,7 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
 
    <section className="v104Hero">
     <div className="v104Mode"><b>SÈCHE <i></i></b><small>JOUR 38</small></div>
-    <div className="v104HeroArt"><img src="/body-os/v104-today-athlete-hero.jpg" alt="Athlète BODY OS"/></div>
+    <div className="v104HeroArt"><img src="/body-os/v9-progress-athlete.png" alt="Athlète BODY OS"/></div>
     <div className="v104Metric v104Weight"><small>POIDS</small><b>107,0 <em>kg</em></b><strong>−0,4 kg</strong><span>vs hier</span></div>
     <div className="v104Metric v104Waist"><small>TOUR DE TAILLE</small><b>97 <em>cm</em></b><strong>−1,2 cm</strong><span>vs hier</span></div>
     <button className="v104Trajectory" onClick={()=>setScreen('adaptive')}><span>TRAJECTOIRE</span><i></i><b>OPTIMALE</b><strong>›</strong></button>
@@ -136,8 +143,10 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
 }
 
 function Workout({view,setView,setScreen}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void}){
+ const doneDefault:Record<MuscleGroup,boolean[]>={Pectoraux:Array(5).fill(false),Dos:Array(5).fill(false),Épaules:Array(5).fill(false),Jambes:Array(5).fill(false),Bras:Array(5).fill(false)}
  const [group,setGroup]=useState<MuscleGroup>('Pectoraux'); const [selected,setSelected]=useState(0)
- const [done,setDone]=useState<Record<MuscleGroup,boolean[]>>({Pectoraux:Array(5).fill(false),Dos:Array(5).fill(false),Épaules:Array(5).fill(false),Jambes:Array(5).fill(false),Bras:Array(5).fill(false)})
+ const [done,setDoneState]=useState<Record<MuscleGroup,boolean[]>>(()=>({...doneDefault,...readJSON(WORKOUT_DONE_KEY,{})}))
+ const setDone=(next:Record<MuscleGroup,boolean[]>)=>{setDoneState(next);writeJSON(WORKOUT_DONE_KEY,next)}
  const [toast,setToast]=useState(''); const exercises=sessionData[group]
  if(view==='exercise') return <Exercise item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})}/>
  if(view==='rest') return <Rest setView={setView}/>
@@ -151,7 +160,13 @@ function Workout({view,setView,setScreen}:{view:WorkoutView,setView:(v:WorkoutVi
 }
 
 function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,index:number,total:number,group:MuscleGroup,setView:(v:WorkoutView)=>void,onDone:()=>void}){
- const [reps,setReps]=useState(index===1?8:10); const [weight,setWeight]=useState(index===3?0:100); const [toast,setToast]=useState('')
+ const logKey=`${group}::${item.name}`
+ const [reps,setRepsState]=useState(()=>readJSON<Record<string,{weight:number,reps:number}>>(WORKOUT_LOG_KEY,{})[logKey]?.reps ?? (index===1?8:10))
+ const [weight,setWeightState]=useState(()=>readJSON<Record<string,{weight:number,reps:number}>>(WORKOUT_LOG_KEY,{})[logKey]?.weight ?? (index===3?0:100))
+ const persistSet=(w:number,r:number)=>writeJSON(WORKOUT_LOG_KEY,{...readJSON(WORKOUT_LOG_KEY,{}),[logKey]:{weight:w,reps:r}})
+ const setReps=(v:number)=>{setRepsState(v);persistSet(weight,v)}
+ const setWeight=(v:number)=>{setWeightState(v);persistSet(v,reps)}
+ const [toast,setToast]=useState('')
  const openVideo=()=>window.open(item.video,'_blank','noopener,noreferrer')
  const validate=()=>{onDone();setToast('Série validée ✓');setTimeout(()=>{setToast('');setView('rest')},650)}
  return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><button className="v93Dots" onClick={()=>setToast('Options exercice')}>•••</button></header>
@@ -174,7 +189,7 @@ function History({setView}:{setView:(v:WorkoutView)=>void}){
  return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setView('exercise')}>‹</button><div><b>HISTORIQUE EXERCICE</b><small>Développé couché · Barre</small></div><span>•••</span></header><div className="v9Segments"><b>CHARGE</b><span>VOLUME</span><span>1RM</span></div><section className="v9HistoryChart"><ResponsiveContainer width="100%" height={210}><BarChart data={strengthData}><Bar dataKey="v" fill="#bdeff2" radius={[4,4,0,0]}/><YAxis hide domain={[80,120]}/><XAxis hide/></BarChart></ResponsiveContainer></section><div className="v9HistoryRows">{[['02/07/25','100 kg × 8','RIR 2'],['19/06/25','97,5 kg × 8','RIR 2'],['05/06/25','95 kg × 8','RIR 2'],['22/05/25','95 kg × 7','RIR 2'],['08/05/25','92,5 kg × 6','RIR 2']].map((r,i)=><div className={i===0?'active':''} key={r[0]}><b>{r[0]}</b><span>{r[1]}</span><em>{r[2]}</em><strong>›</strong></div>)}</div></main>
 }
 
-function Nutrition(){
+function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
  const [open,setOpen]=useState<Meal|null>(null)
  const [tab,setTab]=useState<'day'|'week'|'month'>('day')
  const [mode,setMode]=useState<'programme'|'recipes'>('programme')
@@ -182,9 +197,12 @@ function Nutrition(){
  const [toast,setToast]=useState('')
  const [settingsOpen,setSettingsOpen]=useState(false)
  const [visionOpen,setVisionOpen]=useState(false)
- const [mealState,setMealState]=useState<Meal[]>(meals)
- const [settings,setSettings]=useState({goal:'SÈCHE',calories:2510,protein:180,carbs:210,fat:70,water:2.5,weeklyRate:-0.5})
+ const [mealState,setMealState]=useState<Meal[]>(()=>readJSON(NUTRITION_MEALS_KEY,meals))
+ const [settings,setSettings]=useState(()=>readJSON(NUTRITION_SETTINGS_KEY,{goal:'SÈCHE',calories:2510,protein:180,carbs:210,fat:70,water:2.5,weeklyRate:-0.5}))
  const [draft,setDraft]=useState(settings)
+
+ useEffect(()=>{writeJSON(NUTRITION_MEALS_KEY,mealState)},[mealState])
+ useEffect(()=>{writeJSON(NUTRITION_SETTINGS_KEY,settings)},[settings])
 
  const saveSettings=()=>{
    setSettings(draft); setSettingsOpen(false); setToast('Réglages enregistrés')
@@ -213,7 +231,7 @@ function Nutrition(){
 
  return <main className="v9Page">
   <header className="v9TitleBar">
-   <button onClick={()=>history.back()}>‹</button>
+   <button onClick={()=>setScreen('today')}>‹</button>
    <div><b>NUTRITION</b></div>
    <button className="v93Dots" onClick={()=>{setDraft(settings);setSettingsOpen(true)}}>•••</button>
   </header>
@@ -530,15 +548,15 @@ function Coach({setScreen}:{setScreen:(s:Screen)=>void}){
  return <main className="v9Page v9Coach"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>AI COACH</b></div><span className="v9Online">● DÉMO</span></header><div className="v9Orb"><i></i><i></i><b>✦</b></div><section className="v9CoachHello"><b>Salut Fouad 👋</b><span>Que veux-tu optimiser aujourd'hui ?</span></section><div className="v9CoachPrompts"><button onClick={()=>ask('progression')}>◉ <span>Analyse de ma progression</span>›</button><button onClick={()=>ask('adjust')}>◎ <span>Que dois-je ajuster ?</span>›</button><button onClick={()=>setScreen('plan')}>◌ <span>Planifie ma semaine</span>›</button><button onClick={()=>ask('recovery')}>♙ <span>Conseil récupération</span>›</button></div>{answer&&<div className="v93CoachAnswer">{answer}</div>}<label className="v9Ask"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Pose une question…"/><button onClick={()=>{if(q.trim()){setAnswer('Mode démo : ta question est enregistrée. Le moteur LLM sera branché séparément.');setQ('')}}}>➤</button></label><div className="v9CoachNote">Mode démo : moteur BODY OS local. Aucun token OpenAI requis.</div></main>
 }
 
-function Plan(){
+function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
  const [selected,setSelected]=useState(0)
  const days=[['LUN','7','Pectoraux\nTriceps','Musculation\n45 min'],['MAR','8','Cardio LISS\nZone 2','45 min'],['MER','9','Dos\nBiceps','Musculation\n50 min'],['JEU','10','Repos actif\nMobilité','20 min'],['VEN','11','Épaules\nAbdos','Musculation\n45 min'],['SAM','12','Cardio HIIT','45 min'],['DIM','13','Jambes\nMollets','Musculation\n50 min']]
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>history.back()}>‹</button><div><b>PLAN IA — SEMAINE</b><small>07 – 13 JUILLET</small></div><span>◫</span></header><section className="v9Week">{days.map((d,i)=><article onClick={()=>setSelected(i)} className={i===selected?'active':''} key={d[0]}><b>{d[0]}</b><strong>{d[1]}</strong><span>{d[2].split('\n').map(x=><i key={x}>{x}</i>)}</span><em>{d[3].split('\n').map(x=><i key={x}>{x}</i>)}</em><small>◌ 10 000 pas</small></article>)}</section><section className="v9WeekGoal"><div><small>OBJECTIF DE LA SEMAINE</small><p>Continuer la sèche en préservant le muscle.<br/>Déficit modéré.<br/>Protéines hautes.<br/>Performances stables.</p></div><aside><b>Tes progrès sont excellents.</b><span>Aucun ajustement calorique nécessaire cette semaine.</span><strong>92%</strong></aside></section></main>
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('coach')}>‹</button><div><b>PLAN IA — SEMAINE</b><small>07 – 13 JUILLET</small></div><span>◫</span></header><section className="v9Week">{days.map((d,i)=><article onClick={()=>setSelected(i)} className={i===selected?'active':''} key={d[0]}><b>{d[0]}</b><strong>{d[1]}</strong><span>{d[2].split('\n').map(x=><i key={x}>{x}</i>)}</span><em>{d[3].split('\n').map(x=><i key={x}>{x}</i>)}</em><small>◌ 10 000 pas</small></article>)}</section><section className="v9WeekGoal"><div><small>OBJECTIF DE LA SEMAINE</small><p>Continuer la sèche en préservant le muscle.<br/>Déficit modéré.<br/>Protéines hautes.<br/>Performances stables.</p></div><aside><b>Tes progrès sont excellents.</b><span>Aucun ajustement calorique nécessaire cette semaine.</span><strong>92%</strong></aside></section></main>
 }
 
 export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
- const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen}/>:screen==='nutrition'?<Nutrition/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:<Plan/>,[screen,workoutView])
+ const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
  const showNav=screen==='nutrition'||screen==='progress'
  return <div className="v9Shell"><div className="v9Phone">{screen!=='today'&&<StatusBar/>}{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
 }
