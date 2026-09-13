@@ -188,6 +188,7 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
  const [schedule,setSchedule]=useState<DayPlan[]>(()=>readSchedule())
  const [logOpen,setLogOpen]=useState(false)
  const [programOpen,setProgramOpen]=useState(false)
+ const [cardioOpen,setCardioOpen]=useState(false)
  const nutrition=useMemo(()=>({
   meals:readJSON<Meal[]>(NUTRITION_MEALS_KEY,meals),
   settings:readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS)
@@ -220,7 +221,7 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
     <div className="v104Kpis">
      <button onClick={()=>setScreen('nutrition')}><i className="fire">♨</i><small>CALORIES</small><b>{consumedKcal}</b><span>sur {nutrition.settings.calories} kcal</span></button>
      <button onClick={()=>setScreen('nutrition')}><i className="protein">◯</i><small>PROTÉINES</small><b>{consumedProtein}</b><span>g sur {nutrition.settings.protein} g</span></button>
-     <button className="v104Train" onClick={()=>setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>{plan}</b>{planIsRappel&&<span className="v104Rappel">RAPPEL</span>}</button>
+     <button className="v104Train" onClick={()=>plan==='Cardio'?setCardioOpen(true):setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>{plan}</b>{planIsRappel&&<span className="v104Rappel">RAPPEL</span>}</button>
      <button onClick={()=>setLogOpen(true)}><i className="steps">♧</i><small>ACTIVITÉ</small><b>{latest?.steps!=null?latest.steps.toLocaleString('fr-FR'):'—'}</b><span>pas</span></button>
     </div>
    </section>
@@ -232,6 +233,15 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
    <BottomNav screen="today" setScreen={setScreen}/>
    {logOpen&&<QuickLogSheet latest={latest} close={()=>setLogOpen(false)} onSave={saveLog}/>}
    {programOpen&&<ProgramSheet schedule={schedule} close={()=>setProgramOpen(false)} onSave={saveSchedule}/>}
+   {cardioOpen&&<InfoSheet title="CARDIO DU JOUR" close={()=>setCardioOpen(false)}>
+    <div className="v103Why">
+     <b>25 à 35 minutes en endurance légère (LISS)</b>
+     <p>Marche rapide/inclinée, vélo ou rameur, à une intensité où tu peux encore parler sans être essoufflé (zone 2). Pas de fractionné/HIIT pendant la sèche : ça tape trop dans la récupération et entre en compétition avec la musculation.</p>
+     <small>POURQUOI CE JOUR-LÀ</small>
+     <strong>Récupération active</strong>
+     <p>Le déficit calorique vient de l'alimentation, pas du cardio — ce n'est pas obligatoire. Fais-le si tu en as envie, si ton rythme de perte réel (Progress) est en dessous de l'objectif, ou simplement pour la santé cardiovasculaire.</p>
+    </div>
+   </InfoSheet>}
  </main>
 }
 
