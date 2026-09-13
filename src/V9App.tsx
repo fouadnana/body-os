@@ -61,9 +61,10 @@ type ExerciseItem={name:string,equipment:string,sets:string,img:string,video:str
 const muscleGroups:MuscleGroup[]=['Pectoraux','Dos','Épaules','Jambes','Bras']
 type DayPlan=MuscleGroup|'Repos'|'Cardio'
 const WEEKDAYS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
-const DEFAULT_SCHEDULE:DayPlan[]=['Pectoraux','Cardio','Dos','Repos','Épaules','Cardio','Jambes']
+const DEFAULT_SCHEDULE:DayPlan[]=['Pectoraux','Dos','Épaules','Cardio','Jambes','Bras','Repos']
 const readSchedule=():DayPlan[]=>{const s=readJSON<DayPlan[]>(SCHEDULE_KEY,DEFAULT_SCHEDULE);return s.length===7?s:DEFAULT_SCHEDULE}
 const dayIcon=(d:DayPlan)=>d==='Pectoraux'?'♜':d==='Dos'?'♙':d==='Épaules'?'✣':d==='Jambes'?'♧':d==='Bras'?'◉':d==='Cardio'?'◌':'☾'
+const DEFAULT_NUTRITION_SETTINGS={goal:'SÈCHE',calories:2600,protein:200,carbs:280,fat:75,water:3,weeklyRate:-0.55}
 const sessionData:Record<MuscleGroup,ExerciseItem[]>={
  Pectoraux:[
   {name:'Développé incliné',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/5CECBjd7HLQ/hqdefault.jpg',video:'https://www.youtube.com/watch?v=5CECBjd7HLQ',target:'Haut des pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'6–10',rir:'1–2',rest:'2:30–3:00',anatomy:'/body-os/anatomy-incline-db.svg'},
@@ -174,7 +175,7 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
  const [programOpen,setProgramOpen]=useState(false)
  const nutrition=useMemo(()=>({
   meals:readJSON<Meal[]>(NUTRITION_MEALS_KEY,meals),
-  settings:readJSON(NUTRITION_SETTINGS_KEY,{goal:'SÈCHE',calories:2510,protein:180,carbs:210,fat:70,water:2.5,weeklyRate:-0.5})
+  settings:readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS)
  }),[])
  const consumedKcal=nutrition.meals.reduce((s,m)=>s+m.kcal,0)
  const consumedProtein=Math.round(nutrition.meals.reduce((s,m)=>s+m.protein,0))
@@ -274,7 +275,7 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
  const [settingsOpen,setSettingsOpen]=useState(false)
  const [visionOpen,setVisionOpen]=useState(false)
  const [mealState,setMealState]=useState<Meal[]>(()=>readJSON(NUTRITION_MEALS_KEY,meals))
- const [settings,setSettings]=useState(()=>readJSON(NUTRITION_SETTINGS_KEY,{goal:'SÈCHE',calories:2510,protein:180,carbs:210,fat:70,water:2.5,weeklyRate:-0.5}))
+ const [settings,setSettings]=useState(()=>readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS))
  const [draft,setDraft]=useState(settings)
 
  useEffect(()=>{writeJSON(NUTRITION_MEALS_KEY,mealState)},[mealState])
