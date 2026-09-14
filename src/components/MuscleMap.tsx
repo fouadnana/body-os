@@ -63,9 +63,12 @@ export function MuscleMap({view,primary,secondary,label}:{view:'front'|'back',pr
    <line x1="60" y1="0" x2="60" y2="360"/><line x1="180" y1="0" x2="180" y2="360"/>
   </g>
   <path d="M75 76 L42 145 L52 162 L88 115 M165 76 L198 145 L188 162 L152 115" fill="none" stroke="#37464e" strokeWidth="19" strokeLinecap="round"/>
-  <path d="M112 205 L96 325 M128 205 L144 325" fill="none" stroke="#37464e" strokeWidth="23" strokeLinecap="round"/>
-  <path d="M75 68 Q120 54 165 68 L152 148 Q146 182 132 208 L128 320 H112 L108 208 Q94 182 88 148Z" fill="url(#mapSkin)" stroke="#4c6a72" strokeWidth="1.3"/>
-  <circle cx="120" cy="36" r="15" fill="url(#mapSkin)" stroke="#4c6a72" strokeWidth="1.2"/>
+  <path d="M75 60 Q120 42 165 60 L150 145 Q148 175 150 200 L90 200 Q92 175 90 145Z" fill="url(#mapSkin)" stroke="#4c6a72" strokeWidth="1.3"/>
+  <path d="M90 200 L118 200 L104 330 L80 330Z" fill="url(#mapSkin)" stroke="#4c6a72" strokeWidth="1.3"/>
+  <path d="M150 200 L122 200 L136 330 L160 330Z" fill="url(#mapSkin)" stroke="#4c6a72" strokeWidth="1.3"/>
+  <ellipse cx="92" cy="333" rx="17" ry="7" fill="url(#mapSkin)" stroke="#4c6a72" strokeWidth="1.1"/>
+  <ellipse cx="148" cy="333" rx="17" ry="7" fill="url(#mapSkin)" stroke="#4c6a72" strokeWidth="1.1"/>
+  <circle cx="120" cy="33" r="17" fill="url(#mapSkin)" stroke="#4c6a72" strokeWidth="1.2"/>
   {visible.map(z=><g key={z.id}><Zone z={z} side="l" state={stateOf(z.id)}/>{z.mirror&&<Zone z={z} side="r" state={stateOf(z.id)}/>}</g>)}
   {label&&<text x="120" y="352" textAnchor="middle" fill="#8ff7f4" fontSize="11" fontWeight="700" letterSpacing="1">{label.toUpperCase()}</text>}
  </svg>
