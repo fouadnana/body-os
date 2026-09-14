@@ -35,7 +35,7 @@ body{
   background:transparent;
 }
 .v9Phone{
-  width:min(100vw,390px);
+  width:min(100vw,430px);
   min-height:844px;
   border-radius:27px;
   border:1px solid rgba(255,255,255,.42);
@@ -596,7 +596,7 @@ body{
 
 /* Golden frame */
 .v9Phone{
-  width:min(100vw,390px)!important;
+  width:min(100vw,430px)!important;
   min-height:844px!important;
   border-radius:27px!important;
 }
