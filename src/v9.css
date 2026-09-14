@@ -505,7 +505,7 @@ body{
 .v97ModeTabs button{height:34px;border:0;border-radius:8px;background:transparent;color:#8faab1;font-size:7px;font-weight:800}
 .v97ModeTabs button.active{background:linear-gradient(90deg,rgba(100,225,229,.22),rgba(120,244,239,.12));color:#aaffff;box-shadow:inset 0 -1px 0 #7cecef}
 
-.v97IngredientList{display:grid!important;gap:6px!important;margin:6px 0 12px!important}
+.v97IngredientList{display:grid!important;grid-template-columns:1fr!important;gap:6px!important;margin:6px 0 12px!important}
 .v97IngredientList>div{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;align-items:center!important;padding:8px 9px!important;border-radius:9px!important;background:rgba(32,69,79,.58)!important;border:1px solid rgba(187,239,240,.14)!important}
 .v97IngredientList>div>span{display:grid!important;gap:2px!important}
 .v97IngredientList>div>span b{font-size:8px!important}.v97IngredientList>div>span small{font-size:6px!important;color:#8da9b0!important}
