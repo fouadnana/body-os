@@ -65,20 +65,22 @@ const recipes:Recipe[]=[
 
 const strengthData=[92.5,95,95,97.5,100,100,97.5,100,102.5,105].map((v,i)=>({i,v}))
 type MuscleGroup='Pectoraux'|'Dos'|'Épaules'|'Jambes'|'Bras'
+type SessionGroup=MuscleGroup|'L5-S1'
 type ExerciseItem={name:string,equipment:string,sets:string,img:string,video:string,target:string,secondary:string,reps:string,rir:string,rest:string,anatomy:string,zoneView:'front'|'back',zonePrimary:MuscleZone[],zoneSecondary?:MuscleZone[]}
 const muscleGroups:MuscleGroup[]=['Pectoraux','Dos','Épaules','Jambes','Bras']
-type DayPlan=MuscleGroup|'Repos'|'Cardio'
+const sessionGroups:SessionGroup[]=[...muscleGroups,'L5-S1']
+type DayPlan=SessionGroup|'Repos'|'Cardio'
 const WEEKDAYS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
 const DEFAULT_SCHEDULE:DayPlan[]=['Pectoraux','Dos','Jambes','Épaules','Bras','Bras','Repos']
 const readSchedule=():DayPlan[]=>{const s=readJSON<DayPlan[]>(SCHEDULE_KEY,DEFAULT_SCHEDULE);return s.length===7?s:DEFAULT_SCHEDULE}
-const dayIcon=(d:DayPlan)=>d==='Pectoraux'?'♜':d==='Dos'?'♙':d==='Épaules'?'✣':d==='Jambes'?'♧':d==='Bras'?'◉':d==='Cardio'?'◌':'☾'
+const dayIcon=(d:DayPlan)=>d==='Pectoraux'?'♜':d==='Dos'?'♙':d==='Épaules'?'✣':d==='Jambes'?'♧':d==='Bras'?'◉':d==='L5-S1'?'⚕':d==='Cardio'?'◌':'☾'
 const isRappelDay=(schedule:DayPlan[],idx:number)=>{
  const g=schedule[idx]
  if(g==='Repos'||g==='Cardio') return false
  return schedule.indexOf(g)!==idx
 }
 const DEFAULT_NUTRITION_SETTINGS={goal:'SÈCHE',calories:2600,protein:200,carbs:280,fat:75,water:3,weeklyRate:-0.55}
-const sessionData:Record<MuscleGroup,ExerciseItem[]>={
+const sessionData:Record<SessionGroup,ExerciseItem[]>={
  Pectoraux:[
   {name:'Développé incliné',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/5CECBjd7HLQ/hqdefault.jpg',video:'https://www.youtube.com/watch?v=5CECBjd7HLQ',target:'Haut des pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'6–10',rir:'1–2',rest:'2:30–3:00',anatomy:'/body-os/anatomy-incline-db.svg',zoneView:'front',zonePrimary:['chestUpper'],zoneSecondary:['triceps','frontDelt']},
   {name:'Développé couché',equipment:'Barre',sets:'3 séries',img:'/body-os/v981-golden-bench-media.jpg',video:'https://www.youtube.com/watch?v=A0NBCkpYatQ',target:'Pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'5–8',rir:'1–2',rest:'2:30–3:30',anatomy:'/body-os/anatomy-chest-press.svg',zoneView:'front',zonePrimary:['chestUpper','chestLower'],zoneSecondary:['triceps','frontDelt']},
@@ -113,6 +115,13 @@ const sessionData:Record<MuscleGroup,ExerciseItem[]>={
   {name:'Curl assis',equipment:'Haltères',sets:'2 séries',img:'https://img.youtube.com/vi/HHq-wRiFDh0/hqdefault.jpg',video:'https://www.youtube.com/watch?v=HHq-wRiFDh0',target:'Biceps',secondary:'Avant-bras',reps:'10–15',rir:'1–2',rest:'1:30',anatomy:'/body-os/anatomy-seated-curl.svg',zoneView:'front',zonePrimary:['biceps'],zoneSecondary:['forearm']},
   {name:'Extension triceps',equipment:'Poulie corde',sets:'3 séries',img:'/body-os/demo-rope-pushdown-approved.jpg',video:'https://www.youtube.com/watch?v=ADRve8qqC1U',target:'Triceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30',anatomy:'/body-os/anatomy-rope-pushdown.svg',zoneView:'back',zonePrimary:['triceps']},
   {name:'Extension au-dessus tête',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/w3iAESGWK6M/hqdefault.jpg',video:'https://www.youtube.com/watch?v=w3iAESGWK6M',target:'Triceps long chef',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30',anatomy:'/body-os/anatomy-triceps.svg',zoneView:'back',zonePrimary:['triceps']},
+ ],
+ 'L5-S1':[
+  {name:'Bird dog',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/dia-fydN7rE/hqdefault.jpg',video:'https://www.youtube.com/watch?v=dia-fydN7rE',target:'Gainage profond',secondary:'Fessiers',reps:'8–12 / côté',rir:'—',rest:'45–60 s',anatomy:'/body-os/l5-spine.svg',zoneView:'back',zonePrimary:['lowerBack'],zoneSecondary:['glutes']},
+  {name:'Planche latérale',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/iNbH7_edNI8/hqdefault.jpg',video:'https://www.youtube.com/watch?v=iNbH7_edNI8',target:'Obliques · Carré des lombes',secondary:'Épaules',reps:'20–30 s / côté',rir:'—',rest:'45 s',anatomy:'/body-os/l5-spine.svg',zoneView:'front',zonePrimary:['abs'],zoneSecondary:['sideDelt']},
+  {name:'Pont fessier',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/n6JiF2jp2Ns/hqdefault.jpg',video:'https://www.youtube.com/watch?v=n6JiF2jp2Ns',target:'Fessiers · Chaîne postérieure',secondary:'Ischios',reps:'12–15',rir:'—',rest:'45 s',anatomy:'/body-os/l5-spine.svg',zoneView:'back',zonePrimary:['glutes'],zoneSecondary:['hamstrings']},
+  {name:'Dead bug',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/pxql0kTdmEs/hqdefault.jpg',video:'https://www.youtube.com/watch?v=pxql0kTdmEs',target:'Gainage profond',secondary:'Hanches',reps:'8–10 / côté',rir:'—',rest:'45 s',anatomy:'/body-os/l5-spine.svg',zoneView:'front',zonePrimary:['abs']},
+  {name:'Gainage ventral',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/GQE8ASRA7t0/hqdefault.jpg',video:'https://www.youtube.com/watch?v=GQE8ASRA7t0',target:'Gainage global',secondary:'Épaules',reps:'20–40 s',rir:'—',rest:'45–60 s',anatomy:'/body-os/l5-spine.svg',zoneView:'front',zonePrimary:['abs'],zoneSecondary:['frontDelt']},
  ]
 }
 const progressMuscles:Record<MuscleGroup,{delta:string,score:number,measure:string,unit:string,overlay:string}>={
@@ -173,7 +182,7 @@ function QuickLogSheet({latest,close,onSave}:{latest:DailyEntry|undefined,close:
 
 function ProgramSheet({schedule,close,onSave}:{schedule:DayPlan[],close:()=>void,onSave:(s:DayPlan[])=>void}){
  const [draft,setDraft]=useState<DayPlan[]>(schedule)
- const options:DayPlan[]=['Repos','Cardio',...muscleGroups]
+ const options:DayPlan[]=['Repos','Cardio',...sessionGroups]
  const setDay=(i:number,v:DayPlan)=>setDraft(d=>d.map((x,j)=>j===i?v:x))
  return <div className="v9SheetBack" onClick={close}><section className="v96NutritionSettings" onClick={e=>e.stopPropagation()}>
   <header><button onClick={close}>×</button><div><small>MON PROGRAMME</small><b>Séance par jour</b></div><span></span></header>
@@ -246,24 +255,24 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
  </main>
 }
 
-function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void,initialGroup:MuscleGroup}){
- const doneDefault:Record<MuscleGroup,boolean[]>={Pectoraux:Array(5).fill(false),Dos:Array(5).fill(false),Épaules:Array(5).fill(false),Jambes:Array(5).fill(false),Bras:Array(5).fill(false)}
- const [group,setGroup]=useState<MuscleGroup>(initialGroup); const [selected,setSelected]=useState(0)
- const [done,setDoneState]=useState<Record<MuscleGroup,boolean[]>>(()=>({...doneDefault,...readJSON(WORKOUT_DONE_KEY,{})}))
- const setDone=(next:Record<MuscleGroup,boolean[]>)=>{setDoneState(next);writeJSON(WORKOUT_DONE_KEY,next)}
+function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void,initialGroup:SessionGroup}){
+ const doneDefault=Object.fromEntries(sessionGroups.map(g=>[g,Array(sessionData[g].length).fill(false)])) as Record<SessionGroup,boolean[]>
+ const [group,setGroup]=useState<SessionGroup>(initialGroup); const [selected,setSelected]=useState(0)
+ const [done,setDoneState]=useState<Record<SessionGroup,boolean[]>>(()=>({...doneDefault,...readJSON(WORKOUT_DONE_KEY,{})}))
+ const setDone=(next:Record<SessionGroup,boolean[]>)=>{setDoneState(next);writeJSON(WORKOUT_DONE_KEY,next)}
  const [toast,setToast]=useState(''); const exercises=sessionData[group]
  if(view==='exercise') return <Exercise item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})}/>
  if(view==='rest') return <Rest setView={setView}/>
  if(view==='history') return <History setView={setView} item={exercises[selected]} group={group}/>
- const changeGroup=(g:MuscleGroup)=>{setGroup(g);setSelected(0)}
+ const changeGroup=(g:SessionGroup)=>{setGroup(g);setSelected(0)}
  const finish=()=>{const count=done[group].filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>5 exercices · ~ 32 min</em></div><button className="v93Dots" onClick={()=>setToast('Options de séance')}>•••</button></header>
-  <div className="v94MuscleTabs">{muscleGroups.map(g=><button key={g} className={g===group?'active':''} onClick={()=>changeGroup(g)}><span>{g==='Pectoraux'?'♜':g==='Dos'?'♙':g==='Épaules'?'✣':g==='Jambes'?'♧':'◉'}</span><small>{g}</small></button>)}</div>
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>{exercises.length} exercices · ~ 32 min</em></div><button className="v93Dots" onClick={()=>setToast('Options de séance')}>•••</button></header>
+  <div className="v94MuscleTabs">{sessionGroups.map(g=><button key={g} className={g===group?'active':''} onClick={()=>changeGroup(g)}><span>{g==='Pectoraux'?'♜':g==='Dos'?'♙':g==='Épaules'?'✣':g==='Jambes'?'♧':g==='Bras'?'◉':'⚕'}</span><small>{g}</small></button>)}</div>
   <section className="v9ExerciseList">{exercises.map((e,i)=><button key={e.name} onClick={()=>{setSelected(i);setView('exercise')}} className={done[group][i]?'done':''}><div className="v93Thumb"><img src={e.img} onError={ev=>{(ev.currentTarget as HTMLImageElement).src='/body-os/workout-incline-demo-golden.jpg'}}/><i>▶</i></div><span><small>{i+1}</small><b>{e.name}</b><em>{e.equipment} · {e.reps} · RIR {e.rir}</em></span><strong>{e.sets}</strong><i>{done[group][i]?'✓':'○'}</i></button>)}</section>
   <button className="v9Primary" onClick={finish}>TERMINER LA SÉANCE</button><div className="v9Remaining"><small>Temps estimé restant</small><i><span></span></i><b>32 min</b></div>{toast&&<Toast text={toast}/>} </main>
 }
 
-function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,index:number,total:number,group:MuscleGroup,setView:(v:WorkoutView)=>void,onDone:()=>void}){
+function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void}){
  const logKey=`${group}::${item.name}`
  const [reps,setRepsState]=useState(()=>readJSON<Record<string,{weight:number,reps:number}>>(WORKOUT_LOG_KEY,{})[logKey]?.reps ?? (index===1?8:10))
  const [weight,setWeightState]=useState(()=>readJSON<Record<string,{weight:number,reps:number}>>(WORKOUT_LOG_KEY,{})[logKey]?.weight ?? (index===3?0:100))
@@ -296,7 +305,7 @@ function Rest({setView}:{setView:(v:WorkoutView)=>void}){
 
 const fmtHistoryDate=(iso:string)=>new Date(iso+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})
 
-function History({setView,item,group}:{setView:(v:WorkoutView)=>void,item:ExerciseItem,group:MuscleGroup}){
+function History({setView,item,group}:{setView:(v:WorkoutView)=>void,item:ExerciseItem,group:SessionGroup}){
  const entries=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).slice(-20)
  const chartData=entries.map((e,i)=>({i,v:e.weight}))
  const rows=entries.slice().reverse()
@@ -693,7 +702,7 @@ function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
  const days=WEEKDAYS.map((w,i)=>{
   const d=new Date(monday); d.setDate(monday.getDate()+i)
   const plan=schedule[i]
-  const kind=plan==='Repos'?'Repos':plan==='Cardio'?'Cardio':isRappelDay(schedule,i)?'Rappel':'Musculation'
+  const kind=plan==='Repos'?'Repos':plan==='Cardio'?'Cardio':plan==='L5-S1'?'Renforcement':isRappelDay(schedule,i)?'Rappel':'Musculation'
   return {abbr:w.slice(0,3).toUpperCase(),date:d.getDate(),plan,kind}
  })
  return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('coach')}>‹</button><div><b>PLAN — SEMAINE</b><small>{fmtDate(monday)} – {fmtDate(sunday)}</small></div><span>◫</span></header><section className="v9Week">{days.map((d,i)=><article onClick={()=>setSelected(i)} className={i===selected?'active':''} key={d.abbr}><b>{d.abbr}</b><strong>{d.date}</strong><span><i>{d.plan}</i></span><em><i>{d.kind}</i></em><small>◌ 10 000 pas</small></article>)}</section><section className="v9WeekGoal"><div><small>OBJECTIF DE LA SEMAINE</small><p>Continuer la sèche en préservant le muscle.<br/>Déficit modéré.<br/>Protéines hautes.<br/>Performances stables.</p></div><aside><b>Tes progrès sont excellents.</b><span>Aucun ajustement calorique nécessaire cette semaine.</span><strong>92%</strong></aside></section></main>
@@ -702,7 +711,7 @@ function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
 export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
  const todayPlan=readSchedule()[mondayIndex()]
- const initialGroup=(muscleGroups as string[]).includes(todayPlan)?todayPlan as MuscleGroup:'Pectoraux'
+ const initialGroup=(sessionGroups as string[]).includes(todayPlan)?todayPlan as SessionGroup:'Pectoraux'
  const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
  const showNav=screen==='nutrition'||screen==='progress'
  return <div className="v9Shell"><div className="v9Phone">{screen!=='today'&&<StatusBar/>}{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>

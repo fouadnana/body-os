@@ -1,6 +1,6 @@
 export type MuscleZone=
  |'chestUpper'|'chestLower'|'frontDelt'|'sideDelt'|'rearDelt'|'lats'|'traps'
- |'biceps'|'triceps'|'forearm'|'abs'|'quads'|'hamstrings'|'glutes'|'calves'
+ |'biceps'|'triceps'|'forearm'|'abs'|'quads'|'hamstrings'|'glutes'|'calves'|'lowerBack'
 
 type ZoneDef={id:MuscleZone,view:'front'|'back'|'both',shape:'path'|'ellipse',d?:string,cx?:number,cy?:number,rx?:number,ry?:number,mirror?:boolean}
 
@@ -11,6 +11,7 @@ const ZONES:ZoneDef[]=[
  {id:'traps',view:'back',shape:'path',d:'M87 80 Q120 96 153 80 L148 106 Q120 118 92 106Z'},
  {id:'lats',view:'back',shape:'path',d:'M79 108 Q88 148 100 178 L84 182 Q73 142 75 112Z',mirror:true},
  {id:'glutes',view:'back',shape:'path',d:'M98 200 Q120 212 142 200 L138 226 Q120 236 102 226Z'},
+ {id:'lowerBack',view:'back',shape:'path',d:'M101 148 Q120 158 139 148 L136 198 Q120 208 104 198Z'},
  {id:'frontDelt',view:'front',shape:'ellipse',cx:68,cy:90,rx:15,ry:14,mirror:true},
  {id:'sideDelt',view:'front',shape:'ellipse',cx:57,cy:101,rx:10,ry:13,mirror:true},
  {id:'rearDelt',view:'back',shape:'ellipse',cx:68,cy:90,rx:15,ry:14,mirror:true},
