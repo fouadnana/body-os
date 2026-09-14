@@ -64,7 +64,7 @@ body{
 
 .v9Page{
   min-height:815px;
-  padding:5px 13px 88px;
+  padding:max(18px, env(safe-area-inset-top)) 13px 88px;
   background:
     radial-gradient(circle at 72% 3%,rgba(158,230,231,.10),transparent 28%);
 }
@@ -602,7 +602,7 @@ body{
 }
 .v9Page{
   min-height:815px!important;
-  padding:5px 13px 82px!important;
+  padding:max(18px, env(safe-area-inset-top)) 13px 82px!important;
 }
 .v9TitleBar{
   height:48px!important;
