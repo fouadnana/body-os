@@ -418,7 +418,7 @@ body{
 /* =========================================================
    V9.4 — Muscle navigation + image upgrade
    ========================================================= */
-.v94MuscleTabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:2px 0 9px;padding-bottom:7px;border-bottom:1px solid rgba(185,240,241,.13)}
+.v94MuscleTabs{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:2px 0 9px;padding-bottom:7px;border-bottom:1px solid rgba(185,240,241,.13)}
 .v94MuscleTabs button{border:0;background:transparent;color:#8fa9b0;display:grid;place-items:center;gap:3px;padding:5px 2px;font-size:8px;cursor:pointer}
 .v94MuscleTabs button span{font-size:15px}.v94MuscleTabs button small{font-size:6.5px}.v94MuscleTabs button.active{color:#7ff1ef}.v94MuscleTabs button.active span{filter:drop-shadow(0 0 8px rgba(101,241,239,.7))}.v94MuscleTabs button.active small{font-weight:800}
 .v93Thumb img{object-fit:cover;object-position:center;width:74px!important;height:57px!important;background:#092a34}.v9Media>img{object-fit:cover;object-position:center}
@@ -624,7 +624,7 @@ body{
   padding:0 3px 5px!important;
   border-bottom:1px solid rgba(210,249,250,.10)!important;
   display:grid!important;
-  grid-template-columns:repeat(5,1fr)!important;
+  grid-template-columns:repeat(6,1fr)!important;
   gap:2px!important;
 }
 .v94MuscleTabs button{
