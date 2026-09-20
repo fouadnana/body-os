@@ -37,6 +37,39 @@ const upsertDailyEntry=(patch:Partial<DailyEntry>)=>{
 type Ingredient={name:string,qty:number,unit:string}
 type Meal={name:string,time:string,kcal:number,img:string,details:string,protein:number,carbs:number,fat:number,ingredients:Ingredient[]}
 const mealDetails=(ingredients:Ingredient[])=>ingredients.map(i=>`${i.name} ${i.qty}${i.unit}`).join(' · ')
+// Valeurs par gramme (par œuf pour "Œufs", vendu à l'unité)
+const NUTRITION_DB:Record<string,{kcal:number,protein:number,carbs:number,fat:number}>={
+ 'Skyr 0%':{kcal:.60,protein:.11,carbs:.04,fat:.002},
+ 'Flocons d’avoine':{kcal:3.75,protein:.13,carbs:.60,fat:.07},
+ 'Myrtilles':{kcal:.57,protein:.007,carbs:.14,fat:.003},
+ 'Beurre de cacahuète':{kcal:5.88,protein:.25,carbs:.20,fat:.50},
+ 'Saumon':{kcal:2.08,protein:.20,carbs:0,fat:.13},
+ 'Riz basmati cuit':{kcal:1.30,protein:.027,carbs:.28,fat:.003},
+ 'Riz cuit':{kcal:1.30,protein:.027,carbs:.28,fat:.003},
+ 'Brocoli':{kcal:.34,protein:.028,carbs:.07,fat:.004},
+ 'Citron':{kcal:.29,protein:.011,carbs:.09,fat:.003},
+ 'Fruits rouges':{kcal:.50,protein:.01,carbs:.12,fat:.003},
+ 'Miel':{kcal:3.04,protein:.003,carbs:.82,fat:0},
+ 'Amandes':{kcal:5.79,protein:.21,carbs:.22,fat:.50},
+ 'Poulet grillé':{kcal:1.65,protein:.31,carbs:0,fat:.036},
+ 'Poulet':{kcal:1.65,protein:.31,carbs:0,fat:.036},
+ 'Patate douce':{kcal:.90,protein:.02,carbs:.21,fat:.001},
+ 'Légumes verts':{kcal:.35,protein:.025,carbs:.06,fat:.003},
+ 'Légumes':{kcal:.35,protein:.025,carbs:.06,fat:.003},
+ 'Huile d’olive':{kcal:8.84,protein:0,carbs:0,fat:1.0},
+ 'Œufs':{kcal:78,protein:6.3,carbs:.6,fat:5.3},
+ 'Blancs d’œufs':{kcal:.52,protein:.11,carbs:.007,fat:.002},
+ 'Pain complet':{kcal:2.47,protein:.13,carbs:.41,fat:.034},
+ 'Tomates':{kcal:.18,protein:.009,carbs:.039,fat:.002},
+}
+const computeMacros=(ingredients:Ingredient[])=>{
+ const totals=ingredients.reduce((acc,i)=>{
+  const db=NUTRITION_DB[i.name]
+  if(!db) return acc
+  return {kcal:acc.kcal+i.qty*db.kcal,protein:acc.protein+i.qty*db.protein,carbs:acc.carbs+i.qty*db.carbs,fat:acc.fat+i.qty*db.fat}
+ },{kcal:0,protein:0,carbs:0,fat:0})
+ return {kcal:Math.round(totals.kcal),protein:Math.round(totals.protein),carbs:Math.round(totals.carbs),fat:Math.round(totals.fat)}
+}
 const meals:Meal[]=[
  {name:'Petit déjeuner',time:'07:30',kcal:540,img:'/body-os/meal-breakfast-clean.webp',details:'',protein:42,carbs:64,fat:14,ingredients:[
   {name:'Skyr 0%',qty:250,unit:' g'},{name:'Flocons d’avoine',qty:50,unit:' g'},{name:'Myrtilles',qty:100,unit:' g'},{name:'Beurre de cacahuète',qty:24,unit:' g'}
@@ -434,9 +467,10 @@ function MealSheet({meal,close,save}:{meal:Meal,close:()=>void,save:(m:Meal)=>vo
  const [draft,setDraft]=useState<Meal>({...meal,ingredients:meal.ingredients.map(i=>({...i}))})
  const [edit,setEdit]=useState(false)
  const foodBank=['Skyr 0%','Flocons d’avoine','Myrtilles','Beurre de cacahuète','Saumon','Poulet grillé','Riz basmati cuit','Patate douce','Brocoli','Légumes verts','Fruits rouges','Amandes','Miel','Huile d’olive']
- const updateQty=(idx:number,delta:number)=>setDraft(d=>({...d,ingredients:d.ingredients.map((x,i)=>i===idx?{...x,qty:Math.max(0,Math.round((x.qty+delta)*10)/10)}:x)}))
- const removeIngredient=(idx:number)=>setDraft(d=>({...d,ingredients:d.ingredients.filter((_,i)=>i!==idx)}))
- const addIngredient=(name:string)=>setDraft(d=>({...d,ingredients:[...d.ingredients,{name,qty:100,unit:' g'}]}))
+ const withMacros=(ingredients:Ingredient[])=>({ingredients,...computeMacros(ingredients)})
+ const updateQty=(idx:number,delta:number)=>setDraft(d=>({...d,...withMacros(d.ingredients.map((x,i)=>i===idx?{...x,qty:Math.max(0,Math.round((x.qty+delta)*10)/10)}:x))}))
+ const removeIngredient=(idx:number)=>setDraft(d=>({...d,...withMacros(d.ingredients.filter((_,i)=>i!==idx))}))
+ const addIngredient=(name:string)=>setDraft(d=>({...d,...withMacros([...d.ingredients,{name,qty:100,unit:' g'}])}))
  const persist=()=>{const next={...draft,details:mealDetails(draft.ingredients)};save(next);setDraft(next);setEdit(false)}
  return <div className="v9SheetBack" onClick={close}><section className="v9MealSheet v97MealSheet" onClick={e=>e.stopPropagation()}>
   <header><button onClick={close}>‹</button><b>{meal.name.toUpperCase()}</b><button onClick={()=>setEdit(!edit)}>{edit?'OK':'•••'}</button></header>
@@ -445,7 +479,7 @@ function MealSheet({meal,close,save}:{meal:Meal,close:()=>void,save:(m:Meal)=>vo
    <h2>{draft.name}</h2><p className="v96PortionLabel">PORTIONS CIBLES</p>
    <div className="v97IngredientList">{draft.ingredients.map((ing,i)=><div key={ing.name+i}>
     <span><b>{ing.name}</b><small>{ing.qty}{ing.unit}</small></span>
-    {edit&&<div className="v97IngredientActions"><button onClick={()=>updateQty(i,-10)}>−</button><input type="number" value={ing.qty} onChange={e=>setDraft(d=>({...d,ingredients:d.ingredients.map((x,j)=>j===i?{...x,qty:+e.target.value}:x)}))}/><button onClick={()=>updateQty(i,10)}>+</button><button className="remove" onClick={()=>removeIngredient(i)}>×</button></div>}
+    {edit&&<div className="v97IngredientActions"><button onClick={()=>updateQty(i,-10)}>−</button><input type="number" value={ing.qty} onChange={e=>setDraft(d=>({...d,...withMacros(d.ingredients.map((x,j)=>j===i?{...x,qty:+e.target.value}:x))}))}/><button onClick={()=>updateQty(i,10)}>+</button><button className="remove" onClick={()=>removeIngredient(i)}>×</button></div>}
    </div>)}</div>
    {edit&&<div className="v97AddFood"><small>AJOUTER UN ALIMENT</small><div>{foodBank.filter(f=>!draft.ingredients.some(i=>i.name===f)).slice(0,8).map(f=><button key={f} onClick={()=>addIngredient(f)}>＋ {f}</button>)}</div></div>}
    <b>{draft.kcal} <small>kcal</small></b>
