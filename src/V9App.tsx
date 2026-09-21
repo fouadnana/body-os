@@ -116,8 +116,8 @@ const sessionData:Record<SessionGroup,ExerciseItem[]>={
  Pectoraux:[
   {name:'Développé incliné',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/5CECBjd7HLQ/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=5CECBjd7HLQ',target:'Haut des pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'6–10',rir:'1–2',rest:'2:30–3:00'},
   {name:'Développé couché',equipment:'Barre',sets:'3 séries',img:'https://img.youtube.com/vi/RsobeWfbBcY/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=RsobeWfbBcY',target:'Pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'5–8',rir:'1–2',rest:'2:30–3:30'},
-  {name:'Écartés couchés',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/QwuUZ5wgQOk/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=QwuUZ5wgQOk',target:'Pectoraux',secondary:'Deltoïdes ant.',reps:'10–15',rir:'1–2',rest:'1:30–2:00'},
   {name:'Dips',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/4la6BkUBLgo/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=4la6BkUBLgo',target:'Pectoraux · Triceps',secondary:'Deltoïdes ant.',reps:'6–12',rir:'1–2',rest:'2:00–3:00'},
+  {name:'Écartés couchés',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/QwuUZ5wgQOk/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=QwuUZ5wgQOk',target:'Pectoraux',secondary:'Deltoïdes ant.',reps:'10–15',rir:'1–2',rest:'1:30–2:00'},
   {name:'Écarté poulie bas→haut',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/aoP0s_MjN-g/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=aoP0s_MjN-g',target:'Haut des pectoraux',secondary:'Deltoïdes ant.',reps:'12–15',rir:'1–2',rest:'1:30'},
  ],
  Dos:[
@@ -145,8 +145,8 @@ const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Curl incliné',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/HhHHBj3qTJ4/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HhHHBj3qTJ4',target:'Biceps',secondary:'Brachial',reps:'8–12',rir:'1–2',rest:'1:30–2:00'},
   {name:'Curl poulie',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/aLRv0hRiXhc/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=aLRv0hRiXhc',target:'Biceps',secondary:'Brachial',reps:'10–15',rir:'1–2',rest:'1:30'},
   {name:'Curl assis',equipment:'Haltères',sets:'2 séries',img:'https://img.youtube.com/vi/HHq-wRiFDh0/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HHq-wRiFDh0',target:'Biceps',secondary:'Avant-bras',reps:'10–15',rir:'1–2',rest:'1:30'},
-  {name:'Extension triceps',equipment:'Poulie corde',sets:'3 séries',img:'/body-os/demo-rope-pushdown-approved.jpg',video:'https://www.youtube.com/watch?v=ADRve8qqC1U',target:'Triceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
   {name:'Extension au-dessus tête',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/w3iAESGWK6M/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=w3iAESGWK6M',target:'Triceps long chef',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
+  {name:'Extension triceps',equipment:'Poulie corde',sets:'3 séries',img:'/body-os/demo-rope-pushdown-approved.jpg',video:'https://www.youtube.com/watch?v=ADRve8qqC1U',target:'Triceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
  ],
  'L5-S1':[
   {name:'Bird dog',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/dia-fydN7rE/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=dia-fydN7rE',target:'Gainage profond',secondary:'Fessiers',reps:'8–12 / côté',rir:'—',rest:'45–60 s'},
