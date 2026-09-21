@@ -669,15 +669,23 @@ function Progress({setScreen}:{setScreen:(s:Screen)=>void}){
 function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const [checkinOpen,setCheckinOpen]=useState(false)
  const [decisionOpen,setDecisionOpen]=useState(false)
- const latestDaily=readDailyLog().at(-1)
+ const [dailyLog,setDailyLog]=useState(readDailyLog())
+ const latestDaily=dailyLog.at(-1)
  const [checkin,setCheckin]=useState({weight:latestDaily?.weight!=null?String(latestDaily.weight):'',waist:latestDaily?.waist!=null?String(latestDaily.waist):'',sleep:7,energy:4,hunger:3,recovery:4})
  const saveCheckin=()=>{
   const patch:Partial<DailyEntry>={}
   if(checkin.weight.trim()) patch.weight=Math.round(parseFloat(checkin.weight.replace(',','.'))*10)/10
   if(checkin.waist.trim()) patch.waist=Math.round(parseFloat(checkin.waist.replace(',','.'))*10)/10
-  upsertDailyEntry(patch); setCheckinOpen(false)
+  upsertDailyEntry(patch); setDailyLog(readDailyLog()); setCheckinOpen(false)
  }
- const trend=[{d:'J-13',w:108.2},{d:'J-11',w:108.0},{d:'J-9',w:107.8},{d:'J-7',w:107.6},{d:'J-5',w:107.5},{d:'J-3',w:107.2},{d:'Auj.',w:107.0}]
+ const weightPoints=dailyLog.filter(e=>e.weight!=null).slice(-14).map(e=>({d:fmtHistoryDate(e.date).slice(0,5),w:e.weight!}))
+ const weighedDays=dailyLog.filter(e=>e.weight!=null)
+ const latestWeight=weighedDays.at(-1)?.weight
+ const previousWeight=weighedDays.length>=2?weighedDays[weighedDays.length-2].weight:undefined
+ const trendStatus=latestWeight!=null&&previousWeight!=null?(latestWeight<=previousWeight?'OPTIMALE':'À SURVEILLER'):'EN ATTENTE'
+ const spanDays=weighedDays.length>=2?(new Date(weighedDays.at(-1)!.date).getTime()-new Date(weighedDays[0].date).getTime())/86400000:0
+ const realWeeklyRate=spanDays>=3?(weighedDays.at(-1)!.weight!-weighedDays[0].weight!)/spanDays*7:null
+ const nutritionSettings=readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS)
  const preservation=94
  const adherence=91
  return <main className="v9Page v103Adaptive">
@@ -691,9 +699,9 @@ function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
   </section>
 
   <section className="v103Trend">
-   <header><div><small>TRAJECTOIRE 14 JOURS</small><b>107,0 kg</b></div><span>OPTIMALE</span></header>
-   <ResponsiveContainer width="100%" height={180}><LineChart data={trend}><Line type="monotone" dataKey="w" stroke="#77eff0" strokeWidth={3} dot={{r:4,fill:'#d9ffff'}}/><XAxis dataKey="d" tick={{fill:'#829ca7',fontSize:9}} axisLine={false}/><YAxis domain={[106.5,108.6]} hide/></LineChart></ResponsiveContainer>
-   <div className="v103Trajectory"><span>RÉEL</span><i></i><span>OBJECTIF −0,5 kg/sem.</span></div>
+   <header><div><small>TRAJECTOIRE 14 JOURS</small><b>{latestWeight!=null?`${fmt1(latestWeight)} kg`:'—'}</b></div><span>{trendStatus}</span></header>
+   {weightPoints.length?<ResponsiveContainer width="100%" height={180}><LineChart data={weightPoints}><Line type="monotone" dataKey="w" stroke="#77eff0" strokeWidth={3} dot={{r:4,fill:'#d9ffff'}}/><XAxis dataKey="d" tick={{fill:'#829ca7',fontSize:9}} axisLine={false}/><YAxis domain={['dataMin - 1','dataMax + 1']} hide/></LineChart></ResponsiveContainer>:<p className="v94NoData">Pas encore de mesure. Complète le check-in pour voir ta courbe.</p>}
+   <div className="v103Trajectory"><span>RÉEL {realWeeklyRate!=null?`${realWeeklyRate>0?'+':''}${realWeeklyRate.toFixed(2).replace('.',',')} kg/sem`:''}</span><i></i><span>OBJECTIF {String(nutritionSettings.weeklyRate).replace('.',',')} kg/sem.</span></div>
   </section>
 
   <div className="v103ScoreGrid">
