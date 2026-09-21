@@ -135,17 +135,17 @@ const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Élévation frontale',equipment:'Poulie',sets:'2 séries',img:'https://img.youtube.com/vi/KjqHI59JizY/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=KjqHI59JizY',target:'Deltoïde ant.',secondary:'—',reps:'10–15',rir:'2',rest:'1:30'},
  ],
  Jambes:[
-  {name:'Hack squat',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/scs5XcsZuc8/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=scs5XcsZuc8',target:'Quadriceps',secondary:'Fessiers',reps:'6–10',rir:'1–2',rest:'2:30–3:30'},
-  {name:'Fentes bulgares',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/SkNsa3eBwLA/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=SkNsa3eBwLA',target:'Quadriceps · Fessiers',secondary:'Ischios',reps:'8–12 / jambe',rir:'1–2',rest:'2:00–2:30'},
+  {name:'Hack squat',equipment:'Machine',sets:'4 séries',img:'https://img.youtube.com/vi/scs5XcsZuc8/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=scs5XcsZuc8',target:'Quadriceps',secondary:'Fessiers',reps:'6–10',rir:'1–2',rest:'2:30–3:30'},
+  {name:'Fentes bulgares',equipment:'Haltères',sets:'4 séries',img:'https://img.youtube.com/vi/SkNsa3eBwLA/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=SkNsa3eBwLA',target:'Quadriceps · Fessiers',secondary:'Ischios',reps:'8–12 / jambe',rir:'1–2',rest:'2:00–2:30'},
   {name:'Leg curl',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/IOufFLwNOTU/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=IOufFLwNOTU',target:'Ischio-jambiers',secondary:'—',reps:'8–15',rir:'1–2',rest:'1:30–2:00'},
   {name:'Leg extension',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/m0FOpMEgero/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=m0FOpMEgero',target:'Quadriceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30–2:00'},
   {name:'Mollets',equipment:'Machine',sets:'4 séries',img:'https://img.youtube.com/vi/GAQ-oohMhog/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=GAQ-oohMhog',target:'Mollets',secondary:'—',reps:'8–15',rir:'1–2',rest:'1:30'},
  ],
  Bras:[
-  {name:'Curl incliné',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/HhHHBj3qTJ4/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HhHHBj3qTJ4',target:'Biceps',secondary:'Brachial',reps:'8–12',rir:'1–2',rest:'1:30–2:00'},
+  {name:'Curl incliné',equipment:'Haltères',sets:'4 séries',img:'https://img.youtube.com/vi/HhHHBj3qTJ4/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HhHHBj3qTJ4',target:'Biceps',secondary:'Brachial',reps:'8–12',rir:'1–2',rest:'1:30–2:00'},
   {name:'Curl poulie',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/aLRv0hRiXhc/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=aLRv0hRiXhc',target:'Biceps',secondary:'Brachial',reps:'10–15',rir:'1–2',rest:'1:30'},
   {name:'Curl assis',equipment:'Haltères',sets:'2 séries',img:'https://img.youtube.com/vi/HHq-wRiFDh0/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HHq-wRiFDh0',target:'Biceps',secondary:'Avant-bras',reps:'10–15',rir:'1–2',rest:'1:30'},
-  {name:'Extension au-dessus tête',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/w3iAESGWK6M/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=w3iAESGWK6M',target:'Triceps long chef',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
+  {name:'Extension au-dessus tête',equipment:'Poulie',sets:'4 séries',img:'https://img.youtube.com/vi/w3iAESGWK6M/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=w3iAESGWK6M',target:'Triceps long chef',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
   {name:'Extension triceps',equipment:'Poulie corde',sets:'3 séries',img:'/body-os/demo-rope-pushdown-approved.jpg',video:'https://www.youtube.com/watch?v=ADRve8qqC1U',target:'Triceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
  ],
  'L5-S1':[
