@@ -339,15 +339,19 @@ function Rest({setView}:{setView:(v:WorkoutView)=>void}){
 
 const fmtHistoryDate=(iso:string)=>new Date(iso+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})
 
+const estimate1RM=(weight:number,reps:number)=>Math.round(weight*(1+reps/30))
+
 function History({setView,item,group}:{setView:(v:WorkoutView)=>void,item:ExerciseItem,group:SessionGroup}){
+ const [tab,setTab]=useState<'charge'|'volume'|'1rm'>('charge')
  const entries=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).slice(-20)
- const chartData=entries.map((e,i)=>({i,v:e.weight}))
+ const metricFor=(e:{weight:number,reps:number})=>tab==='charge'?e.weight:tab==='volume'?e.weight*e.reps:estimate1RM(e.weight,e.reps)
+ const chartData=entries.map((e,i)=>({i,v:metricFor(e)}))
  const rows=entries.slice().reverse()
  return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setView('exercise')}>‹</button><div><b>HISTORIQUE EXERCICE</b><small>{item.name} · {item.equipment}</small></div><span>•••</span></header>
-  <div className="v9Segments"><b>CHARGE</b><span>VOLUME</span><span>1RM</span></div>
+  <div className="v9Segments"><button className={tab==='charge'?'active':''} onClick={()=>setTab('charge')}>CHARGE</button><button className={tab==='volume'?'active':''} onClick={()=>setTab('volume')}>VOLUME</button><button className={tab==='1rm'?'active':''} onClick={()=>setTab('1rm')}>1RM</button></div>
   {entries.length?<section className="v9HistoryChart"><ResponsiveContainer width="100%" height={210}><BarChart data={chartData}><Bar dataKey="v" fill="#bdeff2" radius={[4,4,0,0]} maxBarSize={32}/><YAxis hide domain={['dataMin - 5','dataMax + 5']}/><XAxis hide/></BarChart></ResponsiveContainer></section>
   :<section className="v9HistoryChart v9HistoryEmpty"><p>Aucune série enregistrée pour cet exercice.<br/>Valide une série pendant ta séance pour commencer l'historique.</p></section>}
-  <div className="v9HistoryRows">{rows.map((r,i)=><div className={i===0?'active':''} key={r.date+i}><b>{fmtHistoryDate(r.date)}</b><span>{r.weight} kg × {r.reps}</span><em>RIR {item.rir}</em><strong>›</strong></div>)}</div>
+  <div className="v9HistoryRows">{rows.map((r,i)=><div className={i===0?'active':''} key={r.date+i}><b>{fmtHistoryDate(r.date)}</b><span>{tab==='charge'?`${r.weight} kg × ${r.reps}`:tab==='volume'?`${r.weight*r.reps} kg vol.`:`${estimate1RM(r.weight,r.reps)} kg (est.)`}</span><em>RIR {item.rir}</em><strong>›</strong></div>)}</div>
  </main>
 }
 

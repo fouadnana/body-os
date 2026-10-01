@@ -174,7 +174,7 @@ body{
   text-shadow:0 0 18px rgba(157,245,244,.13);
 }
 .v9Load em{color:var(--v91-cyan);font-size:11px}
-.v9Load button{opacity:.0;pointer-events:auto}
+.v9Load button{opacity:1;pointer-events:auto}
 .v9RepLine{margin-top:12px}
 .v9LastSet{height:54px;margin-top:8px}
 .v9ExerciseActions{
@@ -819,8 +819,11 @@ body{
   color:#95eff0!important;
 }
 .v9Load button{
-  opacity:0!important;
-  width:20px!important;
+  opacity:1!important;
+  width:28px!important;
+  height:28px!important;
+  border-radius:50%!important;
+  background:rgba(159,196,201,.14)!important;
 }
 .v9RepLine{
   margin-top:4px!important;
