@@ -34,6 +34,40 @@ test.describe('Workout — séance', () => {
     }
   })
 
+  test('session options (•••) open a real menu that resets progress', async ({ page }) => {
+    // Regression: the "•••" button only fired a decorative toast reading
+    // "Options de séance" — no menu ever opened, so the button did nothing.
+    await page.goto('/')
+    await goNav(page, 'Workout')
+    await page.locator('.v9ExerciseList button').first().click()
+    await page.locator('.v9ExerciseActions .pulse').click()
+    await expect(page.locator('.v93Toast')).toBeVisible()
+
+    await page.goto('/')
+    await goNav(page, 'Workout')
+    await expect(page.locator('.v9ExerciseList button.done')).toHaveCount(1)
+
+    await page.locator('.v93Dots').click()
+    await expect(page.locator('.v105Options')).toBeVisible()
+    await expect(page.locator('.v105Options header')).toHaveText('OPTIONS DE SÉANCE')
+    await page.locator('.v105OptionsList button', { hasText: 'Réinitialiser la progression' }).click()
+    await expect(page.locator('.v105Options')).toHaveCount(0)
+    await expect(page.locator('.v9ExerciseList button.done')).toHaveCount(0)
+  })
+
+  test('session options sheet dismisses via ANNULER without resetting anything', async ({ page }) => {
+    await page.goto('/')
+    await goNav(page, 'Workout')
+    await page.locator('.v9ExerciseList button').first().click()
+    await page.locator('.v9ExerciseActions .pulse').click()
+    await page.goto('/')
+    await goNav(page, 'Workout')
+    await page.locator('.v93Dots').click()
+    await page.locator('.v105OptionsCancel').click()
+    await expect(page.locator('.v105Options')).toHaveCount(0)
+    await expect(page.locator('.v9ExerciseList button.done')).toHaveCount(1)
+  })
+
   test('no uncaught JS errors across every muscle group and its first exercise', async ({ page }) => {
     const errors = collectRealErrors(page)
     await page.goto('/')

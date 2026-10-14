@@ -172,6 +172,14 @@ function InfoSheet({title,children,close}:{title:string,children:any,close:()=>v
  </section></div>
 }
 
+function OptionsSheet({title,options,close}:{title:string,options:{label:string,onClick:()=>void,danger?:boolean}[],close:()=>void}){
+ return <div className="v9SheetBack" onClick={close}><section className="v105Options" onClick={e=>e.stopPropagation()}>
+  <header><b>{title}</b></header>
+  <div className="v105OptionsList">{options.map(o=><button key={o.label} className={o.danger?'danger':''} onClick={()=>{o.onClick();close()}}>{o.label}</button>)}</div>
+  <button className="v105OptionsCancel" onClick={close}>ANNULER</button>
+ </section></div>
+}
+
 function BottomNav({screen,setScreen}:{screen:Screen,setScreen:(s:Screen)=>void}){
  const items:[Screen,string,string][]=[['today','◇','Today'],['nutrition','♜','Nutrition'],['workout','✣','Workout'],['progress','▥','Progress'],['coach','◉','Coach']]
  return <nav className="v9Bottom">{items.map(([id,ic,l])=><button key={id} className={screen===id?'active':''} onClick={()=>setScreen(id)}><Icon>{ic}</Icon><small>{l}</small></button>)}</nav>
@@ -295,15 +303,19 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
  const [done,setDoneState]=useState<Record<SessionGroup,boolean[]>>(()=>({...doneDefault,...readJSON(WORKOUT_DONE_KEY,{})}))
  const setDone=(next:Record<SessionGroup,boolean[]>)=>{setDoneState(next);writeJSON(WORKOUT_DONE_KEY,next)}
  const [toast,setToast]=useState(''); const exercises=sessionData[group]
+ const [optionsOpen,setOptionsOpen]=useState(false)
  if(view==='exercise') return <Exercise item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})}/>
  if(view==='rest') return <Rest setView={setView}/>
  if(view==='history') return <History setView={setView} item={exercises[selected]} group={group}/>
  const changeGroup=(g:SessionGroup)=>{setGroup(g);setSelected(0)}
  const finish=()=>{const count=done[group].filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>{exercises.length} exercices · ~ 32 min</em></div><button className="v93Dots" onClick={()=>setToast('Options de séance')}>•••</button></header>
+ const resetProgress=()=>{setDone({...done,[group]:Array(exercises.length).fill(false)});setToast('Progression réinitialisée')}
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>{exercises.length} exercices · ~ 32 min</em></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
   <div className="v94MuscleTabs">{sessionGroups.map(g=><button key={g} className={g===group?'active':''} onClick={()=>changeGroup(g)}><span>{g==='Pectoraux'?'♜':g==='Dos'?'♙':g==='Épaules'?'✣':g==='Jambes'?'♧':g==='Bras'?'◉':'⚕'}</span><small>{g}</small></button>)}</div>
   <section className="v9ExerciseList">{exercises.map((e,i)=><button key={e.name} onClick={()=>{setSelected(i);setView('exercise')}} className={done[group][i]?'done':''}><div className="v93Thumb"><img src={e.img} onError={thumbFallback}/><i>▶</i></div><span><small>{i+1}</small><b>{e.name}</b><em>{e.equipment} · {e.reps} · RIR {e.rir}</em></span><strong>{e.sets}</strong><i>{done[group][i]?'✓':'○'}</i></button>)}</section>
-  <button className="v9Primary" onClick={finish}>TERMINER LA SÉANCE</button><div className="v9Remaining"><small>Temps estimé restant</small><i><span></span></i><b>32 min</b></div>{toast&&<Toast text={toast}/>} </main>
+  <button className="v9Primary" onClick={finish}>TERMINER LA SÉANCE</button><div className="v9Remaining"><small>Temps estimé restant</small><i><span></span></i><b>32 min</b></div>{toast&&<Toast text={toast}/>}
+  {optionsOpen&&<OptionsSheet title="OPTIONS DE SÉANCE" close={()=>setOptionsOpen(false)} options={[{label:'Réinitialiser la progression',onClick:resetProgress,danger:true}]}/>}
+ </main>
 }
 
 function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void}){
@@ -321,7 +333,7 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
   logWorkoutSet({date:todayISO(),group,exercise:item.name,weight,reps})
   setToast('Série validée ✓');setTimeout(()=>{setToast('');setView('rest')},650)
  }
- return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><button className="v93Dots" onClick={()=>setToast('Options exercice')}>•••</button></header>
+ return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><span className="v93Dots">•••</span></header>
   <div className="v9ExerciseHead"><span><small>EXERCICE {index+1}/{total}</small><b>{item.name}</b><em>{item.equipment.toUpperCase()} · {group.toUpperCase()}</em></span></div>
   <section className="v9Media v93VideoMedia v98Media" onClick={openVideo} role="button" tabIndex={0} onKeyDown={e=>e.key==='Enter'&&openVideo()}><img src={item.img} onError={thumbFallback}/><button onClick={e=>{e.stopPropagation();openVideo()}}>▶</button><div><span>CIBLE&nbsp; {item.target}</span><span>SECONDAIRE&nbsp; {item.secondary}</span></div></section>
   <section className="v93Prescription"><span><small>ZONE REPS</small><b>{item.reps}</b></span><span><small>RIR CIBLE</small><b>{item.rir}</b></span><span><small>REPOS</small><b>{item.rest}</b></span></section>

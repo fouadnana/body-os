@@ -414,6 +414,7 @@ body{
 .v9Alternatives button{border:1px solid transparent;background:transparent;padding:0;border-radius:9px;overflow:hidden;color:inherit}.v9Alternatives button.active{border-color:#83efef}
 .v93CoachAnswer{margin:8px 0;padding:11px;border-radius:10px;background:rgba(44,82,91,.58);border:1px solid rgba(159,239,240,.22);font-size:8px;line-height:1.5;color:#def8f8}
 .v93InfoSheet{width:min(360px,94vw);max-height:80vh;background:#163944;border:1px solid rgba(182,244,245,.28);border-radius:18px;overflow:auto}.v93InfoSheet header{height:48px;display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding:0 8px}.v93InfoSheet header button{border:0;background:none;color:#fff;font-size:20px}.v93InfoSheet>div{padding:14px}
+.v105Options{width:min(340px,92vw);background:#163944;border:1px solid rgba(182,244,245,.28);border-radius:18px;padding:14px;display:grid;gap:10px}.v105Options header{text-align:center;padding:4px 0 2px;font-size:11px;letter-spacing:.04em;color:#c6dadf}.v105OptionsList{display:grid;gap:8px}.v105OptionsList button{height:48px;border-radius:12px;border:1px solid var(--line);background:rgba(25,59,69,.8);color:#eaf6f7;font-size:11px;font-weight:600}.v105OptionsList button.danger{color:#ff9d8f;border-color:rgba(255,157,143,.35)}.v105OptionsCancel{height:48px;border-radius:12px;border:0;background:rgba(255,255,255,.06);color:#c6dadf;font-size:11px;font-weight:600}
 
 /* =========================================================
    V9.4 — Muscle navigation + image upgrade
