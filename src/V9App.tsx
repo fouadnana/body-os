@@ -46,13 +46,15 @@ runMigrations()
 
 type DailyEntry={date:string,weight?:number,waist?:number,steps?:number,bodyFat?:number}
 const WORKOUT_HISTORY_KEY='bodyos.workout.history.v1'
-type WorkoutHistoryEntry={date:string,group:string,exercise:string,weight:number,reps:number}
+type WorkoutHistoryEntry={id?:string,date:string,group:string,exercise:string,weight:number,reps:number,rir?:number}
 const readWorkoutHistory=()=>readJSON<WorkoutHistoryEntry[]>(WORKOUT_HISTORY_KEY,[])
+const newSetId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`
 const logWorkoutSet=(entry:WorkoutHistoryEntry)=>{
  const log=readWorkoutHistory()
- log.push(entry)
+ log.push({...entry,id:entry.id??newSetId()})
  writeJSON(WORKOUT_HISTORY_KEY,log.slice(-500))
 }
+const deleteWorkoutSet=(id:string)=>writeJSON(WORKOUT_HISTORY_KEY,readWorkoutHistory().filter(e=>e.id!==id))
 const todayISO=()=>new Date().toISOString().slice(0,10)
 const mondayIndex=(d=new Date())=>(d.getDay()+6)%7
 const readDailyLog=()=>readJSON<DailyEntry[]>(DAILY_LOG_KEY,[]).slice().sort((a,b)=>a.date.localeCompare(b.date))
@@ -347,13 +349,26 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
  </main>
 }
 
+type SetDraft={weight:number,reps:number,rir:number}
 function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void}){
  const logKey=`${group}::${item.name}`
- const [reps,setRepsState]=useState(()=>readJSON<Record<string,{weight:number,reps:number}>>(WORKOUT_LOG_KEY,{})[logKey]?.reps ?? (index===1?8:10))
- const [weight,setWeightState]=useState(()=>readJSON<Record<string,{weight:number,reps:number}>>(WORKOUT_LOG_KEY,{})[logKey]?.weight ?? (index===3?0:100))
- const persistSet=(w:number,r:number)=>writeJSON(WORKOUT_LOG_KEY,{...readJSON(WORKOUT_LOG_KEY,{}),[logKey]:{weight:w,reps:r}})
- const setReps=(v:number)=>{setRepsState(v);persistSet(weight,v)}
- const setWeight=(v:number)=>{setWeightState(v);persistSet(v,reps)}
+ const targetRir=Number(String(item.rir).match(/\d+/)?.[0] ?? 2)
+ const [todaysSets,setTodaysSets]=useState(()=>readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
+ const draftDefaults=():SetDraft=>{
+  const draft=readJSON<Record<string,SetDraft>>(WORKOUT_LOG_KEY,{})[logKey]
+  if(draft) return draft
+  const lastToday=todaysSets.at(-1)
+  if(lastToday) return {weight:lastToday.weight,reps:lastToday.reps,rir:lastToday.rir??targetRir}
+  const lastEver=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).at(-1)
+  if(lastEver) return {weight:lastEver.weight,reps:lastEver.reps,rir:lastEver.rir??targetRir}
+  return {weight:index===3?0:100,reps:index===1?8:10,rir:targetRir}
+ }
+ const [draft,setDraftState]=useState<SetDraft>(draftDefaults)
+ const {weight,reps,rir}=draft
+ const persist=(d:SetDraft)=>{setDraftState(d);writeJSON(WORKOUT_LOG_KEY,{...readJSON(WORKOUT_LOG_KEY,{}),[logKey]:d})}
+ const setWeight=(v:number)=>persist({...draft,weight:v})
+ const setReps=(v:number)=>persist({...draft,reps:v})
+ const setRir=(v:number)=>persist({...draft,rir:v})
  const [toast,setToast]=useState('')
  const [submitting,setSubmitting]=useState(false)
  const lastSet=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).at(-1)
@@ -362,14 +377,21 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
   if(submitting) return
   setSubmitting(true)
   onDone()
-  logWorkoutSet({date:todayISO(),group,exercise:item.name,weight,reps})
+  logWorkoutSet({date:todayISO(),group,exercise:item.name,weight,reps,rir})
+  setTodaysSets(readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
   setToast('Série validée ✓');setTimeout(()=>{setToast('');setView('rest')},650)
+ }
+ const removeSet=(id?:string)=>{
+  if(!id) return
+  deleteWorkoutSet(id)
+  setTodaysSets(readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
  }
  return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><span className="v93Dots">•••</span></header>
   <div className="v9ExerciseHead"><span><small>EXERCICE {index+1}/{total}</small><b>{item.name}</b><em>{item.equipment.toUpperCase()} · {group.toUpperCase()}</em></span></div>
   <section className="v9Media v93VideoMedia v98Media" onClick={openVideo} role="button" tabIndex={0} onKeyDown={e=>e.key==='Enter'&&openVideo()}><img src={item.img} onError={thumbFallback}/><button onClick={e=>{e.stopPropagation();openVideo()}}>▶</button><div><span>CIBLE&nbsp; {item.target}</span><span>SECONDAIRE&nbsp; {item.secondary}</span></div></section>
   <section className="v93Prescription"><span><small>ZONE REPS</small><b>{item.reps}</b></span><span><small>RIR CIBLE</small><b>{item.rir}</b></span><span><small>REPOS</small><b>{item.rest}</b></span></section>
-  <section className="v9SetPanel"><small>SÉRIE EN COURS</small><div className="v9Load"><button onClick={()=>setWeight(Math.max(0,weight-2.5))}>−</button><b>{weight}</b><em>KG</em><button onClick={()=>setWeight(weight+2.5)}>+</button></div><div className="v9RepLine"><span>6</span><span>7</span><strong>{reps}</strong><span>9</span><span>10</span></div><input type="range" min="5" max="15" value={reps} onChange={e=>setReps(+e.target.value)}/><div className="v9SetMeta"><span><small>RÉPÉTITIONS</small><b>{reps} REPS</b></span><span><small>RIR</small><b>2</b></span></div></section>
+  {todaysSets.length>0&&<section className="v9TodaySets"><small>SÉRIES D'AUJOURD'HUI</small>{todaysSets.map((s,i)=><div key={s.id??i}><b>#{i+1}</b><span>{s.weight} kg × {s.reps}</span><em>RIR {s.rir??'—'}</em><button onClick={()=>removeSet(s.id)} aria-label="Supprimer cette série">×</button></div>)}</section>}
+  <section className="v9SetPanel"><small>SÉRIE {todaysSets.length+1}</small><div className="v9Load"><button onClick={()=>setWeight(Math.max(0,weight-2.5))}>−</button><b>{weight}</b><em>KG</em><button onClick={()=>setWeight(weight+2.5)}>+</button></div><div className="v9RepLine"><span>6</span><span>7</span><strong>{reps}</strong><span>9</span><span>10</span></div><input type="range" min="5" max="15" value={reps} onChange={e=>setReps(+e.target.value)}/><div className="v9SetMeta"><span><small>RÉPÉTITIONS</small><b>{reps} REPS</b></span><span><small>RIR</small><div className="v9RirStepper"><button onClick={()=>setRir(Math.max(0,rir-1))}>−</button><b>{rir}</b><button onClick={()=>setRir(Math.min(5,rir+1))}>+</button></div></span></div></section>
   <button className="v9LastSet" onClick={()=>setView('history')}><span><small>DERNIÈRE SÉRIE</small><b>{lastSet?`${lastSet.weight} kg × ${lastSet.reps} reps`:'Pas encore de série enregistrée'}</b></span>{lastSet&&<em>{lastSet.date}</em>}<strong>↗</strong></button>
   <div className="v9ExerciseActions"><button onClick={()=>setView('session')}>ANNULER</button><button className="pulse" onClick={validate} disabled={submitting}>✓</button><button onClick={()=>{onDone();setView('session')}}>TERMINER<br/>EXERCICE</button></div>
   {toast&&<Toast text={toast}/>}
