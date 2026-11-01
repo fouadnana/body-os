@@ -10,6 +10,7 @@ const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
 const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
 const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
 const WORKOUT_LOG_KEY='bodyos.workout.log.v1'
+const WORKOUT_OVERRIDES_KEY='bodyos.workout.overrides.v1'
 const DAILY_LOG_KEY='bodyos.daily.log.v1'
 const SCHEDULE_KEY='bodyos.schedule.v1'
 
@@ -336,9 +337,18 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
  const [group,setGroup]=useState<SessionGroup>(initialGroup); const [selected,setSelected]=useState(0)
  const [done,setDoneState]=useState<Record<SessionGroup,boolean[]>>(()=>({...doneDefault,...readJSON(WORKOUT_DONE_KEY,{})}))
  const setDone=(next:Record<SessionGroup,boolean[]>)=>{setDoneState(next);writeJSON(WORKOUT_DONE_KEY,next)}
- const [toast,setToast]=useState(''); const exercises=sessionData[group]
+ const [overrides,setOverridesState]=useState<Record<string,Record<number,string>>>(()=>readJSON(WORKOUT_OVERRIDES_KEY,{}))
+ const setOverrides=(next:Record<string,Record<number,string>>)=>{setOverridesState(next);writeJSON(WORKOUT_OVERRIDES_KEY,next)}
+ const [toast,setToast]=useState('')
+ const exercises=sessionData[group].map((e,i)=>{
+  const replName=overrides[group]?.[i]
+  if(!replName) return e
+  return exerciseLibrary.find(x=>x.group===group&&x.name===replName)??e
+ })
+ const replaceExercise=(i:number,name:string)=>setOverrides({...overrides,[group]:{...overrides[group],[i]:name}})
+ const restoreExercise=(i:number)=>{const g={...overrides[group]};delete g[i];setOverrides({...overrides,[group]:g})}
  const [optionsOpen,setOptionsOpen]=useState(false)
- if(view==='exercise') return <Exercise key={exercises[selected].name} item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})} onSwipe={delta=>setSelected(s=>Math.max(0,Math.min(exercises.length-1,s+delta)))}/>
+ if(view==='exercise') return <Exercise key={`${group}-${selected}-${exercises[selected].name}`} item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})} onSwipe={delta=>setSelected(s=>Math.max(0,Math.min(exercises.length-1,s+delta)))} isReplaced={!!overrides[group]?.[selected]} onReplace={name=>replaceExercise(selected,name)} onRestore={()=>restoreExercise(selected)}/>
  if(view==='history') return <History setView={setView} item={exercises[selected]} group={group}/>
  const changeGroup=(g:SessionGroup)=>{setGroup(g);setSelected(0)}
  const finish=()=>{const count=done[group].filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
@@ -352,7 +362,9 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
 }
 
 type SetDraft={weight:number,reps:number,rir:number}
-function Exercise({item,index,total,group,setView,onDone,onSwipe}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void,onSwipe:(delta:number)=>void}){
+function Exercise({item,index,total,group,setView,onDone,onSwipe,isReplaced,onReplace,onRestore}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void,onSwipe:(delta:number)=>void,isReplaced:boolean,onReplace:(name:string)=>void,onRestore:()=>void}){
+ const [optionsOpen,setOptionsOpen]=useState(false)
+ const [pickerOpen,setPickerOpen]=useState(false)
  const logKey=`${group}::${item.name}`
  const targetRir=Number(String(item.rir).match(/\d+/)?.[0] ?? 2)
  const [todaysSets,setTodaysSets]=useState(()=>readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
@@ -401,7 +413,7 @@ function Exercise({item,index,total,group,setView,onDone,onSwipe}:{item:Exercise
   deleteWorkoutSet(id)
   setTodaysSets(readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
  }
- return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><span className="v93Dots">•••</span></header>
+ return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
   <div className="v9SwipeZone" onPointerDown={onSwipeStart} onPointerUp={onSwipeEnd} onDragStart={e=>e.preventDefault()}>
   <div className="v9ExerciseHead"><span><small>EXERCICE {index+1}/{total}</small><b>{item.name}</b><em>{item.equipment.toUpperCase()} · {group.toUpperCase()}</em></span></div>
   <section className="v9Media v93VideoMedia v98Media" onClick={openVideo} role="button" tabIndex={0} onKeyDown={e=>e.key==='Enter'&&openVideo()}><img src={item.img} onError={thumbFallback} draggable={false}/><button onClick={e=>{e.stopPropagation();openVideo()}}>▶</button><div><span>CIBLE&nbsp; {item.target}</span><span>SECONDAIRE&nbsp; {item.secondary}</span></div></section>
@@ -413,7 +425,23 @@ function Exercise({item,index,total,group,setView,onDone,onSwipe}:{item:Exercise
   <div className="v9ExerciseActions"><button onClick={()=>setView('session')}>ANNULER</button><button className="pulse" onClick={validate} disabled={submitting}>✓</button><button onClick={()=>{onDone();setView('session')}}>TERMINER<br/>EXERCICE</button></div>
   {toast&&<Toast text={toast}/>}
   {resting&&<RestOverlay onLeave={()=>setResting(false)} onHistory={()=>{setResting(false);setView('history')}}/>}
+  {optionsOpen&&<OptionsSheet title="OPTIONS EXERCICE" close={()=>setOptionsOpen(false)} options={[
+   {label:'Remplacer l\'exercice',onClick:()=>setPickerOpen(true)},
+   ...(isReplaced?[{label:'Revenir à l\'exercice original',onClick:onRestore}]:[]),
+  ]}/>}
+  {pickerOpen&&<ExercisePickerSheet group={group} exclude={item.name} close={()=>setPickerOpen(false)} onPick={name=>{onReplace(name);setPickerOpen(false)}}/>}
  </main>
+}
+
+function ExercisePickerSheet({group,exclude,close,onPick}:{group:SessionGroup,exclude:string,close:()=>void,onPick:(name:string)=>void}){
+ const options=exerciseLibrary.filter(e=>e.group===group&&e.name!==exclude)
+ return <div className="v9SheetBack" onClick={close}><section className="v9MealSheet" onClick={e=>e.stopPropagation()}>
+  <header><button onClick={close}>×</button><b>REMPLACER PAR…</b><span></span></header>
+  <section className="v9ExerciseList v9LibList v9PickerList">
+   {options.map(e=><button key={e.name} onClick={()=>onPick(e.name)}><div className="v93Thumb"><img src={e.img} onError={thumbFallback}/><i>▶</i></div><span><b>{e.name}</b><em>{e.equipment} · {e.target}</em></span><i>›</i></button>)}
+  </section>
+  {options.length===0&&<p className="v9LibEmpty">Aucun autre exercice disponible pour ce groupe.</p>}
+ </section></div>
 }
 
 const REST_DEADLINE_KEY='bodyos.rest.deadline.v1'

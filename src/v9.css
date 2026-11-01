@@ -1577,3 +1577,4 @@ body{
 .v9LibList span small{grid-row:auto;font-size:8px;color:var(--cyan);text-transform:uppercase;letter-spacing:.04em}
 .v9LibEmpty{text-align:center;color:#8fa9b0;font-size:11px;margin-top:30px}
 .v9LibDetailImg{width:100%;height:170px;object-fit:cover;border-radius:12px;cursor:pointer;margin-bottom:6px}
+.v9PickerList{padding:0 14px 14px;max-height:60vh;overflow:auto}
