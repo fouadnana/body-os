@@ -4,7 +4,7 @@ import './v9.css'
 import FoodVision, { type FoodVisionPayload } from './FoodVision'
 
 type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'|'plus'
-type WorkoutView='session'|'exercise'|'rest'|'history'
+type WorkoutView='session'|'exercise'|'history'
 
 const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
 const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
@@ -336,7 +336,6 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
  const [toast,setToast]=useState(''); const exercises=sessionData[group]
  const [optionsOpen,setOptionsOpen]=useState(false)
  if(view==='exercise') return <Exercise item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})}/>
- if(view==='rest') return <Rest setView={setView}/>
  if(view==='history') return <History setView={setView} item={exercises[selected]} group={group}/>
  const changeGroup=(g:SessionGroup)=>{setGroup(g);setSelected(0)}
  const finish=()=>{const count=done[group].filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
@@ -371,6 +370,7 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
  const setRir=(v:number)=>persist({...draft,rir:v})
  const [toast,setToast]=useState('')
  const [submitting,setSubmitting]=useState(false)
+ const [resting,setResting]=useState(()=>Number(localStorage.getItem(REST_DEADLINE_KEY)||'0')>Date.now())
  const lastSet=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).at(-1)
  const openVideo=()=>window.open(item.video,'_blank','noopener,noreferrer')
  const validate=()=>{
@@ -379,7 +379,7 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
   onDone()
   logWorkoutSet({date:todayISO(),group,exercise:item.name,weight,reps,rir})
   setTodaysSets(readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
-  setToast('Série validée ✓');setTimeout(()=>{setToast('');setView('rest')},650)
+  setToast('Série validée ✓');setTimeout(()=>{setToast('');setSubmitting(false);setResting(true)},650)
  }
  const removeSet=(id?:string)=>{
   if(!id) return
@@ -395,17 +395,20 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
   <button className="v9LastSet" onClick={()=>setView('history')}><span><small>DERNIÈRE SÉRIE</small><b>{lastSet?`${lastSet.weight} kg × ${lastSet.reps} reps`:'Pas encore de série enregistrée'}</b></span>{lastSet&&<em>{lastSet.date}</em>}<strong>↗</strong></button>
   <div className="v9ExerciseActions"><button onClick={()=>setView('session')}>ANNULER</button><button className="pulse" onClick={validate} disabled={submitting}>✓</button><button onClick={()=>{onDone();setView('session')}}>TERMINER<br/>EXERCICE</button></div>
   {toast&&<Toast text={toast}/>}
+  {resting&&<RestOverlay onLeave={()=>setResting(false)} onHistory={()=>{setResting(false);setView('history')}}/>}
  </main>
 }
 
 const REST_DEADLINE_KEY='bodyos.rest.deadline.v1'
 const REST_DEFAULT_MS=45000
-function Rest({setView}:{setView:(v:WorkoutView)=>void}){
+function RestOverlay({onLeave,onHistory}:{onLeave:()=>void,onHistory:()=>void}){
  // Minuteur à base d'échéance (timestamp absolu), pas d'un simple compteur
  // décrémenté : setInterval est throttled/suspendu en arrière-plan sur iOS,
  // mais recalculer (échéance − maintenant) à chaque tick reste correct même
  // après une longue pause. L'échéance est aussi persistée pour survivre à un
- // rechargement de page pendant le repos.
+ // rechargement de page pendant le repos. Rendu en bandeau superposé à
+ // l'écran Exercice (plutôt qu'une navigation vers un écran séparé) pour
+ // garder le contexte de la série en cours et rester fluide.
  const [deadlineAt,setDeadlineAt]=useState(()=>{
   const stored=Number(localStorage.getItem(REST_DEADLINE_KEY)||'0')
   if(stored>Date.now()) return stored
@@ -425,8 +428,9 @@ function Rest({setView}:{setView:(v:WorkoutView)=>void}){
   setDeadlineAt(d)
   localStorage.setItem(REST_DEADLINE_KEY,String(d))
  }
- const leave=(v:WorkoutView)=>{localStorage.removeItem(REST_DEADLINE_KEY);setView(v)}
- return <main className="v9Page v9Rest"><header className="v9TitleBar"><button onClick={()=>leave('exercise')}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={()=>leave('exercise')}>Passer</button></header><section className="v9Timer"><div><b>{fmtTimer(sec)}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>adjust(-15000)}>−15 s</button><button onClick={()=>adjust(15000)}>+15 s</button></div><button className="v9NextSet" onClick={()=>leave('exercise')}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={()=>leave('history')}>VOIR HISTORIQUE</button></main>
+ const leave=()=>{localStorage.removeItem(REST_DEADLINE_KEY);onLeave()}
+ const goHistory=()=>{localStorage.removeItem(REST_DEADLINE_KEY);onHistory()}
+ return <div className="v9SheetBack"><div className="v9RestSheet v9Rest"><header className="v9TitleBar"><button onClick={leave}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={leave}>Passer</button></header><section className="v9Timer"><div><b>{fmtTimer(sec)}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>adjust(-15000)}>−15 s</button><button onClick={()=>adjust(15000)}>+15 s</button></div><button className="v9NextSet" onClick={leave}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={goHistory}>VOIR HISTORIQUE</button></div></div>
 }
 
 const fmtHistoryDate=(iso:string)=>new Date(iso+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})
