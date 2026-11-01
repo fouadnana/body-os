@@ -3,7 +3,7 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart } fro
 import './v9.css'
 import FoodVision, { type FoodVisionPayload } from './FoodVision'
 
-type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'|'plus'|'library'
+type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'|'plus'|'library'|'templates'
 type WorkoutView='session'|'exercise'|'history'
 
 const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
@@ -11,6 +11,8 @@ const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
 const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
 const WORKOUT_LOG_KEY='bodyos.workout.log.v1'
 const WORKOUT_OVERRIDES_KEY='bodyos.workout.overrides.v1'
+const TEMPLATES_KEY='bodyos.templates.v1'
+const ACTIVE_TEMPLATE_KEY='bodyos.templates.active.v1'
 const DAILY_LOG_KEY='bodyos.daily.log.v1'
 const SCHEDULE_KEY='bodyos.schedule.v1'
 
@@ -190,6 +192,26 @@ const sessionData:Record<SessionGroup,ExerciseItem[]>={
 type LibraryEntry=ExerciseItem&{group:SessionGroup}
 const exerciseLibrary:LibraryEntry[]=sessionGroups.flatMap(g=>sessionData[g].map(e=>({...e,group:g})))
 const libraryEquipments=Array.from(new Set(exerciseLibrary.map(e=>e.equipment))).sort((a,b)=>a.localeCompare(b,'fr'))
+
+type WorkoutTemplate={id:string,name:string,group:SessionGroup,exerciseNames:string[]}
+const newTemplateId=()=>`tpl_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
+const readTemplates=():WorkoutTemplate[]=>readJSON(TEMPLATES_KEY,[])
+const writeTemplates=(t:WorkoutTemplate[])=>writeJSON(TEMPLATES_KEY,t)
+const readActiveTemplates=():Record<string,string>=>readJSON(ACTIVE_TEMPLATE_KEY,{})
+const writeActiveTemplates=(a:Record<string,string>)=>writeJSON(ACTIVE_TEMPLATE_KEY,a)
+const DEFAULT_TEMPLATE_ID='default'
+// Résout la liste d'exercices de base d'un groupe pour la séance active :
+// le template par défaut (sessionData, intégré) ou un template personnalisé
+// choisi par l'utilisateur dans "Mes séances". Les remplacements ponctuels
+// par position (WORKOUT_OVERRIDES_KEY) s'appliquent ensuite par-dessus.
+const resolveBaseExercises=(group:SessionGroup):ExerciseItem[]=>{
+ const activeId=readActiveTemplates()[group]
+ if(!activeId||activeId===DEFAULT_TEMPLATE_ID) return sessionData[group]
+ const tpl=readTemplates().find(t=>t.id===activeId&&t.group===group)
+ if(!tpl) return sessionData[group]
+ const resolved=tpl.exerciseNames.map(n=>exerciseLibrary.find(e=>e.group===group&&e.name===n)).filter((e):e is LibraryEntry=>!!e)
+ return resolved.length>0?resolved:sessionData[group]
+}
 const progressMuscles:Record<MuscleGroup,{delta:string,score:number,measure:string,unit:string,overlay:string}>={
  Pectoraux:{delta:'+0,6 %',score:78,measure:'106',unit:'cm',overlay:'chest'},
  Dos:{delta:'+0,4 %',score:75,measure:'121',unit:'cm',overlay:'back'},
@@ -332,30 +354,32 @@ const thumbFallback=(ev:React.SyntheticEvent<HTMLImageElement>)=>{
  else img.src='/body-os/demo-chest-press-approved.jpg'
 }
 
+const padDone=(arr:boolean[]|undefined,len:number)=>Array.from({length:len},(_,i)=>arr?.[i]??false)
 function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void,initialGroup:SessionGroup}){
- const doneDefault=Object.fromEntries(sessionGroups.map(g=>[g,Array(sessionData[g].length).fill(false)])) as Record<SessionGroup,boolean[]>
  const [group,setGroup]=useState<SessionGroup>(initialGroup); const [selected,setSelected]=useState(0)
- const [done,setDoneState]=useState<Record<SessionGroup,boolean[]>>(()=>({...doneDefault,...readJSON(WORKOUT_DONE_KEY,{})}))
- const setDone=(next:Record<SessionGroup,boolean[]>)=>{setDoneState(next);writeJSON(WORKOUT_DONE_KEY,next)}
+ const [doneRaw,setDoneRawState]=useState<Record<string,boolean[]>>(()=>readJSON(WORKOUT_DONE_KEY,{}))
+ const setDoneRaw=(next:Record<string,boolean[]>)=>{setDoneRawState(next);writeJSON(WORKOUT_DONE_KEY,next)}
  const [overrides,setOverridesState]=useState<Record<string,Record<number,string>>>(()=>readJSON(WORKOUT_OVERRIDES_KEY,{}))
  const setOverrides=(next:Record<string,Record<number,string>>)=>{setOverridesState(next);writeJSON(WORKOUT_OVERRIDES_KEY,next)}
  const [toast,setToast]=useState('')
- const exercises=sessionData[group].map((e,i)=>{
+ const exercises=resolveBaseExercises(group).map((e,i)=>{
   const replName=overrides[group]?.[i]
   if(!replName) return e
   return exerciseLibrary.find(x=>x.group===group&&x.name===replName)??e
  })
+ const done=padDone(doneRaw[group],exercises.length)
+ const setDone=(next:boolean[])=>setDoneRaw({...doneRaw,[group]:next})
  const replaceExercise=(i:number,name:string)=>setOverrides({...overrides,[group]:{...overrides[group],[i]:name}})
  const restoreExercise=(i:number)=>{const g={...overrides[group]};delete g[i];setOverrides({...overrides,[group]:g})}
  const [optionsOpen,setOptionsOpen]=useState(false)
- if(view==='exercise') return <Exercise key={`${group}-${selected}-${exercises[selected].name}`} item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})} onSwipe={delta=>setSelected(s=>Math.max(0,Math.min(exercises.length-1,s+delta)))} isReplaced={!!overrides[group]?.[selected]} onReplace={name=>replaceExercise(selected,name)} onRestore={()=>restoreExercise(selected)}/>
+ if(view==='exercise') return <Exercise key={`${group}-${selected}-${exercises[selected].name}`} item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone(done.map((x,i)=>i===selected?true:x))} onSwipe={delta=>setSelected(s=>Math.max(0,Math.min(exercises.length-1,s+delta)))} isReplaced={!!overrides[group]?.[selected]} onReplace={name=>replaceExercise(selected,name)} onRestore={()=>restoreExercise(selected)}/>
  if(view==='history') return <History setView={setView} item={exercises[selected]} group={group}/>
  const changeGroup=(g:SessionGroup)=>{setGroup(g);setSelected(0)}
- const finish=()=>{const count=done[group].filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
- const resetProgress=()=>{setDone({...done,[group]:Array(exercises.length).fill(false)});setToast('Progression réinitialisée')}
+ const finish=()=>{const count=done.filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
+ const resetProgress=()=>{setDone(Array(exercises.length).fill(false));setToast('Progression réinitialisée')}
  return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>{exercises.length} exercices · ~ 32 min</em></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
   <div className="v94MuscleTabs">{sessionGroups.map(g=><button key={g} className={g===group?'active':''} onClick={()=>changeGroup(g)}><span>{g==='Pectoraux'?'♜':g==='Dos'?'♙':g==='Épaules'?'✣':g==='Jambes'?'♧':g==='Bras'?'◉':'⚕'}</span><small>{g}</small></button>)}</div>
-  <section className="v9ExerciseList">{exercises.map((e,i)=><button key={e.name} onClick={()=>{setSelected(i);setView('exercise')}} className={done[group][i]?'done':''}><div className="v93Thumb"><img src={e.img} onError={thumbFallback}/><i>▶</i></div><span><small>{i+1}</small><b>{e.name}</b><em>{e.equipment} · {e.reps} · RIR {e.rir}</em></span><strong>{e.sets}</strong><i>{done[group][i]?'✓':'○'}</i></button>)}</section>
+  <section className="v9ExerciseList">{exercises.map((e,i)=><button key={e.name} onClick={()=>{setSelected(i);setView('exercise')}} className={done[i]?'done':''}><div className="v93Thumb"><img src={e.img} onError={thumbFallback}/><i>▶</i></div><span><small>{i+1}</small><b>{e.name}</b><em>{e.equipment} · {e.reps} · RIR {e.rir}</em></span><strong>{e.sets}</strong><i>{done[i]?'✓':'○'}</i></button>)}</section>
   <button className="v9Primary" onClick={finish}>TERMINER LA SÉANCE</button><div className="v9Remaining"><small>Temps estimé restant</small><i><span></span></i><b>32 min</b></div>{toast&&<Toast text={toast}/>}
   {optionsOpen&&<OptionsSheet title="OPTIONS DE SÉANCE" close={()=>setOptionsOpen(false)} options={[{label:'Réinitialiser la progression',onClick:resetProgress,danger:true}]}/>}
  </main>
@@ -893,7 +917,7 @@ function Coach({setScreen}:{setScreen:(s:Screen)=>void}){
 }
 
 function Plus({setScreen}:{setScreen:(s:Screen)=>void}){
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>PLUS</b></div><span></span></header><div className="v9CoachPrompts"><button onClick={()=>setScreen('library')}>▤ <span>Bibliothèque d'exercices</span>›</button><button onClick={()=>setScreen('coach')}>✦ <span>AI Coach</span>›</button><button onClick={()=>setScreen('plan')}>◫ <span>Plan — Semaine</span>›</button></div></main>
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>PLUS</b></div><span></span></header><div className="v9CoachPrompts"><button onClick={()=>setScreen('library')}>▤ <span>Bibliothèque d'exercices</span>›</button><button onClick={()=>setScreen('templates')}>◧ <span>Mes séances</span>›</button><button onClick={()=>setScreen('coach')}>✦ <span>AI Coach</span>›</button><button onClick={()=>setScreen('plan')}>◫ <span>Plan — Semaine</span>›</button></div></main>
 }
 
 function LibraryDetailSheet({entry,close}:{entry:LibraryEntry,close:()=>void}){
@@ -935,6 +959,79 @@ function Bibliotheque({setScreen}:{setScreen:(s:Screen)=>void}){
  </main>
 }
 
+function TemplateBuilderSheet({group,close,onSave}:{group:SessionGroup,close:()=>void,onSave:(name:string,exerciseNames:string[])=>void}){
+ const [name,setName]=useState('')
+ const [picked,setPicked]=useState<string[]>([])
+ const options=exerciseLibrary.filter(e=>e.group===group)
+ const toggle=(n:string)=>setPicked(p=>p.includes(n)?p.filter(x=>x!==n):[...p,n])
+ const save=()=>{if(!name.trim()||picked.length===0) return;onSave(name.trim(),options.filter(e=>picked.includes(e.name)).map(e=>e.name));close()}
+ return <div className="v9SheetBack" onClick={close}><section className="v9MealSheet" onClick={e=>e.stopPropagation()}>
+  <header><button onClick={close}>×</button><b>NOUVELLE SÉANCE</b><span></span></header>
+  <div className="v9TemplateBuilder">
+   <label className="v9TemplateNameLabel">NOM<input value={name} onChange={e=>setName(e.target.value)} placeholder={`ex. ${group} — variante B`}/></label>
+   <small className="v9TemplatePickHint">CHOISIR LES EXERCICES ({picked.length})</small>
+   <div className="v9TemplatePickList">
+    {options.map(e=><label key={e.name} className="v9TemplatePickRow"><input type="checkbox" checked={picked.includes(e.name)} onChange={()=>toggle(e.name)}/><span>{e.name}</span><em>{e.equipment}</em></label>)}
+   </div>
+   <button className="v9Primary" onClick={save} disabled={!name.trim()||picked.length===0}>CRÉER LA SÉANCE</button>
+  </div>
+ </section></div>
+}
+
+function MesSeances({setScreen}:{setScreen:(s:Screen)=>void}){
+ const [activeGroup,setActiveGroup]=useState<SessionGroup|null>(null)
+ const [active,setActiveState]=useState<Record<string,string>>(()=>readActiveTemplates())
+ const [templates,setTemplatesState]=useState<WorkoutTemplate[]>(()=>readTemplates())
+ const [builderOpen,setBuilderOpen]=useState(false)
+ const setActive=(next:Record<string,string>)=>{setActiveState(next);writeActiveTemplates(next)}
+ const setTemplates=(next:WorkoutTemplate[])=>{setTemplatesState(next);writeTemplates(next)}
+ const activate=(group:SessionGroup,id:string)=>setActive({...active,[group]:id})
+ const createTemplate=(group:SessionGroup,name:string,exerciseNames:string[])=>{
+  const tpl:WorkoutTemplate={id:newTemplateId(),name,group,exerciseNames}
+  setTemplates([...templates,tpl])
+  activate(group,tpl.id)
+ }
+ const deleteTemplate=(id:string)=>{
+  setTemplates(templates.filter(t=>t.id!==id))
+  const group=templates.find(t=>t.id===id)?.group
+  if(group&&active[group]===id) activate(group,DEFAULT_TEMPLATE_ID)
+ }
+ if(activeGroup){
+  const groupTemplates=templates.filter(t=>t.group===activeGroup)
+  const activeId=active[activeGroup]??DEFAULT_TEMPLATE_ID
+  return <main className="v9Page" aria-label="Mes séances">
+   <header className="v9TitleBar"><button onClick={()=>setActiveGroup(null)}>‹</button><div><b>{activeGroup.toUpperCase()}</b><small>Mes séances</small></div><span></span></header>
+   <section className="v9TemplateList">
+    <div className="v9TemplateRow">
+     <button className={`v9TemplateSelect${activeId===DEFAULT_TEMPLATE_ID?' active':''}`} onClick={()=>activate(activeGroup,DEFAULT_TEMPLATE_ID)}>
+      <span><b>Séance standard</b><em>{sessionData[activeGroup].length} exercices · intégrée</em></span>
+      <i>{activeId===DEFAULT_TEMPLATE_ID?'✓':'○'}</i>
+     </button>
+    </div>
+    {groupTemplates.map(t=><div key={t.id} className="v9TemplateRow">
+     <button className={`v9TemplateSelect${activeId===t.id?' active':''}`} onClick={()=>activate(activeGroup,t.id)}>
+      <span><b>{t.name}</b><em>{t.exerciseNames.length} exercices · personnalisée</em></span>
+      <i>{activeId===t.id?'✓':'○'}</i>
+     </button>
+     <button className="v9TemplateDelete" aria-label={`Supprimer ${t.name}`} onClick={()=>deleteTemplate(t.id)}>×</button>
+    </div>)}
+   </section>
+   <button className="v9Outline" onClick={()=>setBuilderOpen(true)}>+ CRÉER UNE SÉANCE</button>
+   {builderOpen&&<TemplateBuilderSheet group={activeGroup} close={()=>setBuilderOpen(false)} onSave={(name,names)=>createTemplate(activeGroup,name,names)}/>}
+  </main>
+ }
+ return <main className="v9Page" aria-label="Mes séances">
+  <header className="v9TitleBar"><button onClick={()=>setScreen('plus')}>‹</button><div><b>MES SÉANCES</b></div><span></span></header>
+  <section className="v9TemplateGroupList">
+   {sessionGroups.map(g=>{
+    const activeId=active[g]??DEFAULT_TEMPLATE_ID
+    const tplName=activeId===DEFAULT_TEMPLATE_ID?'Séance standard':templates.find(t=>t.id===activeId)?.name??'Séance standard'
+    return <button key={g} onClick={()=>setActiveGroup(g)}><i className="v9TemplateGroupIcon">{g==='Pectoraux'?'♜':g==='Dos'?'♙':g==='Épaules'?'✣':g==='Jambes'?'♧':g==='Bras'?'◉':'⚕'}</i><span><b>{g}</b><em>{tplName}</em></span><strong>›</strong></button>
+   })}
+  </section>
+ </main>
+}
+
 function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
  const [selected,setSelected]=useState(mondayIndex())
  const schedule=readSchedule()
@@ -954,7 +1051,7 @@ export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
  const todayPlan=readSchedule()[mondayIndex()]
  const initialGroup=(sessionGroups as string[]).includes(todayPlan)?todayPlan as SessionGroup:'Pectoraux'
- const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:screen==='plus'?<Plus setScreen={setScreen}/>:screen==='library'?<Bibliotheque setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
- const showNav=screen==='nutrition'||screen==='progress'||screen==='plus'||screen==='library'
+ const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:screen==='plus'?<Plus setScreen={setScreen}/>:screen==='library'?<Bibliotheque setScreen={setScreen}/>:screen==='templates'?<MesSeances setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
+ const showNav=screen==='nutrition'||screen==='progress'||screen==='plus'||screen==='library'||screen==='templates'
  return <div className="v9Shell"><div className="v9Phone">{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
 }

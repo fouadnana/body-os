@@ -1578,3 +1578,30 @@ body{
 .v9LibEmpty{text-align:center;color:#8fa9b0;font-size:11px;margin-top:30px}
 .v9LibDetailImg{width:100%;height:170px;object-fit:cover;border-radius:12px;cursor:pointer;margin-bottom:6px}
 .v9PickerList{padding:0 14px 14px;max-height:60vh;overflow:auto}
+
+/* ---------- Phase 3 : Mes séances (templates) ---------- */
+.v9TemplateGroupList{display:grid;gap:8px;margin:12px 0 18px}
+.v9TemplateGroupList button{display:flex;align-items:center;width:100%;min-height:62px;border-radius:13px;border:1px solid var(--line);background:rgba(21,55,65,.72);color:#eef8f8;padding:0 14px;text-align:left}
+.v9TemplateGroupIcon{font-style:normal;font-size:19px;color:var(--cyan);flex:0 0 auto;width:28px}
+.v9TemplateGroupList span{flex:1;display:grid;gap:3px}
+.v9TemplateGroupList b{font-size:12px}
+.v9TemplateGroupList em{font-style:normal;font-size:9px;color:#98b1b7}
+.v9TemplateGroupList strong{font-size:13px;color:var(--cyan)}
+.v9TemplateList{display:grid;gap:8px;margin:12px 0 18px}
+.v9TemplateRow{display:flex;align-items:stretch;gap:8px}
+.v9TemplateSelect{flex:1;display:flex;align-items:center;min-height:62px;border-radius:13px;border:1px solid var(--line);background:rgba(21,55,65,.72);color:#eef8f8;padding:0 14px;text-align:left}
+.v9TemplateSelect.active{border-color:rgba(126,240,238,.55);box-shadow:inset 0 0 22px rgba(92,221,228,.05)}
+.v9TemplateSelect span{flex:1;display:grid;gap:3px}
+.v9TemplateSelect b{font-size:12px}
+.v9TemplateSelect em{font-style:normal;font-size:9px;color:#98b1b7}
+.v9TemplateSelect i{font-style:normal;color:var(--cyan)}
+.v9TemplateDelete{flex:0 0 auto;width:42px;border-radius:13px;border:1px solid var(--line);background:rgba(21,55,65,.5);color:#d98a8a;font-size:17px}
+.v9TemplateBuilder{padding:4px 16px 18px}
+.v9TemplateNameLabel{display:block;font-size:8px;color:#9db6bc;margin-bottom:14px}
+.v9TemplateNameLabel input{display:block;width:100%;height:44px;margin-top:6px;border-radius:12px;border:1px solid var(--line);background:rgba(21,50,60,.6);color:#dff;font-size:12px;padding:0 12px}
+.v9TemplatePickHint{display:block;font-size:8px;color:#9db6bc;letter-spacing:.04em}
+.v9TemplatePickList{max-height:40vh;overflow:auto;margin:8px 0 16px}
+.v9TemplatePickRow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(219,249,250,.08);font-size:11px}
+.v9TemplatePickRow span{flex:1}
+.v9TemplatePickRow em{font-style:normal;font-size:9px;color:#8da8ae}
+.v9TemplatePickRow input{accent-color:#9ff3f3;width:17px;height:17px}
