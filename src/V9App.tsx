@@ -3,7 +3,7 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart } fro
 import './v9.css'
 import FoodVision, { type FoodVisionPayload } from './FoodVision'
 
-type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'
+type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'|'plus'
 type WorkoutView='session'|'exercise'|'rest'|'history'
 
 const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
@@ -181,7 +181,7 @@ function OptionsSheet({title,options,close}:{title:string,options:{label:string,
 }
 
 function BottomNav({screen,setScreen}:{screen:Screen,setScreen:(s:Screen)=>void}){
- const items:[Screen,string,string][]=[['today','◇','Today'],['nutrition','♜','Nutrition'],['workout','✣','Workout'],['progress','▥','Progress'],['coach','◉','Coach']]
+ const items:[Screen,string,string][]=[['today','◇','Today'],['workout','✣','Séance'],['nutrition','♜','Nutrition'],['progress','▥','Progrès'],['plus','☰','Plus']]
  return <nav className="v9Bottom">{items.map(([id,ic,l])=><button key={id} className={screen===id?'active':''} onClick={()=>setScreen(id)}><Icon>{ic}</Icon><small>{l}</small></button>)}</nav>
 }
 
@@ -761,7 +761,11 @@ function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
 function Coach({setScreen}:{setScreen:(s:Screen)=>void}){
  const [answer,setAnswer]=useState(''); const [q,setQ]=useState('')
  const ask=(kind:string)=>{if(kind==='progression'){setScreen('adaptive');return} setAnswer(kind==='progression'?'Trajectoire cohérente : conserve les calories et vise la stabilité de tes performances.':kind==='adjust'?'Aucun ajustement majeur aujourd’hui. Priorité : protéines, sommeil et performance sur les mouvements de base.':'Conseil récupération : garde 1–2 RIR sur la majorité des séries et évite d’augmenter simultanément cardio et volume musculation.')}
- return <main className="v9Page v9Coach"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>AI COACH</b></div><span className="v9Online">● DÉMO</span></header><div className="v9Orb"><i></i><i></i><b>✦</b></div><section className="v9CoachHello"><b>Salut Fouad 👋</b><span>Que veux-tu optimiser aujourd'hui ?</span></section><div className="v9CoachPrompts"><button onClick={()=>ask('progression')}>◉ <span>Analyse de ma progression</span>›</button><button onClick={()=>ask('adjust')}>◎ <span>Que dois-je ajuster ?</span>›</button><button onClick={()=>setScreen('plan')}>◌ <span>Planifie ma semaine</span>›</button><button onClick={()=>ask('recovery')}>♙ <span>Conseil récupération</span>›</button></div>{answer&&<div className="v93CoachAnswer">{answer}</div>}<label className="v9Ask"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Pose une question…"/><button onClick={()=>{if(q.trim()){setAnswer('Mode démo : ta question est enregistrée. Le moteur LLM sera branché séparément.');setQ('')}}}>➤</button></label><div className="v9CoachNote">Mode démo : moteur BODY OS local. Aucun token OpenAI requis.</div></main>
+ return <main className="v9Page v9Coach"><header className="v9TitleBar"><button onClick={()=>setScreen('plus')}>‹</button><div><b>AI COACH</b></div><span className="v9Online">● DÉMO</span></header><div className="v9Orb"><i></i><i></i><b>✦</b></div><section className="v9CoachHello"><b>Salut Fouad 👋</b><span>Que veux-tu optimiser aujourd'hui ?</span></section><div className="v9CoachPrompts"><button onClick={()=>ask('progression')}>◉ <span>Analyse de ma progression</span>›</button><button onClick={()=>ask('adjust')}>◎ <span>Que dois-je ajuster ?</span>›</button><button onClick={()=>setScreen('plan')}>◌ <span>Planifie ma semaine</span>›</button><button onClick={()=>ask('recovery')}>♙ <span>Conseil récupération</span>›</button></div>{answer&&<div className="v93CoachAnswer">{answer}</div>}<label className="v9Ask"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Pose une question…"/><button onClick={()=>{if(q.trim()){setAnswer('Mode démo : ta question est enregistrée. Le moteur LLM sera branché séparément.');setQ('')}}}>➤</button></label><div className="v9CoachNote">Mode démo : moteur BODY OS local. Aucun token OpenAI requis.</div></main>
+}
+
+function Plus({setScreen}:{setScreen:(s:Screen)=>void}){
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>PLUS</b></div><span></span></header><div className="v9CoachPrompts"><button onClick={()=>setScreen('coach')}>✦ <span>AI Coach</span>›</button><button onClick={()=>setScreen('plan')}>◫ <span>Plan — Semaine</span>›</button></div></main>
 }
 
 function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
@@ -783,7 +787,7 @@ export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
  const todayPlan=readSchedule()[mondayIndex()]
  const initialGroup=(sessionGroups as string[]).includes(todayPlan)?todayPlan as SessionGroup:'Pectoraux'
- const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
- const showNav=screen==='nutrition'||screen==='progress'
+ const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:screen==='plus'?<Plus setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
+ const showNav=screen==='nutrition'||screen==='progress'||screen==='plus'
  return <div className="v9Shell"><div className="v9Phone">{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
 }

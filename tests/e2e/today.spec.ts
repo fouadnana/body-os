@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { collectRealErrors } from './helpers'
+import { collectRealErrors, goNav } from './helpers'
 
 test.describe('Today', () => {
   test('loads with KPIs, bottom nav, and no console errors', async ({ page }) => {
@@ -29,5 +29,35 @@ test.describe('Today', () => {
     await page.goto('/')
     await page.locator('.v104Train').click()
     await expect(page.locator('.v94MuscleTabs')).toBeVisible()
+  })
+})
+
+test.describe('Plus (Phase 1 — remplace l\'onglet Coach)', () => {
+  test('bottom nav shows Today/Séance/Nutrition/Progrès/Plus, no bare "Coach" tab', async ({ page }) => {
+    await page.goto('/')
+    const labels = await page.locator('.v9Bottom small').allTextContents()
+    expect(labels).toEqual(['Today', 'Séance', 'Nutrition', 'Progrès', 'Plus'])
+  })
+
+  test('Plus lists AI Coach and Plan — Semaine, both still reachable', async ({ page }) => {
+    await page.goto('/')
+    await goNav(page, 'Coach') // mapped to Plus → AI Coach, see helpers.ts
+    await expect(page.locator('.v9Coach')).toBeVisible()
+    await expect(page.locator('.v9TitleBar b')).toHaveText('AI COACH')
+  })
+
+  test('back from AI Coach returns to Plus, not Today', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.v9Bottom button', { hasText: 'Plus' }).click()
+    await page.locator('button', { hasText: 'AI Coach' }).click()
+    await page.locator('.v9TitleBar button', { hasText: '‹' }).click()
+    await expect(page.locator('.v9TitleBar b')).toHaveText('PLUS')
+  })
+
+  test('Plan — Semaine is reachable directly from Plus', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.v9Bottom button', { hasText: 'Plus' }).click()
+    await page.locator('button', { hasText: 'Plan — Semaine' }).click()
+    await expect(page.locator('.v9Week')).toBeVisible()
   })
 })
