@@ -355,9 +355,12 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
  const setReps=(v:number)=>{setRepsState(v);persistSet(weight,v)}
  const setWeight=(v:number)=>{setWeightState(v);persistSet(v,reps)}
  const [toast,setToast]=useState('')
+ const [submitting,setSubmitting]=useState(false)
  const lastSet=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).at(-1)
  const openVideo=()=>window.open(item.video,'_blank','noopener,noreferrer')
  const validate=()=>{
+  if(submitting) return
+  setSubmitting(true)
   onDone()
   logWorkoutSet({date:todayISO(),group,exercise:item.name,weight,reps})
   setToast('Série validée ✓');setTimeout(()=>{setToast('');setView('rest')},650)
@@ -368,15 +371,40 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
   <section className="v93Prescription"><span><small>ZONE REPS</small><b>{item.reps}</b></span><span><small>RIR CIBLE</small><b>{item.rir}</b></span><span><small>REPOS</small><b>{item.rest}</b></span></section>
   <section className="v9SetPanel"><small>SÉRIE EN COURS</small><div className="v9Load"><button onClick={()=>setWeight(Math.max(0,weight-2.5))}>−</button><b>{weight}</b><em>KG</em><button onClick={()=>setWeight(weight+2.5)}>+</button></div><div className="v9RepLine"><span>6</span><span>7</span><strong>{reps}</strong><span>9</span><span>10</span></div><input type="range" min="5" max="15" value={reps} onChange={e=>setReps(+e.target.value)}/><div className="v9SetMeta"><span><small>RÉPÉTITIONS</small><b>{reps} REPS</b></span><span><small>RIR</small><b>2</b></span></div></section>
   <button className="v9LastSet" onClick={()=>setView('history')}><span><small>DERNIÈRE SÉRIE</small><b>{lastSet?`${lastSet.weight} kg × ${lastSet.reps} reps`:'Pas encore de série enregistrée'}</b></span>{lastSet&&<em>{lastSet.date}</em>}<strong>↗</strong></button>
-  <div className="v9ExerciseActions"><button onClick={()=>setView('session')}>ANNULER</button><button className="pulse" onClick={validate}>✓</button><button onClick={()=>{onDone();setView('session')}}>TERMINER<br/>EXERCICE</button></div>
+  <div className="v9ExerciseActions"><button onClick={()=>setView('session')}>ANNULER</button><button className="pulse" onClick={validate} disabled={submitting}>✓</button><button onClick={()=>{onDone();setView('session')}}>TERMINER<br/>EXERCICE</button></div>
   {toast&&<Toast text={toast}/>}
  </main>
 }
 
+const REST_DEADLINE_KEY='bodyos.rest.deadline.v1'
+const REST_DEFAULT_MS=45000
 function Rest({setView}:{setView:(v:WorkoutView)=>void}){
- const [sec,setSec]=useState(45)
+ // Minuteur à base d'échéance (timestamp absolu), pas d'un simple compteur
+ // décrémenté : setInterval est throttled/suspendu en arrière-plan sur iOS,
+ // mais recalculer (échéance − maintenant) à chaque tick reste correct même
+ // après une longue pause. L'échéance est aussi persistée pour survivre à un
+ // rechargement de page pendant le repos.
+ const [deadlineAt,setDeadlineAt]=useState(()=>{
+  const stored=Number(localStorage.getItem(REST_DEADLINE_KEY)||'0')
+  if(stored>Date.now()) return stored
+  const d=Date.now()+REST_DEFAULT_MS
+  localStorage.setItem(REST_DEADLINE_KEY,String(d))
+  return d
+ })
+ const [now,setNow]=useState(Date.now())
+ useEffect(()=>{
+  const id=setInterval(()=>setNow(Date.now()),250)
+  return ()=>clearInterval(id)
+ },[])
+ const sec=Math.max(0,Math.round((deadlineAt-now)/1000))
  const fmtTimer=(s:number)=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
- return <main className="v9Page v9Rest"><header className="v9TitleBar"><button onClick={()=>setView('exercise')}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={()=>setView('exercise')}>Passer</button></header><section className="v9Timer"><div><b>{fmtTimer(sec)}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>setSec(Math.max(0,sec-15))}>−15 s</button><button onClick={()=>setSec(sec+15)}>+15 s</button></div><button className="v9NextSet" onClick={()=>setView('exercise')}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={()=>setView('history')}>VOIR HISTORIQUE</button></main>
+ const adjust=(deltaMs:number)=>{
+  const d=Math.max(now,deadlineAt+deltaMs)
+  setDeadlineAt(d)
+  localStorage.setItem(REST_DEADLINE_KEY,String(d))
+ }
+ const leave=(v:WorkoutView)=>{localStorage.removeItem(REST_DEADLINE_KEY);setView(v)}
+ return <main className="v9Page v9Rest"><header className="v9TitleBar"><button onClick={()=>leave('exercise')}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={()=>leave('exercise')}>Passer</button></header><section className="v9Timer"><div><b>{fmtTimer(sec)}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>adjust(-15000)}>−15 s</button><button onClick={()=>adjust(15000)}>+15 s</button></div><button className="v9NextSet" onClick={()=>leave('exercise')}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={()=>leave('history')}>VOIR HISTORIQUE</button></main>
 }
 
 const fmtHistoryDate=(iso:string)=>new Date(iso+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})
