@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart } from 'recharts'
 import './v9.css'
 import FoodVision, { type FoodVisionPayload } from './FoodVision'
@@ -335,7 +335,7 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
  const setDone=(next:Record<SessionGroup,boolean[]>)=>{setDoneState(next);writeJSON(WORKOUT_DONE_KEY,next)}
  const [toast,setToast]=useState(''); const exercises=sessionData[group]
  const [optionsOpen,setOptionsOpen]=useState(false)
- if(view==='exercise') return <Exercise item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})}/>
+ if(view==='exercise') return <Exercise key={exercises[selected].name} item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone({...done,[group]:done[group].map((x,i)=>i===selected?true:x)})} onSwipe={delta=>setSelected(s=>Math.max(0,Math.min(exercises.length-1,s+delta)))}/>
  if(view==='history') return <History setView={setView} item={exercises[selected]} group={group}/>
  const changeGroup=(g:SessionGroup)=>{setGroup(g);setSelected(0)}
  const finish=()=>{const count=done[group].filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
@@ -349,7 +349,7 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
 }
 
 type SetDraft={weight:number,reps:number,rir:number}
-function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void}){
+function Exercise({item,index,total,group,setView,onDone,onSwipe}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void,onSwipe:(delta:number)=>void}){
  const logKey=`${group}::${item.name}`
  const targetRir=Number(String(item.rir).match(/\d+/)?.[0] ?? 2)
  const [todaysSets,setTodaysSets]=useState(()=>readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
@@ -373,6 +373,18 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
  const [resting,setResting]=useState(()=>Number(localStorage.getItem(REST_DEADLINE_KEY)||'0')>Date.now())
  const lastSet=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).at(-1)
  const openVideo=()=>window.open(item.video,'_blank','noopener,noreferrer')
+ // Glisser horizontalement sur l'en-tête/média passe à l'exercice suivant
+ // ou précédent sans repasser par la liste de la séance.
+ const pointerStart=useRef<{x:number,y:number}|null>(null)
+ const onSwipeStart=(e:React.PointerEvent)=>{pointerStart.current={x:e.clientX,y:e.clientY}}
+ const onSwipeEnd=(e:React.PointerEvent)=>{
+  const start=pointerStart.current; pointerStart.current=null
+  if(!start) return
+  const dx=e.clientX-start.x,dy=e.clientY-start.y
+  if(Math.abs(dx)<60||Math.abs(dy)>50) return
+  if(dx<0&&index<total-1) onSwipe(1)
+  else if(dx>0&&index>0) onSwipe(-1)
+ }
  const validate=()=>{
   if(submitting) return
   setSubmitting(true)
@@ -387,8 +399,10 @@ function Exercise({item,index,total,group,setView,onDone}:{item:ExerciseItem,ind
   setTodaysSets(readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
  }
  return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><span className="v93Dots">•••</span></header>
+  <div className="v9SwipeZone" onPointerDown={onSwipeStart} onPointerUp={onSwipeEnd} onDragStart={e=>e.preventDefault()}>
   <div className="v9ExerciseHead"><span><small>EXERCICE {index+1}/{total}</small><b>{item.name}</b><em>{item.equipment.toUpperCase()} · {group.toUpperCase()}</em></span></div>
-  <section className="v9Media v93VideoMedia v98Media" onClick={openVideo} role="button" tabIndex={0} onKeyDown={e=>e.key==='Enter'&&openVideo()}><img src={item.img} onError={thumbFallback}/><button onClick={e=>{e.stopPropagation();openVideo()}}>▶</button><div><span>CIBLE&nbsp; {item.target}</span><span>SECONDAIRE&nbsp; {item.secondary}</span></div></section>
+  <section className="v9Media v93VideoMedia v98Media" onClick={openVideo} role="button" tabIndex={0} onKeyDown={e=>e.key==='Enter'&&openVideo()}><img src={item.img} onError={thumbFallback} draggable={false}/><button onClick={e=>{e.stopPropagation();openVideo()}}>▶</button><div><span>CIBLE&nbsp; {item.target}</span><span>SECONDAIRE&nbsp; {item.secondary}</span></div></section>
+  </div>
   <section className="v93Prescription"><span><small>ZONE REPS</small><b>{item.reps}</b></span><span><small>RIR CIBLE</small><b>{item.rir}</b></span><span><small>REPOS</small><b>{item.rest}</b></span></section>
   {todaysSets.length>0&&<section className="v9TodaySets"><small>SÉRIES D'AUJOURD'HUI</small>{todaysSets.map((s,i)=><div key={s.id??i}><b>#{i+1}</b><span>{s.weight} kg × {s.reps}</span><em>RIR {s.rir??'—'}</em><button onClick={()=>removeSet(s.id)} aria-label="Supprimer cette série">×</button></div>)}</section>}
   <section className="v9SetPanel"><small>SÉRIE {todaysSets.length+1}</small><div className="v9Load"><button onClick={()=>setWeight(Math.max(0,weight-2.5))}>−</button><b>{weight}</b><em>KG</em><button onClick={()=>setWeight(weight+2.5)}>+</button></div><div className="v9RepLine"><span>6</span><span>7</span><strong>{reps}</strong><span>9</span><span>10</span></div><input type="range" min="5" max="15" value={reps} onChange={e=>setReps(+e.target.value)}/><div className="v9SetMeta"><span><small>RÉPÉTITIONS</small><b>{reps} REPS</b></span><span><small>RIR</small><div className="v9RirStepper"><button onClick={()=>setRir(Math.max(0,rir-1))}>−</button><b>{rir}</b><button onClick={()=>setRir(Math.min(5,rir+1))}>+</button></div></span></div></section>
