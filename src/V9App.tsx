@@ -12,8 +12,37 @@ const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
 const WORKOUT_LOG_KEY='bodyos.workout.log.v1'
 const DAILY_LOG_KEY='bodyos.daily.log.v1'
 const SCHEDULE_KEY='bodyos.schedule.v1'
-const readJSON=<T,>(key:string,fallback:T):T=>{try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback}catch{return fallback}}
+
+// Phase 1 (fondations) — persistance versionnée : donnée corrompue mise de
+// côté plutôt qu'écrasée silencieusement, et un point d'ancrage de version
+// de schéma pour que les futures migrations (Phase 3/4 : identifiants
+// d'exercice stables, templates remplaçant DayPlan) aient un endroit sûr où
+// transformer les données existantes sans en perdre.
+const SCHEMA_VERSION=1
+const SCHEMA_VERSION_KEY='bodyos.schema.version'
+const readJSON=<T,>(key:string,fallback:T):T=>{
+ try{
+  const raw=localStorage.getItem(key)
+  return raw?JSON.parse(raw):fallback
+ }catch{
+  try{
+   const raw=localStorage.getItem(key)
+   if(raw) localStorage.setItem(`${key}.corrupted.${Date.now()}`,raw)
+  }catch{}
+  return fallback
+ }
+}
 const writeJSON=(key:string,value:unknown)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
+function runMigrations(){
+ try{
+  const stored=Number(localStorage.getItem(SCHEMA_VERSION_KEY)||'0')
+  if(stored>=SCHEMA_VERSION) return
+  // v0→v1 : aucune transformation de données n'est nécessaire — c'est le
+  // premier point de version. Les migrations suivantes s'ajoutent ici.
+  localStorage.setItem(SCHEMA_VERSION_KEY,String(SCHEMA_VERSION))
+ }catch{}
+}
+runMigrations()
 
 type DailyEntry={date:string,weight?:number,waist?:number,steps?:number,bodyFat?:number}
 const WORKOUT_HISTORY_KEY='bodyos.workout.history.v1'
