@@ -26,6 +26,32 @@ test.describe('Layout', () => {
     expect(paddingTop).toBeGreaterThanOrEqual(18)
   })
 
+  test('sheets animate in (Semaine 0 motion system) instead of appearing instantly', async ({ page }) => {
+    // Every sheet in the app shares the .v9SheetBack wrapper, so one shared
+    // animation covers all of them without touching each screen.
+    await page.goto('/')
+    await page.locator('button', { hasText: 'ACTIVITÉ' }).click()
+    await expect(page.locator('.v9SheetBack')).toHaveCSS('animation-name', 'v9Fade')
+    await expect(page.locator('.v9SheetBack > *').first()).toHaveCSS('animation-name', 'v9PanelUp')
+  })
+
+  test('buttons show a pressed state on tap', async ({ page }) => {
+    await page.goto('/')
+    const btn = page.locator('.v9Bottom button').first()
+    await btn.hover()
+    await page.mouse.down()
+    await expect(btn).not.toHaveCSS('transform', 'none')
+    await page.mouse.up()
+  })
+
+  test('Progress tab content fades in when switching SÈCHE/PHYSIQUE/PERF.', async ({ page }) => {
+    await page.goto('/')
+    await goNav(page, 'Progress')
+    await expect(page.locator('.v9TabFade')).toHaveCSS('animation-name', 'v9Fade')
+    await page.locator('.v94MainSegments button', { hasText: 'PERF.' }).click()
+    await expect(page.locator('.v9TabFade')).toHaveCSS('animation-name', 'v9Fade')
+  })
+
   test('no uncaught JS errors walking through every major screen', async ({ page }) => {
     // Workout, Coach and Adaptive are immersive screens with no persistent
     // bottom nav (only Today embeds its own, and the root shell only shows
