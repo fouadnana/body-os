@@ -3,7 +3,7 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart } fro
 import './v9.css'
 import FoodVision, { type FoodVisionPayload } from './FoodVision'
 
-type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'|'plus'
+type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'|'plus'|'library'
 type WorkoutView='session'|'exercise'|'history'
 
 const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
@@ -186,6 +186,9 @@ const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Gainage ventral',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/GQE8ASRA7t0/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=GQE8ASRA7t0',target:'Gainage global',secondary:'Épaules',reps:'20–40 s',rir:'—',rest:'45–60 s'},
  ]
 }
+type LibraryEntry=ExerciseItem&{group:SessionGroup}
+const exerciseLibrary:LibraryEntry[]=sessionGroups.flatMap(g=>sessionData[g].map(e=>({...e,group:g})))
+const libraryEquipments=Array.from(new Set(exerciseLibrary.map(e=>e.equipment))).sort((a,b)=>a.localeCompare(b,'fr'))
 const progressMuscles:Record<MuscleGroup,{delta:string,score:number,measure:string,unit:string,overlay:string}>={
  Pectoraux:{delta:'+0,6 %',score:78,measure:'106',unit:'cm',overlay:'chest'},
  Dos:{delta:'+0,4 %',score:75,measure:'121',unit:'cm',overlay:'back'},
@@ -862,7 +865,46 @@ function Coach({setScreen}:{setScreen:(s:Screen)=>void}){
 }
 
 function Plus({setScreen}:{setScreen:(s:Screen)=>void}){
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>PLUS</b></div><span></span></header><div className="v9CoachPrompts"><button onClick={()=>setScreen('coach')}>✦ <span>AI Coach</span>›</button><button onClick={()=>setScreen('plan')}>◫ <span>Plan — Semaine</span>›</button></div></main>
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>PLUS</b></div><span></span></header><div className="v9CoachPrompts"><button onClick={()=>setScreen('library')}>▤ <span>Bibliothèque d'exercices</span>›</button><button onClick={()=>setScreen('coach')}>✦ <span>AI Coach</span>›</button><button onClick={()=>setScreen('plan')}>◫ <span>Plan — Semaine</span>›</button></div></main>
+}
+
+function LibraryDetailSheet({entry,close}:{entry:LibraryEntry,close:()=>void}){
+ const openVideo=()=>window.open(entry.video,'_blank','noopener,noreferrer')
+ return <div className="v9SheetBack" onClick={close}><section className="v93InfoSheet" onClick={e=>e.stopPropagation()}>
+  <header><button onClick={close}>×</button><b>{entry.name}</b><span></span></header>
+  <div>
+   <img src={entry.img} onError={thumbFallback} className="v9LibDetailImg" onClick={openVideo} role="button" tabIndex={0} onKeyDown={e=>e.key==='Enter'&&openVideo()}/>
+   <div className="v93Prescription"><span><small>ZONE REPS</small><b>{entry.reps}</b></span><span><small>RIR CIBLE</small><b>{entry.rir}</b></span><span><small>REPOS</small><b>{entry.rest}</b></span></div>
+   <p><b>Groupe</b> {entry.group} · <b>Matériel</b> {entry.equipment}</p>
+   <p><b>Cible</b> {entry.target}</p>
+   <p><b>Secondaire</b> {entry.secondary}</p>
+   <button className="v9Primary" onClick={openVideo}>VOIR LA VIDÉO</button>
+  </div>
+ </section></div>
+}
+
+function Bibliotheque({setScreen}:{setScreen:(s:Screen)=>void}){
+ const [query,setQuery]=useState('')
+ const [group,setGroup]=useState<SessionGroup|'Tous'>('Tous')
+ const [equipment,setEquipment]=useState<string|'Tous'>('Tous')
+ const [detail,setDetail]=useState<LibraryEntry|null>(null)
+ const q=query.trim().toLowerCase()
+ const results=exerciseLibrary.filter(e=>
+  (group==='Tous'||e.group===group)&&
+  (equipment==='Tous'||e.equipment===equipment)&&
+  (q===''||e.name.toLowerCase().includes(q)||e.target.toLowerCase().includes(q)||e.equipment.toLowerCase().includes(q))
+ )
+ return <main className="v9Page" aria-label="Bibliothèque d'exercices">
+  <header className="v9TitleBar"><button onClick={()=>setScreen('plus')}>‹</button><div><b>BIBLIOTHÈQUE</b><small>{exerciseLibrary.length} exercices</small></div><span></span></header>
+  <div className="v9Ask v9LibSearch"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher un exercice, un muscle, un matériel…" aria-label="Rechercher un exercice"/></div>
+  <div className="v94MuscleTabs v9LibTabs"><button className={group==='Tous'?'active':''} onClick={()=>setGroup('Tous')}><small>Tous</small></button>{sessionGroups.map(g=><button key={g} className={g===group?'active':''} onClick={()=>setGroup(g)}><span>{g==='Pectoraux'?'♜':g==='Dos'?'♙':g==='Épaules'?'✣':g==='Jambes'?'♧':g==='Bras'?'◉':'⚕'}</span><small>{g}</small></button>)}</div>
+  <div className="v9Segments v9LibEquip"><select value={equipment} onChange={e=>setEquipment(e.target.value)} aria-label="Filtrer par matériel"><option value="Tous">Tout matériel</option>{libraryEquipments.map(eq=><option key={eq} value={eq}>{eq}</option>)}</select></div>
+  <section className="v9ExerciseList v9LibList">
+   {results.map(e=><button key={`${e.group}::${e.name}`} onClick={()=>setDetail(e)}><div className="v93Thumb"><img src={e.img} onError={thumbFallback}/><i>▶</i></div><span><small>{e.group}</small><b>{e.name}</b><em>{e.equipment} · {e.target}</em></span><i>›</i></button>)}
+  </section>
+  {results.length===0&&<p className="v9LibEmpty">Aucun exercice ne correspond à cette recherche.</p>}
+  {detail&&<LibraryDetailSheet entry={detail} close={()=>setDetail(null)}/>}
+ </main>
 }
 
 function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
@@ -884,7 +926,7 @@ export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
  const todayPlan=readSchedule()[mondayIndex()]
  const initialGroup=(sessionGroups as string[]).includes(todayPlan)?todayPlan as SessionGroup:'Pectoraux'
- const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:screen==='plus'?<Plus setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
- const showNav=screen==='nutrition'||screen==='progress'||screen==='plus'
+ const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:screen==='plus'?<Plus setScreen={setScreen}/>:screen==='library'?<Bibliotheque setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
+ const showNav=screen==='nutrition'||screen==='progress'||screen==='plus'||screen==='library'
  return <div className="v9Shell"><div className="v9Phone">{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
 }

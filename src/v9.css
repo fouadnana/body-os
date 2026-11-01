@@ -1565,3 +1565,15 @@ body{
   .v104Kpis b{font-size:16px}
   .v104AdaptiveCard{width:calc(100% - 20px);margin-left:10px;margin-right:10px}
 }
+
+/* ---------- Phase 3 : Bibliothèque d'exercices ---------- */
+.v9LibSearch{margin:4px 0 10px}
+.v9LibTabs{display:flex!important;overflow-x:auto;gap:6px!important;grid-template-columns:none!important;height:auto!important;border-bottom:1px solid rgba(185,240,241,.13);padding:0 0 7px!important;margin:2px 0 9px!important;scrollbar-width:none}
+.v9LibTabs::-webkit-scrollbar{display:none}
+.v9LibTabs button{flex:0 0 auto;min-width:46px}
+.v9LibEquip{margin-bottom:10px}
+.v9LibEquip select{width:100%;height:42px;border-radius:12px;border:1px solid var(--line);background:rgba(21,50,60,.6);color:#dff;font-size:11px;padding:0 12px}
+.v9LibList span{grid-template-columns:1fr!important}
+.v9LibList span small{grid-row:auto;font-size:8px;color:var(--cyan);text-transform:uppercase;letter-spacing:.04em}
+.v9LibEmpty{text-align:center;color:#8fa9b0;font-size:11px;margin-top:30px}
+.v9LibDetailImg{width:100%;height:170px;object-fit:cover;border-radius:12px;cursor:pointer;margin-bottom:6px}
