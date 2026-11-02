@@ -1000,14 +1000,20 @@ function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const nutritionSettings=readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS)
  const preservation=94
  const adherence=91
+ // Numéro de semaine réel depuis la toute première donnée suivie (poids/taille
+ // ou séance), plutôt qu'un "SEMAINE 7" figé sans rapport avec l'usage réel.
+ const allTrackedDates=[...dailyLog.map(e=>e.date),...readWorkoutHistory().map(h=>h.date)]
+ const earliestTrackedDate=allTrackedDates.length?allTrackedDates.slice().sort()[0]:todayISO()
+ const daysSinceStart=Math.max(0,Math.floor((Date.now()-new Date(earliestTrackedDate+'T00:00:00').getTime())/86400000))
+ const weekNumber=Math.floor(daysSinceStart/7)+1
  return <main className="v9Page v103Adaptive">
-  <header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>ADAPTIVE SÈCHE</b><small>INTELLIGENCE · SEMAINE 7</small></div><span className="v103Live">● ACTIF</span></header>
+  <header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>ADAPTIVE SÈCHE</b><small>INTELLIGENCE · SEMAINE {weekNumber}</small></div><span className="v103Live">● ACTIF</span></header>
 
   <section className="v103Decision">
    <div className="v103DecisionTop"><span><small>DÉCISION DE LA SEMAINE</small><b>MAINTENIR</b></span><strong>✓</strong></div>
    <p>La trajectoire est cohérente : poids et taille diminuent, performances stables et adhérence élevée.</p>
    <div className="v103DecisionMetrics"><span><small>POIDS 7J</small><b>−0,48 kg</b></span><span><small>TAILLE</small><b>−0,7 cm</b></span><span><small>PERF.</small><b>STABLE</b></span></div>
-   <button onClick={()=>setDecisionOpen(true)}>2 510 KCAL MAINTENUES <b>›</b></button>
+   <button onClick={()=>setDecisionOpen(true)}>{nutritionSettings.calories.toLocaleString('fr-FR')} KCAL MAINTENUES <b>›</b></button>
   </section>
 
   <section className="v103Trend">

@@ -72,4 +72,45 @@ test.describe('Adaptive Sèche', () => {
     await page.locator('.v9TitleBar button', { hasText: '‹' }).click()
     await expect(page.locator('.v104Brand')).toBeVisible()
   })
+
+  test('the weekly decision kcal reflects the real configured calorie target, not a hardcoded value', async ({ page }) => {
+    // Regression: "2 510 KCAL MAINTENUES" used to be a literal hardcoded
+    // string, disconnected from the actual editable target (2600 by default,
+    // and never updating if the user changed it in Nutrition settings).
+    await page.goto('/')
+    await page.locator('.v104Trajectory').click()
+    await expect(page.locator('.v103Decision')).toContainText('2 600 KCAL MAINTENUES')
+
+    await page.goto('/')
+    await page.locator('.v9Bottom button', { hasText: 'Nutrition' }).click()
+    await page.locator('.v93Dots').click()
+    await page.locator('label', { hasText: 'CALORIES' }).locator('input').fill('2200')
+    await page.locator('button', { hasText: 'ENREGISTRER' }).click()
+
+    await page.goto('/')
+    await page.locator('.v104Trajectory').click()
+    await expect(page.locator('.v103Decision')).toContainText('2 200 KCAL MAINTENUES')
+  })
+
+  test('the week number is computed from the first tracked data, not hardcoded to 7', async ({ page }) => {
+    // Regression: "SEMAINE 7" was a literal hardcoded string, true for
+    // nobody in particular. A brand-new user with no tracked data yet
+    // should see week 1.
+    await page.goto('/')
+    await page.locator('.v104Trajectory').click()
+    await expect(page.locator('.v9TitleBar small')).toHaveText('INTELLIGENCE · SEMAINE 1')
+
+    await page.goto('/')
+    await page.evaluate(() => {
+      // 17 days before today → week 3, with a day of slack on either side
+      // for timezone rounding so the test isn't boundary-sensitive
+      const d = new Date()
+      d.setDate(d.getDate() - 17)
+      const iso = d.toISOString().slice(0, 10)
+      localStorage.setItem('bodyos.daily.log.v1', JSON.stringify([{ date: iso, weight: 90 }]))
+    })
+    await page.reload()
+    await page.locator('.v104Trajectory').click()
+    await expect(page.locator('.v9TitleBar small')).toContainText('SEMAINE 3')
+  })
 })
