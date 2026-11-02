@@ -59,6 +59,25 @@ const logWorkoutSet=(entry:WorkoutHistoryEntry)=>{
 }
 const deleteWorkoutSet=(id:string)=>writeJSON(WORKOUT_HISTORY_KEY,readWorkoutHistory().filter(e=>e.id!==id))
 const todayISO=()=>new Date().toISOString().slice(0,10)
+
+type ProgressionSuggestion={weight:number,reps:number,rir:number,reason:string}
+// Progression double classique, basée sur la dernière séance passée de cet
+// exercice : si la fourchette de reps cible a été atteinte, on augmente la
+// charge et on repart en bas de fourchette ; sinon on vise +1 répétition à
+// charge égale. Ignore les exercices chronométrés (ex. "20–30 s") où ces
+// nombres ne sont pas des répétitions.
+const suggestProgression=(repsRange:string,targetRir:number,lastPast:WorkoutHistoryEntry):ProgressionSuggestion|null=>{
+ if(/\d\s*s\b/i.test(repsRange)) return null
+ const match=repsRange.match(/(\d+)\D+(\d+)/)
+ if(!match) return null
+ const targetMin=Number(match[1]),targetMax=Number(match[2])
+ if(lastPast.reps>=targetMax) return {
+  weight:lastPast.weight+2.5,reps:targetMin,rir:targetRir,
+  reason:`Haut de fourchette atteint (${targetMax} reps la dernière fois) — charge +2,5 kg, reps repartent à ${targetMin}.`
+ }
+ const nextReps=Math.min(lastPast.reps+1,targetMax)
+ return {weight:lastPast.weight,reps:nextReps,rir:targetRir,reason:`Objectif : ${nextReps} reps (+1 vs dernière séance), même charge.`}
+}
 const mondayIndex=(d=new Date())=>(d.getDay()+6)%7
 const readDailyLog=()=>readJSON<DailyEntry[]>(DAILY_LOG_KEY,[]).slice().sort((a,b)=>a.date.localeCompare(b.date))
 const upsertDailyEntry=(patch:Partial<DailyEntry>)=>{
@@ -392,13 +411,15 @@ function Exercise({item,index,total,group,setView,onDone,onSwipe,isReplaced,onRe
  const logKey=`${group}::${item.name}`
  const targetRir=Number(String(item.rir).match(/\d+/)?.[0] ?? 2)
  const [todaysSets,setTodaysSets]=useState(()=>readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
+ const lastPast=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date!==todayISO()).at(-1)
+ const progression=lastPast?suggestProgression(item.reps,targetRir,lastPast):null
  const draftDefaults=():SetDraft=>{
   const draft=readJSON<Record<string,SetDraft>>(WORKOUT_LOG_KEY,{})[logKey]
   if(draft) return draft
   const lastToday=todaysSets.at(-1)
   if(lastToday) return {weight:lastToday.weight,reps:lastToday.reps,rir:lastToday.rir??targetRir}
-  const lastEver=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).at(-1)
-  if(lastEver) return {weight:lastEver.weight,reps:lastEver.reps,rir:lastEver.rir??targetRir}
+  if(progression) return {weight:progression.weight,reps:progression.reps,rir:progression.rir}
+  if(lastPast) return {weight:lastPast.weight,reps:lastPast.reps,rir:lastPast.rir??targetRir}
   return {weight:index===3?0:100,reps:index===1?8:10,rir:targetRir}
  }
  const [draft,setDraftState]=useState<SetDraft>(draftDefaults)
@@ -444,7 +465,9 @@ function Exercise({item,index,total,group,setView,onDone,onSwipe,isReplaced,onRe
   </div>
   <section className="v93Prescription"><span><small>ZONE REPS</small><b>{item.reps}</b></span><span><small>RIR CIBLE</small><b>{item.rir}</b></span><span><small>REPOS</small><b>{item.rest}</b></span></section>
   {todaysSets.length>0&&<section className="v9TodaySets"><small>SÉRIES D'AUJOURD'HUI</small>{todaysSets.map((s,i)=><div key={s.id??i}><b>#{i+1}</b><span>{s.weight} kg × {s.reps}</span><em>RIR {s.rir??'—'}</em><button onClick={()=>removeSet(s.id)} aria-label="Supprimer cette série">×</button></div>)}</section>}
-  <section className="v9SetPanel"><small>SÉRIE {todaysSets.length+1}</small><div className="v9Load"><button onClick={()=>setWeight(Math.max(0,weight-2.5))}>−</button><b>{weight}</b><em>KG</em><button onClick={()=>setWeight(weight+2.5)}>+</button></div><div className="v9RepLine"><span>6</span><span>7</span><strong>{reps}</strong><span>9</span><span>10</span></div><input type="range" min="5" max="15" value={reps} onChange={e=>setReps(+e.target.value)}/><div className="v9SetMeta"><span><small>RÉPÉTITIONS</small><b>{reps} REPS</b></span><span><small>RIR</small><div className="v9RirStepper"><button onClick={()=>setRir(Math.max(0,rir-1))}>−</button><b>{rir}</b><button onClick={()=>setRir(Math.min(5,rir+1))}>+</button></div></span></div></section>
+  <section className="v9SetPanel"><small>SÉRIE {todaysSets.length+1}</small><div className="v9Load"><button onClick={()=>setWeight(Math.max(0,weight-2.5))}>−</button><b>{weight}</b><em>KG</em><button onClick={()=>setWeight(weight+2.5)}>+</button></div><div className="v9RepLine"><span>6</span><span>7</span><strong>{reps}</strong><span>9</span><span>10</span></div><input type="range" min="5" max="15" value={reps} onChange={e=>setReps(+e.target.value)}/><div className="v9SetMeta"><span><small>RÉPÉTITIONS</small><b>{reps} REPS</b></span><span><small>RIR</small><div className="v9RirStepper"><button onClick={()=>setRir(Math.max(0,rir-1))}>−</button><b>{rir}</b><button onClick={()=>setRir(Math.min(5,rir+1))}>+</button></div></span></div>
+   {progression&&todaysSets.length===0&&<p className="v9ProgressionNote">💡 {progression.reason}</p>}
+  </section>
   <button className="v9LastSet" onClick={()=>setView('history')}><span><small>DERNIÈRE SÉRIE</small><b>{lastSet?`${lastSet.weight} kg × ${lastSet.reps} reps`:'Pas encore de série enregistrée'}</b></span>{lastSet&&<em>{lastSet.date}</em>}<strong>↗</strong></button>
   <div className="v9ExerciseActions"><button onClick={()=>setView('session')}>ANNULER</button><button className="pulse" onClick={validate} disabled={submitting}>✓</button><button onClick={()=>{onDone();setView('session')}}>TERMINER<br/>EXERCICE</button></div>
   {toast&&<Toast text={toast}/>}
