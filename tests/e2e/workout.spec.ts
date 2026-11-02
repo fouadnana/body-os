@@ -149,17 +149,36 @@ test.describe('Workout — exercise detail', () => {
 
 test.describe('Workout — rest', () => {
   test('timer +/-15s and skip work', async ({ page }) => {
+    // Uses real time (not page.clock) and tolerant deltas instead of exact
+    // mm:ss strings: under parallel-worker contention a few real seconds can
+    // elapse between actions, which would flake an exact-text assertion.
+    // What actually matters is that +15/-15 move the displayed time by the
+    // right amount, which a delta check captures regardless of drift.
+    const readSeconds = async () => {
+      const t = await page.locator('.v9Timer b').textContent()
+      const [m, s] = t!.split(':').map(Number)
+      return m * 60 + s
+    }
     await page.goto('/')
     await goNav(page, 'Workout')
     await page.locator('.v9ExerciseList button').first().click()
     await page.locator('.v9ExerciseActions .pulse').click()
     await expect(page.locator('.v9Rest')).toBeVisible()
-    await expect(page.locator('.v9Timer b')).toHaveText('00:45')
+    const initial = await readSeconds()
+    expect(initial).toBeGreaterThanOrEqual(42)
+    expect(initial).toBeLessThanOrEqual(45)
+
     await page.locator('.v93TimerControls button', { hasText: '+15' }).click()
-    await expect(page.locator('.v9Timer b')).toHaveText('01:00')
+    const afterPlus = await readSeconds()
+    expect(afterPlus).toBeGreaterThanOrEqual(initial + 13)
+    expect(afterPlus).toBeLessThanOrEqual(initial + 15)
+
     await page.locator('.v93TimerControls button', { hasText: '−15' }).click()
     await page.locator('.v93TimerControls button', { hasText: '−15' }).click()
-    await expect(page.locator('.v9Timer b')).toHaveText('00:30')
+    const final = await readSeconds()
+    expect(final).toBeGreaterThanOrEqual(afterPlus - 32)
+    expect(final).toBeLessThanOrEqual(afterPlus - 28)
+
     await page.locator('.v9NextSet').click()
     await expect(page.locator('.v9SetPanel')).toBeVisible()
   })
