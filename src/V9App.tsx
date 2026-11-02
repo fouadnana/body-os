@@ -543,6 +543,40 @@ function History({setView,item,group}:{setView:(v:WorkoutView)=>void,item:Exerci
  </main>
 }
 
+function QuickAddMealSheet({close,onAdd}:{close:()=>void,onAdd:(meal:Meal)=>void}){
+ const [name,setName]=useState('')
+ const [kcal,setKcal]=useState('')
+ const [protein,setProtein]=useState('')
+ const [carbs,setCarbs]=useState('')
+ const [fat,setFat]=useState('')
+ const num=(v:string)=>Math.round(parseFloat(v.replace(',','.'))||0)
+ const canSave=kcal.trim()!==''&&!isNaN(parseFloat(kcal.replace(',','.')))
+ const save=()=>{
+  if(!canSave) return
+  onAdd({
+   name:name.trim()||'Repas rapide',
+   time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+   kcal:num(kcal),
+   img:'/body-os/meal-breakfast-clean.webp',
+   details:'Ajout rapide',
+   protein:num(protein),
+   carbs:num(carbs),
+   fat:num(fat),
+   ingredients:[],
+  })
+  close()
+ }
+ return <div className="v9SheetBack" onClick={close}><section className="v103Sheet" onClick={e=>e.stopPropagation()}>
+  <header><button onClick={close}>×</button><div><b>AJOUT RAPIDE</b><small>Repas ou collation hors programme</small></div><span></span></header>
+  <label>NOM — optionnel<input value={name} onChange={e=>setName(e.target.value)} placeholder="ex. Collation"/></label>
+  <label>CALORIES (KCAL)<input inputMode="numeric" value={kcal} onChange={e=>setKcal(e.target.value)} placeholder="ex. 250"/></label>
+  <label>PROTÉINES (G) — optionnel<input inputMode="decimal" value={protein} onChange={e=>setProtein(e.target.value)} placeholder="ex. 20"/></label>
+  <label>GLUCIDES (G) — optionnel<input inputMode="decimal" value={carbs} onChange={e=>setCarbs(e.target.value)} placeholder="ex. 25"/></label>
+  <label>LIPIDES (G) — optionnel<input inputMode="decimal" value={fat} onChange={e=>setFat(e.target.value)} placeholder="ex. 8"/></label>
+  <button className="v9Primary" onClick={save} disabled={!canSave}>AJOUTER</button>
+ </section></div>
+}
+
 function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
  const [open,setOpen]=useState<Meal|null>(null)
  const [tab,setTab]=useState<'day'|'week'|'month'>('day')
@@ -551,6 +585,7 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
  const [toast,setToast]=useState('')
  const [settingsOpen,setSettingsOpen]=useState(false)
  const [visionOpen,setVisionOpen]=useState(false)
+ const [quickAddOpen,setQuickAddOpen]=useState(false)
  const [mealState,setMealState]=useState<Meal[]>(()=>readJSON(NUTRITION_MEALS_KEY,meals))
  const [settings,setSettings]=useState(()=>readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS))
  const [draft,setDraft]=useState(settings)
@@ -581,6 +616,12 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
     return {...m,kcal:result.kcal,protein:result.protein,carbs:result.carbs,fat:result.fat,ingredients,details:mealDetails(ingredients)}
    }))
    setVisionOpen(false); setToast('Repas analysé ajouté'); window.setTimeout(()=>setToast(''),1800)
+ }
+ const addQuickMeal=(meal:Meal)=>{
+   let finalName=meal.name
+   if(mealState.some(m=>m.name===finalName)) finalName=`${finalName} (${meal.time})`
+   setMealState(prev=>[...prev,{...meal,name:finalName}])
+   setToast('Repas ajouté'); window.setTimeout(()=>setToast(''),1800)
  }
 
  return <main className="v9Page">
@@ -620,7 +661,7 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
      <img src={m.img}/><strong>{m.kcal} kcal</strong>
     </button>)}
    </section>
-   <button className="v9Fab" onClick={()=>{setToast('Ajout rapide prêt');window.setTimeout(()=>setToast(''),1800)}}>＋</button>
+   <button className="v9Fab" onClick={()=>setQuickAddOpen(true)}>＋</button>
   </>:<>
    <section className="v97Recipes">
     <div className="v97RecipeHead"><div><small>RECETTES INTELLIGENTES</small><b>Compatibles avec ta sèche</b></div><span>{recipes.length} recettes</span></div>
@@ -633,6 +674,7 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
 
   {open&&<MealSheet meal={open} close={()=>setOpen(null)} save={saveMeal}/>}
   {recipeOpen&&<RecipeSheet recipe={recipeOpen} close={()=>setRecipeOpen(null)} add={()=>addRecipeToPlan(recipeOpen)}/>}
+  {quickAddOpen&&<QuickAddMealSheet close={()=>setQuickAddOpen(false)} onAdd={addQuickMeal}/>}
   {settingsOpen&&<div className="v9SheetBack" onClick={()=>setSettingsOpen(false)}>
    <section className="v96NutritionSettings" onClick={e=>e.stopPropagation()}>
     <header><button onClick={()=>setSettingsOpen(false)}>×</button><div><small>RÉGLAGES NUTRITION</small><b>Adapter la sèche</b></div><span></span></header>
