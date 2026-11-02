@@ -54,4 +54,22 @@ test.describe('Adaptive Sèche', () => {
     await page.locator('button', { hasText: 'Analyse de ma progression' }).click()
     await expect(page.locator('.v103Trend header b')).toHaveText('99,4 kg')
   })
+
+  test('back caret returns to Today when entered via the Today trajectory/adaptive card (its primary entry points)', async ({ page }) => {
+    // Regression: the back caret used to be hardcoded to 'coach', stranding
+    // users on the demo AI Coach screen when they came from Today instead.
+    await page.goto('/')
+    await page.locator('.v104Trajectory').click()
+    await expect(page.locator('.v103Adaptive')).toBeVisible()
+    await page.locator('.v9TitleBar button', { hasText: '‹' }).click()
+    await expect(page.locator('.v104Brand')).toBeVisible()
+  })
+
+  test('back caret also returns to Today when entered via AI Coach > Analyse de ma progression', async ({ page }) => {
+    await page.goto('/')
+    await goNav(page, 'Coach')
+    await page.locator('button', { hasText: 'Analyse de ma progression' }).click()
+    await page.locator('.v9TitleBar button', { hasText: '‹' }).click()
+    await expect(page.locator('.v104Brand')).toBeVisible()
+  })
 })

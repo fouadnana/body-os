@@ -1001,7 +1001,7 @@ function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const preservation=94
  const adherence=91
  return <main className="v9Page v103Adaptive">
-  <header className="v9TitleBar"><button onClick={()=>setScreen('coach')}>‹</button><div><b>ADAPTIVE SÈCHE</b><small>INTELLIGENCE · SEMAINE 7</small></div><span className="v103Live">● ACTIF</span></header>
+  <header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>ADAPTIVE SÈCHE</b><small>INTELLIGENCE · SEMAINE 7</small></div><span className="v103Live">● ACTIF</span></header>
 
   <section className="v103Decision">
    <div className="v103DecisionTop"><span><small>DÉCISION DE LA SEMAINE</small><b>MAINTENIR</b></span><strong>✓</strong></div>
