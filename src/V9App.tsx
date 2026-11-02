@@ -395,6 +395,20 @@ const thumbFallback=(ev:React.SyntheticEvent<HTMLImageElement>)=>{
 }
 
 const padDone=(arr:boolean[]|undefined,len:number)=>Array.from({length:len},(_,i)=>arr?.[i]??false)
+// Estimation du temps de séance dérivée des vraies séries/repos de chaque
+// exercice, plutôt qu'un "~32 min" figé identique quel que soit le nombre
+// d'exercices (visible notamment sur un template personnalisé à 2 exercices
+// affichant la même estimation qu'une séance standard à 5).
+const parseRestSeconds=(rest:string):number=>{
+ const toSeconds=(p:string)=>p.includes(':')?(([m,s])=>m*60+(s||0))(p.split(':').map(Number)):Number(p.replace(/[^\d.]/g,''))||0
+ const vals=rest.split('–').map(p=>toSeconds(p.trim())).filter(v=>v>0)
+ return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:60
+}
+const estimateExerciseSeconds=(item:ExerciseItem):number=>{
+ const setsCount=Number(item.sets.match(/\d+/)?.[0] ?? 3)
+ return setsCount*(35+parseRestSeconds(item.rest))
+}
+const estimateSessionMinutes=(items:ExerciseItem[]):number=>items.length===0?0:Math.max(1,Math.round(items.reduce((s,e)=>s+estimateExerciseSeconds(e),0)/60))
 function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void,initialGroup:SessionGroup}){
  const [group,setGroup]=useState<SessionGroup>(initialGroup); const [selected,setSelected]=useState(0)
  const [doneRaw,setDoneRawState]=useState<Record<string,boolean[]>>(()=>readJSON(WORKOUT_DONE_KEY,{}))
@@ -417,10 +431,14 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
  const changeGroup=(g:SessionGroup)=>{setGroup(g);setSelected(0)}
  const finish=()=>{const count=done.filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
  const resetProgress=()=>{setDone(Array(exercises.length).fill(false));setToast('Progression réinitialisée')}
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>{exercises.length} exercices · ~ 32 min</em></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
+ const totalEstimateMin=estimateSessionMinutes(exercises)
+ const remainingEstimateMin=estimateSessionMinutes(exercises.filter((_,i)=>!done[i]))
+ const doneCount=done.filter(Boolean).length
+ const remainingPct=exercises.length?Math.round((doneCount/exercises.length)*100):0
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>{exercises.length} exercices · ~ {totalEstimateMin} min</em></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
   <div className="v94MuscleTabs">{sessionGroups.map(g=><button key={g} className={g===group?'active':''} onClick={()=>changeGroup(g)}><span>{g==='Pectoraux'?'♜':g==='Dos'?'♙':g==='Épaules'?'✣':g==='Jambes'?'♧':g==='Bras'?'◉':'⚕'}</span><small>{g}</small></button>)}</div>
   <section className="v9ExerciseList">{exercises.map((e,i)=><button key={e.name} onClick={()=>{setSelected(i);setView('exercise')}} className={done[i]?'done':''}><div className="v93Thumb"><img src={e.img} onError={thumbFallback}/><i>▶</i></div><span><small>{i+1}</small><b>{e.name}</b><em>{e.equipment} · {e.reps} · RIR {e.rir}</em></span><strong>{e.sets}</strong><i>{done[i]?'✓':'○'}</i></button>)}</section>
-  <button className="v9Primary" onClick={finish}>TERMINER LA SÉANCE</button><div className="v9Remaining"><small>Temps estimé restant</small><i><span></span></i><b>32 min</b></div>{toast&&<Toast text={toast}/>}
+  <button className="v9Primary" onClick={finish}>TERMINER LA SÉANCE</button><div className="v9Remaining"><small>Temps estimé restant</small><i><span style={{width:`${remainingPct}%`}}></span></i><b>{remainingEstimateMin} min</b></div>{toast&&<Toast text={toast}/>}
   {optionsOpen&&<OptionsSheet title="OPTIONS DE SÉANCE" close={()=>setOptionsOpen(false)} options={[{label:'Réinitialiser la progression',onClick:resetProgress,danger:true}]}/>}
  </main>
 }
