@@ -1043,7 +1043,20 @@ function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const realWeeklyRate=spanDays>=3?(weighedDays.at(-1)!.weight!-weighedDays[0].weight!)/spanDays*7:null
  const nutritionSettings=readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS)
  const preservation=94
- const adherence=91
+ // Adhérence nutrition réelle sur les 7 derniers jours calendaires, à partir
+ // du même journal quotidien que l'onglet SEMAINE/MOIS de Nutrition : un
+ // jour est "dans la cible" si kcal/protéines sont à ±10% de l'objectif
+ // configuré. Remplace les 91%/87%/94%/6-7 auparavant figés.
+ const dailyNutrition=readNutritionDaily()
+ const within=(val:number,target:number,tolerance=.1)=>target>0&&Math.abs(val-target)/target<=tolerance
+ const last7Dates=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toISOString().slice(0,10)})
+ const loggedDays=last7Dates.filter(d=>dailyNutrition[d]!=null)
+ const caloriesOnTarget=loggedDays.filter(d=>within(dailyNutrition[d].kcal,nutritionSettings.calories)).length
+ const proteinOnTarget=loggedDays.filter(d=>within(dailyNutrition[d].protein,nutritionSettings.protein)).length
+ const caloriesAdherencePct=loggedDays.length?Math.round(caloriesOnTarget/loggedDays.length*100):0
+ const proteinAdherencePct=loggedDays.length?Math.round(proteinOnTarget/loggedDays.length*100):0
+ const adherence=loggedDays.length?Math.round((caloriesAdherencePct+proteinAdherencePct)/2):0
+ const adherenceLabel=loggedDays.length===0?'EN ATTENTE':adherence>=85?'TRÈS BON':adherence>=65?'BON':adherence>=40?'MOYEN':'À AMÉLIORER'
  // Numéro de semaine réel depuis la toute première donnée suivie (poids/taille
  // ou séance), plutôt qu'un "SEMAINE 7" figé sans rapport avec l'usage réel.
  const allTrackedDates=[...dailyLog.map(e=>e.date),...readWorkoutHistory().map(h=>h.date)]
@@ -1068,7 +1081,7 @@ function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
 
   <div className="v103ScoreGrid">
    <section><small>MUSCLE PRESERVATION</small><div className="v103Ring"><b>{preservation}</b><em>/100</em></div><strong>EXCELLENT</strong><p>Force stable · protéines hautes · rythme de perte maîtrisé.</p></section>
-   <section><small>ADHÉRENCE NUTRITION</small><div className="v103Ring"><b>{adherence}</b><em>%</em></div><strong>TRÈS BON</strong><p>Calories 87% · protéines 94% · repas enregistrés 6/7.</p></section>
+   <section><small>ADHÉRENCE NUTRITION</small><div className="v103Ring"><b>{adherence}</b><em>%</em></div><strong>{adherenceLabel}</strong><p>{loggedDays.length?`Calories ${caloriesAdherencePct}% · protéines ${proteinAdherencePct}% · repas enregistrés ${loggedDays.length}/7.`:'Pas encore de repas enregistrés cette semaine.'}</p></section>
   </div>
 
   <section className="v103Signals"><header><b>SIGNAUX DU MOTEUR</b><span>5/5 FAVORABLES</span></header>
