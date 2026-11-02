@@ -1608,3 +1608,5 @@ body{
 
 /* ---------- Phase 4 : progression automatique ---------- */
 .v9ProgressionNote{margin:10px 0 0;padding:9px 11px;border-radius:10px;background:rgba(182,239,73,.1);border:1px solid rgba(182,239,73,.25);color:#d8f3a8;font-size:9px;line-height:1.5}
+.v97FavoriteToggle{color:#7fffb2}
+.v97FavoriteToggle.active{color:#ff7f9e}

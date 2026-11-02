@@ -8,6 +8,7 @@ type WorkoutView='session'|'exercise'|'history'
 
 const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
 const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
+const RECIPE_FAVORITES_KEY='bodyos.recipes.favorites.v1'
 const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
 const WORKOUT_LOG_KEY='bodyos.workout.log.v1'
 const WORKOUT_OVERRIDES_KEY='bodyos.workout.overrides.v1'
@@ -586,6 +587,17 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
  const [settingsOpen,setSettingsOpen]=useState(false)
  const [visionOpen,setVisionOpen]=useState(false)
  const [quickAddOpen,setQuickAddOpen]=useState(false)
+ const [recipeFilter,setRecipeFilter]=useState<'toutes'|'rapides'|'proteinees'|'favoris'>('toutes')
+ const [favorites,setFavoritesState]=useState<string[]>(()=>readJSON(RECIPE_FAVORITES_KEY,[]))
+ const setFavorites=(next:string[])=>{setFavoritesState(next);writeJSON(RECIPE_FAVORITES_KEY,next)}
+ const toggleFavorite=(id:string)=>setFavorites(favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id])
+ const parseMinutes=(t:string)=>Number(t.match(/\d+/)?.[0]??0)
+ const filteredRecipes=recipes.filter(r=>
+  recipeFilter==='toutes'||
+  (recipeFilter==='rapides'&&parseMinutes(r.time)<=15)||
+  (recipeFilter==='proteinees'&&r.protein>=40)||
+  (recipeFilter==='favoris'&&favorites.includes(r.id))
+ )
  const [mealState,setMealState]=useState<Meal[]>(()=>readJSON(NUTRITION_MEALS_KEY,meals))
  const [settings,setSettings]=useState(()=>readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS))
  const [draft,setDraft]=useState(settings)
@@ -664,16 +676,22 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
    <button className="v9Fab" onClick={()=>setQuickAddOpen(true)}>＋</button>
   </>:<>
    <section className="v97Recipes">
-    <div className="v97RecipeHead"><div><small>RECETTES INTELLIGENTES</small><b>Compatibles avec ta sèche</b></div><span>{recipes.length} recettes</span></div>
-    <div className="v97RecipeFilters"><button className="active">TOUTES</button><button>RAPIDES</button><button>PROTÉINÉES</button><button>FAVORIS</button></div>
-    <div className="v97RecipeGrid">{recipes.map(r=><button key={r.id} onClick={()=>setRecipeOpen(r)}>
+    <div className="v97RecipeHead"><div><small>RECETTES INTELLIGENTES</small><b>Compatibles avec ta sèche</b></div><span>{filteredRecipes.length} recette{filteredRecipes.length>1?'s':''}</span></div>
+    <div className="v97RecipeFilters">
+     <button className={recipeFilter==='toutes'?'active':''} onClick={()=>setRecipeFilter('toutes')}>TOUTES</button>
+     <button className={recipeFilter==='rapides'?'active':''} onClick={()=>setRecipeFilter('rapides')}>RAPIDES</button>
+     <button className={recipeFilter==='proteinees'?'active':''} onClick={()=>setRecipeFilter('proteinees')}>PROTÉINÉES</button>
+     <button className={recipeFilter==='favoris'?'active':''} onClick={()=>setRecipeFilter('favoris')}>FAVORIS</button>
+    </div>
+    <div className="v97RecipeGrid">{filteredRecipes.map(r=><button key={r.id} onClick={()=>setRecipeOpen(r)}>
      <img src={r.img}/><span><small>{r.category} · {r.time}</small><b>{r.name}</b><em>{r.kcal} kcal · P {r.protein} g</em></span>
     </button>)}</div>
+    {filteredRecipes.length===0&&<p className="v94NoData">{recipeFilter==='favoris'?"Pas encore de recette favorite — touche ♡ dans une fiche recette.":'Aucune recette ne correspond à ce filtre.'}</p>}
    </section>
   </>}
 
   {open&&<MealSheet meal={open} close={()=>setOpen(null)} save={saveMeal}/>}
-  {recipeOpen&&<RecipeSheet recipe={recipeOpen} close={()=>setRecipeOpen(null)} add={()=>addRecipeToPlan(recipeOpen)}/>}
+  {recipeOpen&&<RecipeSheet recipe={recipeOpen} close={()=>setRecipeOpen(null)} add={()=>addRecipeToPlan(recipeOpen)} isFavorite={favorites.includes(recipeOpen.id)} onToggleFavorite={()=>toggleFavorite(recipeOpen.id)}/>}
   {quickAddOpen&&<QuickAddMealSheet close={()=>setQuickAddOpen(false)} onAdd={addQuickMeal}/>}
   {settingsOpen&&<div className="v9SheetBack" onClick={()=>setSettingsOpen(false)}>
    <section className="v96NutritionSettings" onClick={e=>e.stopPropagation()}>
@@ -723,9 +741,9 @@ function MealSheet({meal,close,save}:{meal:Meal,close:()=>void,save:(m:Meal)=>vo
  </section></div>
 }
 
-function RecipeSheet({recipe,close,add}:{recipe:Recipe,close:()=>void,add:()=>void}){
+function RecipeSheet({recipe,close,add,isFavorite,onToggleFavorite}:{recipe:Recipe,close:()=>void,add:()=>void,isFavorite:boolean,onToggleFavorite:()=>void}){
  return <div className="v9SheetBack" onClick={close}><section className="v9MealSheet v97RecipeSheet" onClick={e=>e.stopPropagation()}>
-  <header><button onClick={close}>‹</button><b>RECETTE</b><span>♡</span></header>
+  <header><button onClick={close}>‹</button><b>RECETTE</b><button className={`v97FavoriteToggle${isFavorite?' active':''}`} onClick={onToggleFavorite} aria-label={isFavorite?'Retirer des favoris':'Ajouter aux favoris'}>{isFavorite?'♥':'♡'}</button></header>
   <img className="v9FoodHero" src={recipe.img}/>
   <div className="v9MealInfo"><small>{recipe.category} · {recipe.time}</small><h2>{recipe.name}</h2><b>{recipe.kcal} <small>kcal</small></b>
    <div><span><i>◖</i><b>{recipe.protein} g</b><small>Protéines</small></span><span><i>G</i><b>{recipe.carbs} g</b><small>Glucides</small></span><span><i>L</i><b>{recipe.fat} g</b><small>Lipides</small></span></div>
