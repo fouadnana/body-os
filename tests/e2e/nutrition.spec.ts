@@ -9,9 +9,9 @@ test.describe('Nutrition', () => {
     await expect(page.locator('.v9Segments button')).toHaveCount(3)
     await expect(page.locator('.v9Segments button.active')).toHaveText("AUJOURD'HUI")
     await page.locator('.v9Segments button', { hasText: 'SEMAINE' }).click()
-    await expect(page.locator('.v9MealList h3')).toContainText('APERÇU SEMAINE')
+    await expect(page.locator('.v9NutritionTrend h3')).toContainText('APERÇU SEMAINE')
     await page.locator('.v9Segments button', { hasText: 'MOIS' }).click()
-    await expect(page.locator('.v9MealList h3')).toContainText('TENDANCE DU MOIS')
+    await expect(page.locator('.v9NutritionTrend h3')).toContainText('TENDANCE DU MOIS')
     expect(errors).toEqual([])
   })
 

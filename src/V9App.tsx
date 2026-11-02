@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart } from 'recharts'
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart, ReferenceLine } from 'recharts'
 import './v9.css'
 import FoodVision, { type FoodVisionPayload } from './FoodVision'
 
@@ -9,6 +9,9 @@ type WorkoutView='session'|'exercise'|'history'
 const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
 const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
 const RECIPE_FAVORITES_KEY='bodyos.recipes.favorites.v1'
+const NUTRITION_DAILY_KEY='bodyos.nutrition.daily.v1'
+type NutritionDaily={kcal:number,protein:number,carbs:number,fat:number}
+const readNutritionDaily=()=>readJSON<Record<string,NutritionDaily>>(NUTRITION_DAILY_KEY,{})
 const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
 const WORKOUT_LOG_KEY='bodyos.workout.log.v1'
 const WORKOUT_OVERRIDES_KEY='bodyos.workout.overrides.v1'
@@ -601,9 +604,24 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
  const [mealState,setMealState]=useState<Meal[]>(()=>readJSON(NUTRITION_MEALS_KEY,meals))
  const [settings,setSettings]=useState(()=>readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS))
  const [draft,setDraft]=useState(settings)
+ const [dailyNutrition,setDailyNutrition]=useState<Record<string,NutritionDaily>>(()=>readNutritionDaily())
 
- useEffect(()=>{writeJSON(NUTRITION_MEALS_KEY,mealState)},[mealState])
+ useEffect(()=>{
+  writeJSON(NUTRITION_MEALS_KEY,mealState)
+  const totals=mealState.reduce((acc,m)=>({kcal:acc.kcal+m.kcal,protein:acc.protein+m.protein,carbs:acc.carbs+m.carbs,fat:acc.fat+m.fat}),{kcal:0,protein:0,carbs:0,fat:0})
+  const daily={...readNutritionDaily(),[todayISO()]:totals}
+  writeJSON(NUTRITION_DAILY_KEY,daily)
+  setDailyNutrition(daily)
+ },[mealState])
  useEffect(()=>{writeJSON(NUTRITION_SETTINGS_KEY,settings)},[settings])
+
+ const dailyDates=Object.keys(dailyNutrition).sort()
+ const trendPoints=(n:number)=>dailyDates.slice(-n).map(d=>({d:fmtHistoryDate(d).slice(0,5),kcal:dailyNutrition[d].kcal,protein:dailyNutrition[d].protein}))
+ const weekPoints=trendPoints(7)
+ const monthPoints=trendPoints(30)
+ const trendForTab=tab==='week'?weekPoints:monthPoints
+ const avgKcal=trendForTab.length?Math.round(trendForTab.reduce((s,p)=>s+p.kcal,0)/trendForTab.length):null
+ const avgDeltaVsTarget=avgKcal!=null?avgKcal-settings.calories:null
 
  const saveSettings=()=>{
    setSettings(draft); setSettingsOpen(false); setToast('Réglages enregistrés')
@@ -666,14 +684,29 @@ function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
     </div>
    </section>
 
-   <section className="v9MealList">
-    <h3>{tab==='day'?'REPAS DU JOUR':tab==='week'?'APERÇU SEMAINE':'TENDANCE DU MOIS'}</h3>
+   {tab==='day'?<section className="v9MealList">
+    <h3>REPAS DU JOUR</h3>
     {mealState.map(m=><button key={m.name} onClick={()=>setOpen(m)}>
      <span className="v95MealText"><small>{m.name}</small><b>{mealDetails(m.ingredients)}</b><em>{m.time}</em></span>
      <img src={m.img}/><strong>{m.kcal} kcal</strong>
     </button>)}
-   </section>
-   <button className="v9Fab" onClick={()=>setQuickAddOpen(true)}>＋</button>
+   </section>:<section className="v9HistoryChart v9NutritionTrend">
+    <h3>{tab==='week'?'APERÇU SEMAINE':'TENDANCE DU MOIS'}</h3>
+    {trendForTab.length?<>
+     <ResponsiveContainer width="100%" height={180}><LineChart data={trendForTab}>
+      <Line dataKey="kcal" stroke="#75eef0" strokeWidth={3} dot={{r:3,fill:'#d8fcff'}}/>
+      <ReferenceLine y={settings.calories} stroke="#b6ef49" strokeDasharray="4 4"/>
+      <XAxis dataKey="d" tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/>
+      <YAxis hide domain={['dataMin - 100','dataMax + 100']}/>
+     </LineChart></ResponsiveContainer>
+     <div className="v94PerfStats">
+      <span><small>MOYENNE</small><b>{avgKcal} kcal/j</b></span>
+      <span><small>JOURS SUIVIS</small><b>{trendForTab.length}</b></span>
+      <span><small>ÉCART VS OBJECTIF</small><b>{avgDeltaVsTarget!=null?`${avgDeltaVsTarget>0?'+':''}${avgDeltaVsTarget} kcal`:'—'}</b></span>
+     </div>
+    </>:<p className="v94NoData">Pas encore assez de jours suivis. Reviens demain pour voir ta tendance {tab==='week'?'hebdomadaire':'mensuelle'}.</p>}
+   </section>}
+   {tab==='day'&&<button className="v9Fab" onClick={()=>setQuickAddOpen(true)}>＋</button>}
   </>:<>
    <section className="v97Recipes">
     <div className="v97RecipeHead"><div><small>RECETTES INTELLIGENTES</small><b>Compatibles avec ta sèche</b></div><span>{filteredRecipes.length} recette{filteredRecipes.length>1?'s':''}</span></div>
