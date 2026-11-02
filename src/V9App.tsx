@@ -1088,7 +1088,7 @@ function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
   </section></div>}
 
   {decisionOpen&&<InfoSheet title="POURQUOI MAINTENIR ?" close={()=>setDecisionOpen(false)}>
-   <div className="v103Why"><b>Décision proposée : maintenir 2 510 kcal</b><p>La moyenne de poids baisse au rythme cible, le tour de taille diminue et les performances restent stables. Réduire davantage les calories n'apporte pas de bénéfice évident aujourd'hui.</p><small>CONFIANCE DU MOTEUR</small><strong>ÉLEVÉE · 92%</strong><p>Cette recommandation est une aide à la décision, pas un diagnostic médical.</p></div>
+   <div className="v103Why"><b>Décision proposée : maintenir {nutritionSettings.calories.toLocaleString('fr-FR')} kcal</b><p>La moyenne de poids baisse au rythme cible, le tour de taille diminue et les performances restent stables. Réduire davantage les calories n'apporte pas de bénéfice évident aujourd'hui.</p><small>CONFIANCE DU MOTEUR</small><strong>ÉLEVÉE · 92%</strong><p>Cette recommandation est une aide à la décision, pas un diagnostic médical.</p></div>
   </InfoSheet>}
  </main>
 }

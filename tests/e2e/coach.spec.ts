@@ -90,6 +90,10 @@ test.describe('Adaptive Sèche', () => {
     await page.goto('/')
     await page.locator('.v104Trajectory').click()
     await expect(page.locator('.v103Decision')).toContainText('2 200 KCAL MAINTENUES')
+
+    // the "pourquoi maintenir ?" explanation sheet must match too, not just the button
+    await page.locator('.v103Decision button').click()
+    await expect(page.locator('.v93InfoSheet')).toContainText('maintenir 2 200 kcal')
   })
 
   test('the week number is computed from the first tracked data, not hardcoded to 7', async ({ page }) => {
