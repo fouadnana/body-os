@@ -96,6 +96,67 @@ test.describe('Adaptive Sèche', () => {
     await expect(page.locator('.v93InfoSheet')).toContainText('maintenir 2 200 kcal')
   })
 
+  test('the weekly decision defaults to MAINTENIR with honest placeholders when there is no data', async ({ page }) => {
+    // Regression: "MAINTENIR", "−0,48 kg", "−0,7 cm" and "STABLE" used to be
+    // literal hardcoded strings, shown identically to every user regardless
+    // of their actual data.
+    await page.goto('/')
+    await page.locator('.v104Trajectory').click()
+    await expect(page.locator('.v103DecisionTop b')).toHaveText('MAINTENIR')
+    const metrics = page.locator('.v103DecisionMetrics')
+    await expect(metrics).toContainText('POIDS 7J')
+    await expect(metrics.locator('span').nth(0).locator('b')).toHaveText('—')
+    await expect(metrics.locator('span').nth(1).locator('b')).toHaveText('—')
+    await expect(metrics.locator('span').nth(2).locator('b')).toHaveText('EN ATTENTE')
+  })
+
+  test('the decision becomes RÉDUIRE with a lower suggested target when the real weekly loss is clearly slower than the goal', async ({ page }) => {
+    await page.goto('/')
+    const log: { date: string, weight: number, waist: number }[] = []
+    const today = new Date()
+    for (let i = 10; i >= 0; i--) {
+      const d = new Date(today); d.setDate(d.getDate() - i)
+      log.push({ date: d.toISOString().slice(0, 10), weight: 90 - (10 - i) * 0.02, waist: 95 })
+    }
+    await page.evaluate((l) => localStorage.setItem('bodyos.daily.log.v1', JSON.stringify(l)), log)
+    await page.reload()
+    await page.locator('.v104Trajectory').click()
+    await expect(page.locator('.v103DecisionTop b')).toHaveText('RÉDUIRE')
+    await expect(page.locator('.v103Decision')).toContainText('2 450 KCAL SUGGÉRÉS')
+    await page.locator('.v103Decision button').click()
+    await expect(page.locator('.v93InfoSheet')).toContainText('réduire à 2 450 kcal')
+  })
+
+  test('the decision becomes AUGMENTER with a higher suggested target when the real weekly loss is clearly faster than the goal', async ({ page }) => {
+    await page.goto('/')
+    const log: { date: string, weight: number, waist: number }[] = []
+    const today = new Date()
+    for (let i = 10; i >= 0; i--) {
+      const d = new Date(today); d.setDate(d.getDate() - i)
+      log.push({ date: d.toISOString().slice(0, 10), weight: 90 - (10 - i) * 0.3, waist: 95 })
+    }
+    await page.evaluate((l) => localStorage.setItem('bodyos.daily.log.v1', JSON.stringify(l)), log)
+    await page.reload()
+    await page.locator('.v104Trajectory').click()
+    await expect(page.locator('.v103DecisionTop b')).toHaveText('AUGMENTER')
+    await expect(page.locator('.v103Decision')).toContainText('2 750 KCAL SUGGÉRÉS')
+  })
+
+  test('POIDS 7J and TAILLE reflect the real 7-day deltas, not hardcoded values', async ({ page }) => {
+    await page.goto('/')
+    const today = new Date()
+    const dateNDaysAgo = (n: number) => { const d = new Date(today); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10) }
+    await page.evaluate((entries) => localStorage.setItem('bodyos.daily.log.v1', JSON.stringify(entries)), [
+      { date: dateNDaysAgo(8), weight: 92, waist: 98 },
+      { date: dateNDaysAgo(0), weight: 90, waist: 96.5 },
+    ])
+    await page.reload()
+    await page.locator('.v104Trajectory').click()
+    const metrics = page.locator('.v103DecisionMetrics')
+    await expect(metrics.locator('span').nth(0).locator('b')).toHaveText('-2,0 kg')
+    await expect(metrics.locator('span').nth(1).locator('b')).toHaveText('-1,5 cm')
+  })
+
   test('the week number is computed from the first tracked data, not hardcoded to 7', async ({ page }) => {
     // Regression: "SEMAINE 7" was a literal hardcoded string, true for
     // nobody in particular. A brand-new user with no tracked data yet
