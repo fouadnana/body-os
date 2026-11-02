@@ -1,7 +1,7 @@
 // Fonctions pures (formatage, calculs, logique métier sans accès au
 // stockage ni aux données statiques). Extrait de V9App.tsx (Phase 6).
 import type { SyntheticEvent } from 'react'
-import type { DayPlan, ExerciseItem, Ingredient, ProgressionSuggestion, WorkoutHistoryEntry } from './types'
+import type { DailyEntry, DayPlan, ExerciseItem, Ingredient, NutritionDaily, ProgressionSuggestion, WorkoutHistoryEntry } from './types'
 
 export const mondayIndex=(d=new Date())=>(d.getDay()+6)%7
 export const dayIcon=(d:DayPlan)=>d==='Pectoraux'?'♜':d==='Dos'?'♙':d==='Épaules'?'✣':d==='Jambes'?'♧':d==='Bras'?'◉':d==='L5-S1'?'⚕':d==='Cardio'?'◌':'☾'
@@ -19,6 +19,46 @@ export const fmtDelta=(curr:number,prev:number|undefined,unit:string,decimals=1)
 }
 export const fmtHistoryDate=(iso:string)=>new Date(iso+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})
 export const estimate1RM=(weight:number,reps:number)=>Math.round(weight*(1+reps/30))
+
+// Rythme de perte réel (kg/semaine), extrapolé depuis les deux pesées les
+// plus espacées du journal (null si moins de 3 jours d'écart — pas assez
+// de recul pour une extrapolation fiable). Partagé entre Adaptive Sèche et
+// Plan — Semaine pour que les deux écrans s'accordent sur le même chiffre.
+export const estimateWeeklyRate=(dailyLog:DailyEntry[]):number|null=>{
+ const weighedDays=dailyLog.filter(e=>e.weight!=null)
+ if(weighedDays.length<2) return null
+ const spanDays=(new Date(weighedDays.at(-1)!.date).getTime()-new Date(weighedDays[0].date).getTime())/86400000
+ return spanDays>=3?(weighedDays.at(-1)!.weight!-weighedDays[0].weight!)/spanDays*7:null
+}
+
+export type WeeklyVerdict='MAINTENIR'|'RÉDUIRE'|'AUGMENTER'
+// Compare le rythme de perte réel à l'objectif configuré avec une marge de
+// tolérance de ±35% (ou ±0,15 kg/sem minimum, pour les objectifs proches de
+// zéro). Sans rythme réel calculable, reste sur MAINTENIR : pas de
+// suggestion de changement sans preuve.
+export const decideWeeklyVerdict=(realWeeklyRate:number|null,targetWeeklyRate:number):WeeklyVerdict=>{
+ if(realWeeklyRate==null) return 'MAINTENIR'
+ const tolerance=Math.max(Math.abs(targetWeeklyRate)*.35,.15)
+ const diff=realWeeklyRate-targetWeeklyRate
+ if(diff>tolerance) return 'RÉDUIRE'
+ if(diff<-tolerance) return 'AUGMENTER'
+ return 'MAINTENIR'
+}
+
+// Adhérence nutrition réelle sur les 7 derniers jours calendaires : un jour
+// est "dans la cible" si ses calories/protéines sont à ±10% de l'objectif
+// configuré. Partagé entre Adaptive Sèche et Plan — Semaine.
+export const computeNutritionAdherence=(dailyNutrition:Record<string,NutritionDaily>,target:{calories:number,protein:number})=>{
+ const within=(val:number,goal:number,tolerance=.1)=>goal>0&&Math.abs(val-goal)/goal<=tolerance
+ const last7Dates=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toISOString().slice(0,10)})
+ const loggedDates=last7Dates.filter(d=>dailyNutrition[d]!=null)
+ const caloriesOnTarget=loggedDates.filter(d=>within(dailyNutrition[d].kcal,target.calories)).length
+ const proteinOnTarget=loggedDates.filter(d=>within(dailyNutrition[d].protein,target.protein)).length
+ const caloriesPct=loggedDates.length?Math.round(caloriesOnTarget/loggedDates.length*100):0
+ const proteinPct=loggedDates.length?Math.round(proteinOnTarget/loggedDates.length*100):0
+ const adherencePct=loggedDates.length?Math.round((caloriesPct+proteinPct)/2):0
+ return {loggedDays:loggedDates.length,caloriesPct,proteinPct,adherencePct}
+}
 
 export const mealDetails=(ingredients:Ingredient[])=>ingredients.map(i=>`${i.name} ${i.qty}${i.unit}`).join(' · ')
 

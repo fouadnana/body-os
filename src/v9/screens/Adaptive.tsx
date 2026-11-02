@@ -5,7 +5,7 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import type { DailyEntry, Screen } from '../types'
 import { DEFAULT_NUTRITION_SETTINGS } from '../data'
 import { NUTRITION_SETTINGS_KEY, readDailyLog, readJSON, readNutritionDaily, readWorkoutHistory, todayISO, upsertDailyEntry } from '../storage'
-import { fmt1, fmtDelta, fmtHistoryDate } from '../utils'
+import { computeNutritionAdherence, decideWeeklyVerdict, estimateWeeklyRate, fmt1, fmtDelta, fmtHistoryDate } from '../utils'
 import { InfoSheet } from '../components/Shared'
 
 export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
@@ -25,24 +25,15 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const latestWeight=weighedDays.at(-1)?.weight
  const previousWeight=weighedDays.length>=2?weighedDays[weighedDays.length-2].weight:undefined
  const trendStatus=latestWeight!=null&&previousWeight!=null?(latestWeight<=previousWeight?'OPTIMALE':'À SURVEILLER'):'EN ATTENTE'
- const spanDays=weighedDays.length>=2?(new Date(weighedDays.at(-1)!.date).getTime()-new Date(weighedDays[0].date).getTime())/86400000:0
- const realWeeklyRate=spanDays>=3?(weighedDays.at(-1)!.weight!-weighedDays[0].weight!)/spanDays*7:null
+ const realWeeklyRate=estimateWeeklyRate(dailyLog)
  const nutritionSettings=readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS)
  const preservation=94
  // Adhérence nutrition réelle sur les 7 derniers jours calendaires, à partir
  // du même journal quotidien que l'onglet SEMAINE/MOIS de Nutrition : un
  // jour est "dans la cible" si kcal/protéines sont à ±10% de l'objectif
  // configuré. Remplace les 91%/87%/94%/6-7 auparavant figés.
- const dailyNutrition=readNutritionDaily()
- const within=(val:number,target:number,tolerance=.1)=>target>0&&Math.abs(val-target)/target<=tolerance
- const last7Dates=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toISOString().slice(0,10)})
- const loggedDays=last7Dates.filter(d=>dailyNutrition[d]!=null)
- const caloriesOnTarget=loggedDays.filter(d=>within(dailyNutrition[d].kcal,nutritionSettings.calories)).length
- const proteinOnTarget=loggedDays.filter(d=>within(dailyNutrition[d].protein,nutritionSettings.protein)).length
- const caloriesAdherencePct=loggedDays.length?Math.round(caloriesOnTarget/loggedDays.length*100):0
- const proteinAdherencePct=loggedDays.length?Math.round(proteinOnTarget/loggedDays.length*100):0
- const adherence=loggedDays.length?Math.round((caloriesAdherencePct+proteinAdherencePct)/2):0
- const adherenceLabel=loggedDays.length===0?'EN ATTENTE':adherence>=85?'TRÈS BON':adherence>=65?'BON':adherence>=40?'MOYEN':'À AMÉLIORER'
+ const {loggedDays,caloriesPct:caloriesAdherencePct,proteinPct:proteinAdherencePct,adherencePct:adherence}=computeNutritionAdherence(readNutritionDaily(),nutritionSettings)
+ const adherenceLabel=loggedDays===0?'EN ATTENTE':adherence>=85?'TRÈS BON':adherence>=65?'BON':adherence>=40?'MOYEN':'À AMÉLIORER'
  // Numéro de semaine réel depuis la toute première donnée suivie (poids/taille
  // ou séance), plutôt qu'un "SEMAINE 7" figé sans rapport avec l'usage réel.
  const workoutHistory=readWorkoutHistory()
@@ -82,15 +73,7 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const perfChangePct=recentAvgWeight!=null&&priorAvgWeight!=null&&priorAvgWeight>0?(recentAvgWeight-priorAvgWeight)/priorAvgWeight*100:null
  const perfLabel=perfChangePct==null?'EN ATTENTE':perfChangePct>3?'EN HAUSSE':perfChangePct<-5?'EN BAISSE':'STABLE'
 
- type Verdict='MAINTENIR'|'RÉDUIRE'|'AUGMENTER'
- let verdict:Verdict='MAINTENIR'
- if(realWeeklyRate!=null){
-  const target=nutritionSettings.weeklyRate
-  const tolerance=Math.max(Math.abs(target)*.35,.15)
-  const diff=realWeeklyRate-target
-  if(diff>tolerance) verdict='RÉDUIRE'
-  else if(diff<-tolerance) verdict='AUGMENTER'
- }
+ const verdict=decideWeeklyVerdict(realWeeklyRate,nutritionSettings.weeklyRate)
  const verdictIcon=verdict==='MAINTENIR'?'✓':verdict==='RÉDUIRE'?'↓':'↑'
  const verdictVerb=verdict==='MAINTENIR'?'maintenir':verdict==='RÉDUIRE'?'réduire à':'augmenter à'
  const calorieStep=150
@@ -101,7 +84,7 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  if(weight7dText!=='—') decisionFacts.push(`poids ${weight7dText} sur 7 jours`)
  if(waist7dText!=='—') decisionFacts.push(`tour de taille ${waist7dText}`)
  if(perfLabel!=='EN ATTENTE') decisionFacts.push(`performances ${perfLabel.toLowerCase()}`)
- if(loggedDays.length>0) decisionFacts.push(`adhérence ${adherenceLabel.toLowerCase()}`)
+ if(loggedDays>0) decisionFacts.push(`adhérence ${adherenceLabel.toLowerCase()}`)
  const decisionSummary=decisionFacts.length
   ?`Cette semaine : ${decisionFacts.join(', ')}.`
   :'Pas encore assez de données cette semaine : complète ton check-in pour affiner la recommandation.'
@@ -119,7 +102,7 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
   ?`Ton rythme de perte réel (${realWeeklyRate.toFixed(2).replace('.',',')} kg/sem) est plus lent que ton objectif (${targetRateText} kg/sem). Réduire légèrement les calories devrait relancer la perte sans à-coup.`
   :`Ton rythme de perte réel (${realWeeklyRate>0?'+':''}${realWeeklyRate.toFixed(2).replace('.',',')} kg/sem) dépasse ton objectif (${targetRateText} kg/sem). Remonter légèrement les calories protège la masse musculaire.`
 
- const confidenceSignals=[realWeeklyRate!=null,waist7dText!=='—',perfChangePct!=null,loggedDays.length>0].filter(Boolean).length
+ const confidenceSignals=[realWeeklyRate!=null,waist7dText!=='—',perfChangePct!=null,loggedDays>0].filter(Boolean).length
  const confidencePct=Math.round(confidenceSignals/4*100)
  const confidenceLabel=confidencePct>=75?'ÉLEVÉE':confidencePct>=50?'MODÉRÉE':confidencePct>0?'LIMITÉE':'INSUFFISANTE'
  return <main className="v9Page v103Adaptive">
@@ -140,7 +123,7 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
 
   <div className="v103ScoreGrid">
    <section><small>MUSCLE PRESERVATION</small><div className="v103Ring"><b>{preservation}</b><em>/100</em></div><strong>EXCELLENT</strong><p>Force stable · protéines hautes · rythme de perte maîtrisé.</p></section>
-   <section><small>ADHÉRENCE NUTRITION</small><div className="v103Ring"><b>{adherence}</b><em>%</em></div><strong>{adherenceLabel}</strong><p>{loggedDays.length?`Calories ${caloriesAdherencePct}% · protéines ${proteinAdherencePct}% · repas enregistrés ${loggedDays.length}/7.`:'Pas encore de repas enregistrés cette semaine.'}</p></section>
+   <section><small>ADHÉRENCE NUTRITION</small><div className="v103Ring"><b>{adherence}</b><em>%</em></div><strong>{adherenceLabel}</strong><p>{loggedDays?`Calories ${caloriesAdherencePct}% · protéines ${proteinAdherencePct}% · repas enregistrés ${loggedDays}/7.`:'Pas encore de repas enregistrés cette semaine.'}</p></section>
   </div>
 
   <section className="v103Signals"><header><b>SIGNAUX DU MOTEUR</b><span>5/5 FAVORABLES</span></header>
