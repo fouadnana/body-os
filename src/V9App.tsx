@@ -51,7 +51,7 @@ function runMigrations(){
 }
 runMigrations()
 
-type DailyEntry={date:string,weight?:number,waist?:number,steps?:number,bodyFat?:number}
+type DailyEntry={date:string,weight?:number,waist?:number,steps?:number,bodyFat?:number,measurements?:Partial<Record<MuscleGroup,number>>}
 const WORKOUT_HISTORY_KEY='bodyos.workout.history.v1'
 type WorkoutHistoryEntry={id?:string,date:string,group:string,exercise:string,weight:number,reps:number,rir?:number}
 const readWorkoutHistory=()=>readJSON<WorkoutHistoryEntry[]>(WORKOUT_HISTORY_KEY,[])
@@ -87,9 +87,15 @@ const readDailyLog=()=>readJSON<DailyEntry[]>(DAILY_LOG_KEY,[]).slice().sort((a,
 const upsertDailyEntry=(patch:Partial<DailyEntry>)=>{
  const log=readDailyLog(); const date=todayISO()
  const idx=log.findIndex(e=>e.date===date)
- if(idx===-1) log.push({date,...patch}); else log[idx]={...log[idx],...patch}
+ // measurements est fusionné muscle par muscle (pas remplacé) : mesurer un
+ // seul muscle aujourd'hui ne doit pas effacer ceux déjà saisis le même jour.
+ const mergedMeasurements=patch.measurements&&idx!==-1?{...log[idx].measurements,...patch.measurements}:patch.measurements
+ const mergedPatch=mergedMeasurements?{...patch,measurements:mergedMeasurements}:patch
+ if(idx===-1) log.push({date,...mergedPatch}); else log[idx]={...log[idx],...mergedPatch}
  writeJSON(DAILY_LOG_KEY,log); return log
 }
+const muscleMeasurementSeries=(log:DailyEntry[],muscle:MuscleGroup)=>
+ log.filter(e=>e.measurements?.[muscle]!=null).map(e=>({date:e.date,value:e.measurements![muscle]!}))
 
 type Ingredient={name:string,qty:number,unit:string}
 type Meal={name:string,time:string,kcal:number,img:string,details:string,protein:number,carbs:number,fat:number,ingredients:Ingredient[]}
@@ -235,13 +241,6 @@ const resolveBaseExercises=(group:SessionGroup):ExerciseItem[]=>{
  const resolved=tpl.exerciseNames.map(n=>exerciseLibrary.find(e=>e.group===group&&e.name===n)).filter((e):e is LibraryEntry=>!!e)
  return resolved.length>0?resolved:sessionData[group]
 }
-const progressMuscles:Record<MuscleGroup,{delta:string,score:number,measure:string,unit:string,overlay:string}>={
- Pectoraux:{delta:'+0,6 %',score:78,measure:'106',unit:'cm',overlay:'chest'},
- Dos:{delta:'+0,4 %',score:75,measure:'121',unit:'cm',overlay:'back'},
- Épaules:{delta:'+0,5 %',score:81,measure:'126',unit:'cm',overlay:'shoulders'},
- Jambes:{delta:'+0,3 %',score:72,measure:'62',unit:'cm',overlay:'legs'},
- Bras:{delta:'+0,4 %',score:79,measure:'34',unit:'cm',overlay:'arms'},
-}
 
 const Icon=({children}:{children:string})=><span className="v9Icon">{children}</span>
 
@@ -291,6 +290,24 @@ function QuickLogSheet({latest,close,onSave}:{latest:DailyEntry|undefined,close:
   <label>TOUR DE TAILLE (CM)<input inputMode="decimal" value={waist} onChange={e=>setWaist(e.target.value)} placeholder="ex. 97"/></label>
   <label>MASSE GRASSE (%) — optionnel<input inputMode="decimal" value={bodyFat} onChange={e=>setBodyFat(e.target.value)} placeholder="ex. 18,5"/></label>
   <label>PAS<input inputMode="numeric" value={steps} onChange={e=>setSteps(e.target.value)} placeholder="ex. 8000"/></label>
+  <button className="v9Primary" onClick={save}>ENREGISTRER</button>
+ </section></div>
+}
+
+function MeasurementsSheet({latestByMuscle,close,onSave}:{latestByMuscle:Partial<Record<MuscleGroup,number>>,close:()=>void,onSave:(patch:Partial<Record<MuscleGroup,number>>)=>void}){
+ const [draft,setDraft]=useState<Record<MuscleGroup,string>>(()=>Object.fromEntries(muscleGroups.map(g=>[g,''])) as Record<MuscleGroup,string>)
+ const save=()=>{
+  const patch:Partial<Record<MuscleGroup,number>>={}
+  muscleGroups.forEach(g=>{
+   const v=draft[g].trim()
+   if(v) patch[g]=Math.round(parseFloat(v.replace(',','.'))*10)/10
+  })
+  if(Object.keys(patch).length) onSave(patch)
+  close()
+ }
+ return <div className="v9SheetBack" onClick={close}><section className="v103Sheet" onClick={e=>e.stopPropagation()}>
+  <header><button onClick={close}>×</button><div><b>MESURES CORPORELLES</b><small>Laisse vide ce que tu ne mesures pas aujourd'hui</small></div><span></span></header>
+  {muscleGroups.map(g=><label key={g}>{g.toUpperCase()} (CM)<input inputMode="decimal" value={draft[g]} onChange={e=>setDraft({...draft,[g]:e.target.value})} placeholder={latestByMuscle[g]!=null?`dernière : ${latestByMuscle[g]} cm`:'ex. 106'}/></label>)}
   <button className="v9Primary" onClick={save}>ENREGISTRER</button>
  </section></div>
 }
@@ -945,7 +962,7 @@ function Progress({setScreen}:{setScreen:(s:Screen)=>void}){
  useEffect(()=>{
   try{localStorage.setItem('body-os-evolution-photos-v1',JSON.stringify(evolutionPhotos))}catch{}
  },[evolutionPhotos])
- const m=progressMuscles[muscle]; const muscleTrend=[0.1,0.5,0.2,0.4,-0.1].map((v,i)=>({d:['08/05','22/05','05/06','19/06','02/07'][i],v}))
+ const [measureOpen,setMeasureOpen]=useState(false)
  const workoutHistory=readWorkoutHistory()
  const muscleHistory=workoutHistory.filter(h=>h.group===muscle)
  const bestByDate=new Map<string,number>()
@@ -957,7 +974,7 @@ function Progress({setScreen}:{setScreen:(s:Screen)=>void}){
  const volumeThisWeek=workoutHistory.filter(h=>h.group===muscle&&new Date(h.date).getTime()>=weekAgo).length
  const bestWeightEver=muscleHistory.length?Math.max(...muscleHistory.map(h=>h.weight)):null
  const sessionsLogged=bestByDate.size
- const dailyLog=readDailyLog()
+ const [dailyLog,setDailyLog]=useState(()=>readDailyLog())
  const latestDay=dailyLog.at(-1); const previousDay=dailyLog.at(-2)
  const weightPoints=dailyLog.filter(e=>e.weight!=null).slice(-14).map(e=>({d:fmtHistoryDate(e.date).slice(0,5),w:e.weight!}))
  const weightWeekDelta=latestDay?.weight!=null?fmtDelta(latestDay.weight,previousDay?.weight,'kg'):null
@@ -967,12 +984,21 @@ function Progress({setScreen}:{setScreen:(s:Screen)=>void}){
  const weighedDays=dailyLog.filter(e=>e.weight!=null)
  const spanDays=weighedDays.length>=2?(new Date(weighedDays.at(-1)!.date).getTime()-new Date(weighedDays[0].date).getTime())/86400000:0
  const realWeeklyRate=spanDays>=3?(weighedDays.at(-1)!.weight!-weighedDays[0].weight!)/spanDays*7:null
+ const measurementSeries=muscleMeasurementSeries(dailyLog,muscle)
+ const latestMeasurement=measurementSeries.at(-1)
+ const previousMeasurement=measurementSeries.length>=2?measurementSeries[measurementSeries.length-2]:undefined
+ const measureDelta=latestMeasurement?fmtDelta(latestMeasurement.value,previousMeasurement?.value,'cm'):null
+ const muscleTrend=measurementSeries.slice(-10).map(p=>({d:fmtHistoryDate(p.date).slice(0,5),v:p.value}))
+ const latestByMuscle=Object.fromEntries(muscleGroups.map(g=>[g,muscleMeasurementSeries(dailyLog,g).at(-1)?.value])) as Partial<Record<MuscleGroup,number>>
+ const overlayFor=(g:MuscleGroup)=>g==='Pectoraux'?'chest':g==='Dos'?'back':g==='Épaules'?'shoulders':g==='Jambes'?'legs':'arms'
+ const saveMeasurements=(patch:Partial<Record<MuscleGroup,number>>)=>{upsertDailyEntry({measurements:patch});setDailyLog(readDailyLog());setMeasureOpen(false)}
  return <main className="v9Page v94Progress"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>PROGRESS</b></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>☷</button></header>
   <div className="v9Segments v94MainSegments"><button className={tab==='cut'?'active':''} onClick={()=>setTab('cut')}>SÈCHE</button><button className={tab==='physique'?'active':''} onClick={()=>setTab('physique')}>PHYSIQUE</button><button className={tab==='perf'?'active':''} onClick={()=>setTab('perf')}>PERF.</button></div>
   {tab==='cut'&&<div className="v9TabFade"><section className="v9WeightCard"><div><small>POIDS</small>{weightWeekDelta&&<strong>{weightWeekDelta}</strong>}<i>vs mesure précédente</i><b>{latestDay?.weight!=null?fmt1(latestDay.weight):'—'} <em>kg</em></b></div>{weightPoints.length?<ResponsiveContainer width="100%" height={180}><LineChart data={weightPoints}><Line dataKey="w" stroke="#75eef0" strokeWidth={3} dot={{r:4,fill:'#d8fcff'}}/><XAxis dataKey="d" tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/><YAxis domain={['dataMin - 1','dataMax + 1']} tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/></LineChart></ResponsiveContainer>:<p className="v94NoData">Pas encore de mesure. Ajoute ton poids depuis Today pour voir ta courbe.</p>}</section><div className="v9ProgressGrid"><article><small>TOUR DE TAILLE</small><b>{latestDay?.waist!=null?latestDay.waist:'—'} <em>cm</em></b>{waistDelta&&<strong>{waistDelta}</strong>}</article><article><small>MASSE GRASSE</small><b>{latestDay?.bodyFat!=null?latestDay.bodyFat:'—'} <em>%</em></b>{bodyFatDelta&&<strong>{bodyFatDelta}</strong>}</article><article onClick={()=>setPhotos(true)}><small>PHOTOS</small><b>Voir</b><div className="v94PhotoPair"><img src={evolutionPhotos[0]?.src||"/body-os/v9-progress-athlete.png"}/><img src={evolutionPhotos.at(-1)?.src||"/body-os/v9-progress-athlete.png"}/></div></article></div><section className="v94RateCard"><div><small>RYTHME DE PERTE RÉEL</small><b>{realWeeklyRate!=null?`${realWeeklyRate>0?'+':''}${realWeeklyRate.toFixed(2).replace('.',',')} kg/sem`:'—'}</b></div><span>Objectif {String(nutritionSettings.weeklyRate).replace('.',',')} kg/sem · {weighedDays.length} mesure{weighedDays.length>1?'s':''}</span></section></div>}
-  {tab==='physique'&&<div className="v9TabFade"><section className="v94Photos v982ProgressPhotos"><h3>PHOTOS D'ÉVOLUTION <button onClick={()=>setPhotos(true)}>＋ AJOUTER</button></h3><div>{evolutionPhotos.slice(-4).map((p,i)=><button key={p.id} onClick={()=>setPhotos(true)}><img src={p.src}/><small>{i===evolutionPhotos.slice(-4).length-1?'Aujourd’hui':p.label}</small></button>)}</div></section><section className="v9Impact"><span><small>IMPACT CORPS</small><b>{m.score}%</b><em>{muscle} suivi</em><i><strong style={{width:m.score+'%'}}></strong></i></span><div className={'v94AthleteMini '+m.overlay}><img src="/body-os/v9-progress-athlete.png"/><i></i><i></i></div></section><h3 className="v94Sub">ÉVOLUTION PAR MUSCLE</h3><div className="v94MuscleChips">{muscleGroups.map(g=><button className={muscle===g?'active':''} onClick={()=>setMuscle(g)} key={g}>{g}</button>)}</div><section className="v94MuscleDetail"><div><small>{muscle.toUpperCase()}</small><b>{m.measure} {m.unit}</b><strong>{m.delta}</strong><em>vs semaine dernière</em></div><ResponsiveContainer width="100%" height={115}><LineChart data={muscleTrend}><Line dataKey="v" stroke="#78eff0" strokeWidth={2} dot={{r:3,fill:'#baffff'}}/><XAxis dataKey="d" tick={{fill:'#8ba6ad',fontSize:7}} axisLine={false}/><YAxis hide domain={[-1,1]}/></LineChart></ResponsiveContainer></section></div>}
+  {tab==='physique'&&<div className="v9TabFade"><section className="v94Photos v982ProgressPhotos"><h3>PHOTOS D'ÉVOLUTION <button onClick={()=>setPhotos(true)}>＋ AJOUTER</button></h3><div>{evolutionPhotos.slice(-4).map((p,i)=><button key={p.id} onClick={()=>setPhotos(true)}><img src={p.src}/><small>{i===evolutionPhotos.slice(-4).length-1?'Aujourd’hui':p.label}</small></button>)}</div></section><section className="v9Impact"><span><small>DERNIÈRE MESURE</small><b>{latestMeasurement?`${latestMeasurement.value} cm`:'—'}</b>{measureDelta&&<strong>{measureDelta}</strong>}<em>{latestMeasurement?fmtHistoryDate(latestMeasurement.date):`${muscle} — pas encore mesuré`}</em></span><div className={'v94AthleteMini '+overlayFor(muscle)}><img src="/body-os/v9-progress-athlete.png"/><i></i><i></i></div></section><h3 className="v94Sub">ÉVOLUTION PAR MUSCLE <button onClick={()=>setMeasureOpen(true)}>＋ MESURER</button></h3><div className="v94MuscleChips">{muscleGroups.map(g=><button className={muscle===g?'active':''} onClick={()=>setMuscle(g)} key={g}>{g}</button>)}</div><section className="v94MuscleDetail"><div><small>{muscle.toUpperCase()}</small><b>{latestMeasurement?`${latestMeasurement.value} cm`:'—'}</b>{measureDelta&&<strong>{measureDelta}</strong>}<em>vs mesure précédente</em></div>{muscleTrend.length?<ResponsiveContainer width="100%" height={115}><LineChart data={muscleTrend}><Line dataKey="v" stroke="#78eff0" strokeWidth={2} dot={{r:3,fill:'#baffff'}}/><XAxis dataKey="d" tick={{fill:'#8ba6ad',fontSize:7}} axisLine={false}/><YAxis hide domain={['dataMin - 1','dataMax + 1']}/></LineChart></ResponsiveContainer>:<p className="v94NoData">Pas encore de mesure pour {muscle}. Touche ＋ MESURER pour commencer.</p>}</section></div>}
   {tab==='perf'&&<div className="v9TabFade"><section className="v94PerfHero"><small>PERFORMANCE EN SÈCHE</small><b>{perfLabel}</b>{perfChangePct!=null&&<strong>{perfChangePct>0?'+':''}{perfChangePct.toFixed(1).replace('.',',')} %</strong>}<p>{perfPoints.length>=2?'La force est maintenue malgré le déficit : bon signal pour la préservation musculaire.':'Enregistre des séries sur ce muscle pour voir ta progression réelle.'}</p></section><div className="v94MuscleChips">{muscleGroups.map(g=><button className={muscle===g?'active':''} onClick={()=>setMuscle(g)} key={g}>{g}</button>)}</div><section className="v9HistoryChart">{perfPoints.length?<ResponsiveContainer width="100%" height={210}><BarChart data={perfPoints}><Bar dataKey="v" fill="#8feef0" radius={[4,4,0,0]}/><YAxis hide domain={['dataMin - 5','dataMax + 5']}/><XAxis hide/></BarChart></ResponsiveContainer>:<p className="v94NoData">Pas encore de série enregistrée sur {muscle}.</p>}</section><section className="v94PerfStats"><span><small>VOLUME (7J)</small><b>{volumeThisWeek} série{volumeThisWeek>1?'s':''}</b></span><span><small>MEILLEUR POIDS</small><b>{bestWeightEver!=null?`${bestWeightEver} kg`:'—'}</b></span><span><small>SÉANCES</small><b>{sessionsLogged}</b></span></section></div>}
   {photos&&<EvolutionPhotosSheet photos={evolutionPhotos} close={()=>setPhotos(false)} onChange={setEvolutionPhotos}/>}
+  {measureOpen&&<MeasurementsSheet latestByMuscle={latestByMuscle} close={()=>setMeasureOpen(false)} onSave={saveMeasurements}/>}
   {optionsOpen&&<OptionsSheet title="OPTIONS PROGRÈS" close={()=>setOptionsOpen(false)} options={[{label:'Exporter mes données (JSON)',onClick:exportProgressData}]}/>}
  </main>
 }
