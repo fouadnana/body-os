@@ -2,245 +2,31 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart, ReferenceLine } from 'recharts'
 import './v9.css'
 import FoodVision, { type FoodVisionPayload } from './FoodVision'
+import type {
+ DailyEntry, DayPlan, EvolutionPhoto, ExerciseItem, Ingredient, LibraryEntry, Meal, MuscleGroup,
+ NutritionDaily, ProgressionSuggestion, Recipe, SessionGroup, SetDraft, WorkoutHistoryEntry, WorkoutTemplate,
+} from './v9/types'
+import {
+ ACTIVE_TEMPLATE_KEY, DAILY_LOG_KEY, DEFAULT_TEMPLATE_ID, NUTRITION_DAILY_KEY, NUTRITION_MEALS_KEY,
+ NUTRITION_SETTINGS_KEY, RECIPE_FAVORITES_KEY, SCHEDULE_KEY, TEMPLATES_KEY, WORKOUT_DONE_KEY,
+ WORKOUT_HISTORY_KEY, WORKOUT_LOG_KEY, WORKOUT_OVERRIDES_KEY,
+ deleteWorkoutSet, logWorkoutSet, muscleMeasurementSeries, newSetId, newTemplateId, readActiveTemplates,
+ readDailyLog, readJSON, readNutritionDaily, readTemplates, readWorkoutHistory, todayISO, upsertDailyEntry,
+ writeActiveTemplates, writeJSON, writeTemplates,
+} from './v9/storage'
+import {
+ computeMacros, dayIcon, estimate1RM, estimateExerciseSeconds, estimateSessionMinutes, fmt1, fmtDelta,
+ fmtHistoryDate, isRappelDay, mealDetails, mondayIndex, NUTRITION_DB, padDone, parseRestSeconds,
+ suggestProgression, thumbFallback,
+} from './v9/utils'
+import {
+ DEFAULT_EVOLUTION_PHOTOS, DEFAULT_NUTRITION_SETTINGS, DEFAULT_SCHEDULE, exerciseLibrary,
+ exportProgressData, libraryEquipments, meals, muscleGroups, readSchedule, recipes,
+ resolveBaseExercises, sessionData, sessionGroups, WEEKDAYS,
+} from './v9/data'
 
 type Screen='today'|'workout'|'nutrition'|'progress'|'coach'|'plan'|'adaptive'|'plus'|'library'|'templates'
 type WorkoutView='session'|'exercise'|'history'
-
-const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
-const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
-const RECIPE_FAVORITES_KEY='bodyos.recipes.favorites.v1'
-const NUTRITION_DAILY_KEY='bodyos.nutrition.daily.v1'
-type NutritionDaily={kcal:number,protein:number,carbs:number,fat:number}
-const readNutritionDaily=()=>readJSON<Record<string,NutritionDaily>>(NUTRITION_DAILY_KEY,{})
-const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
-const WORKOUT_LOG_KEY='bodyos.workout.log.v1'
-const WORKOUT_OVERRIDES_KEY='bodyos.workout.overrides.v1'
-const TEMPLATES_KEY='bodyos.templates.v1'
-const ACTIVE_TEMPLATE_KEY='bodyos.templates.active.v1'
-const DAILY_LOG_KEY='bodyos.daily.log.v1'
-const SCHEDULE_KEY='bodyos.schedule.v1'
-
-// Phase 1 (fondations) — persistance versionnée : donnée corrompue mise de
-// côté plutôt qu'écrasée silencieusement, et un point d'ancrage de version
-// de schéma pour que les futures migrations (Phase 3/4 : identifiants
-// d'exercice stables, templates remplaçant DayPlan) aient un endroit sûr où
-// transformer les données existantes sans en perdre.
-const SCHEMA_VERSION=1
-const SCHEMA_VERSION_KEY='bodyos.schema.version'
-const readJSON=<T,>(key:string,fallback:T):T=>{
- try{
-  const raw=localStorage.getItem(key)
-  return raw?JSON.parse(raw):fallback
- }catch{
-  try{
-   const raw=localStorage.getItem(key)
-   if(raw) localStorage.setItem(`${key}.corrupted.${Date.now()}`,raw)
-  }catch{}
-  return fallback
- }
-}
-const writeJSON=(key:string,value:unknown)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
-function runMigrations(){
- try{
-  const stored=Number(localStorage.getItem(SCHEMA_VERSION_KEY)||'0')
-  if(stored>=SCHEMA_VERSION) return
-  // v0→v1 : aucune transformation de données n'est nécessaire — c'est le
-  // premier point de version. Les migrations suivantes s'ajoutent ici.
-  localStorage.setItem(SCHEMA_VERSION_KEY,String(SCHEMA_VERSION))
- }catch{}
-}
-runMigrations()
-
-type DailyEntry={date:string,weight?:number,waist?:number,steps?:number,bodyFat?:number,measurements?:Partial<Record<MuscleGroup,number>>}
-const WORKOUT_HISTORY_KEY='bodyos.workout.history.v1'
-type WorkoutHistoryEntry={id?:string,date:string,group:string,exercise:string,weight:number,reps:number,rir?:number}
-const readWorkoutHistory=()=>readJSON<WorkoutHistoryEntry[]>(WORKOUT_HISTORY_KEY,[])
-const newSetId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`
-const logWorkoutSet=(entry:WorkoutHistoryEntry)=>{
- const log=readWorkoutHistory()
- log.push({...entry,id:entry.id??newSetId()})
- writeJSON(WORKOUT_HISTORY_KEY,log.slice(-500))
-}
-const deleteWorkoutSet=(id:string)=>writeJSON(WORKOUT_HISTORY_KEY,readWorkoutHistory().filter(e=>e.id!==id))
-const todayISO=()=>new Date().toISOString().slice(0,10)
-
-type ProgressionSuggestion={weight:number,reps:number,rir:number,reason:string}
-// Progression double classique, basée sur la dernière séance passée de cet
-// exercice : si la fourchette de reps cible a été atteinte, on augmente la
-// charge et on repart en bas de fourchette ; sinon on vise +1 répétition à
-// charge égale. Ignore les exercices chronométrés (ex. "20–30 s") où ces
-// nombres ne sont pas des répétitions.
-const suggestProgression=(repsRange:string,targetRir:number,lastPast:WorkoutHistoryEntry):ProgressionSuggestion|null=>{
- if(/\d\s*s\b/i.test(repsRange)) return null
- const match=repsRange.match(/(\d+)\D+(\d+)/)
- if(!match) return null
- const targetMin=Number(match[1]),targetMax=Number(match[2])
- if(lastPast.reps>=targetMax) return {
-  weight:lastPast.weight+2.5,reps:targetMin,rir:targetRir,
-  reason:`Haut de fourchette atteint (${targetMax} reps la dernière fois) — charge +2,5 kg, reps repartent à ${targetMin}.`
- }
- const nextReps=Math.min(lastPast.reps+1,targetMax)
- return {weight:lastPast.weight,reps:nextReps,rir:targetRir,reason:`Objectif : ${nextReps} reps (+1 vs dernière séance), même charge.`}
-}
-const mondayIndex=(d=new Date())=>(d.getDay()+6)%7
-const readDailyLog=()=>readJSON<DailyEntry[]>(DAILY_LOG_KEY,[]).slice().sort((a,b)=>a.date.localeCompare(b.date))
-const upsertDailyEntry=(patch:Partial<DailyEntry>)=>{
- const log=readDailyLog(); const date=todayISO()
- const idx=log.findIndex(e=>e.date===date)
- // measurements est fusionné muscle par muscle (pas remplacé) : mesurer un
- // seul muscle aujourd'hui ne doit pas effacer ceux déjà saisis le même jour.
- const mergedMeasurements=patch.measurements&&idx!==-1?{...log[idx].measurements,...patch.measurements}:patch.measurements
- const mergedPatch=mergedMeasurements?{...patch,measurements:mergedMeasurements}:patch
- if(idx===-1) log.push({date,...mergedPatch}); else log[idx]={...log[idx],...mergedPatch}
- writeJSON(DAILY_LOG_KEY,log); return log
-}
-const muscleMeasurementSeries=(log:DailyEntry[],muscle:MuscleGroup)=>
- log.filter(e=>e.measurements?.[muscle]!=null).map(e=>({date:e.date,value:e.measurements![muscle]!}))
-
-type Ingredient={name:string,qty:number,unit:string}
-type Meal={name:string,time:string,kcal:number,img:string,details:string,protein:number,carbs:number,fat:number,ingredients:Ingredient[]}
-const mealDetails=(ingredients:Ingredient[])=>ingredients.map(i=>`${i.name} ${i.qty}${i.unit}`).join(' · ')
-// Valeurs par gramme (par œuf pour "Œufs", vendu à l'unité)
-const NUTRITION_DB:Record<string,{kcal:number,protein:number,carbs:number,fat:number}>={
- 'Skyr 0%':{kcal:.60,protein:.11,carbs:.04,fat:.002},
- 'Flocons d’avoine':{kcal:3.75,protein:.13,carbs:.60,fat:.07},
- 'Myrtilles':{kcal:.57,protein:.007,carbs:.14,fat:.003},
- 'Beurre de cacahuète':{kcal:5.88,protein:.25,carbs:.20,fat:.50},
- 'Saumon':{kcal:2.08,protein:.20,carbs:0,fat:.13},
- 'Riz basmati cuit':{kcal:1.30,protein:.027,carbs:.28,fat:.003},
- 'Riz cuit':{kcal:1.30,protein:.027,carbs:.28,fat:.003},
- 'Brocoli':{kcal:.34,protein:.028,carbs:.07,fat:.004},
- 'Citron':{kcal:.29,protein:.011,carbs:.09,fat:.003},
- 'Fruits rouges':{kcal:.50,protein:.01,carbs:.12,fat:.003},
- 'Miel':{kcal:3.04,protein:.003,carbs:.82,fat:0},
- 'Amandes':{kcal:5.79,protein:.21,carbs:.22,fat:.50},
- 'Poulet grillé':{kcal:1.65,protein:.31,carbs:0,fat:.036},
- 'Poulet':{kcal:1.65,protein:.31,carbs:0,fat:.036},
- 'Patate douce':{kcal:.90,protein:.02,carbs:.21,fat:.001},
- 'Légumes verts':{kcal:.35,protein:.025,carbs:.06,fat:.003},
- 'Légumes':{kcal:.35,protein:.025,carbs:.06,fat:.003},
- 'Huile d’olive':{kcal:8.84,protein:0,carbs:0,fat:1.0},
- 'Œufs':{kcal:78,protein:6.3,carbs:.6,fat:5.3},
- 'Blancs d’œufs':{kcal:.52,protein:.11,carbs:.007,fat:.002},
- 'Pain complet':{kcal:2.47,protein:.13,carbs:.41,fat:.034},
- 'Tomates':{kcal:.18,protein:.009,carbs:.039,fat:.002},
-}
-const computeMacros=(ingredients:Ingredient[])=>{
- const totals=ingredients.reduce((acc,i)=>{
-  const db=NUTRITION_DB[i.name]
-  if(!db) return acc
-  return {kcal:acc.kcal+i.qty*db.kcal,protein:acc.protein+i.qty*db.protein,carbs:acc.carbs+i.qty*db.carbs,fat:acc.fat+i.qty*db.fat}
- },{kcal:0,protein:0,carbs:0,fat:0})
- return {kcal:Math.round(totals.kcal),protein:Math.round(totals.protein),carbs:Math.round(totals.carbs),fat:Math.round(totals.fat)}
-}
-const meals:Meal[]=[
- {name:'Petit déjeuner',time:'07:30',kcal:540,img:'/body-os/meal-breakfast-clean.webp',details:'',protein:42,carbs:64,fat:14,ingredients:[
-  {name:'Skyr 0%',qty:250,unit:' g'},{name:'Flocons d’avoine',qty:50,unit:' g'},{name:'Myrtilles',qty:100,unit:' g'},{name:'Beurre de cacahuète',qty:24,unit:' g'}
- ]},
- {name:'Déjeuner',time:'12:30',kcal:680,img:'/body-os/meal-dinner-clean.webp',details:'',protein:45,carbs:70,fat:18,ingredients:[
-  {name:'Saumon',qty:180,unit:' g'},{name:'Riz basmati cuit',qty:180,unit:' g'},{name:'Brocoli',qty:180,unit:' g'},{name:'Citron',qty:20,unit:' g'}
- ]},
- {name:'Goûter',time:'16:30',kcal:280,img:'/body-os/meal-preworkout-clean.webp',details:'',protein:25,carbs:36,fat:5,ingredients:[
-  {name:'Skyr 0%',qty:200,unit:' g'},{name:'Fruits rouges',qty:100,unit:' g'},{name:'Miel',qty:10,unit:' g'},{name:'Amandes',qty:14,unit:' g'}
- ]},
- {name:'Dîner',time:'19:30',kcal:670,img:'/body-os/meal-dinner-clean.webp',details:'',protein:48,carbs:62,fat:24,ingredients:[
-  {name:'Poulet grillé',qty:200,unit:' g'},{name:'Patate douce',qty:250,unit:' g'},{name:'Légumes verts',qty:250,unit:' g'},{name:'Huile d’olive',qty:5,unit:' g'}
- ]}
-].map(m=>({...m,details:mealDetails(m.ingredients)}))
-
-type Recipe={id:string,name:string,category:string,time:string,kcal:number,protein:number,carbs:number,fat:number,img:string,ingredients:Ingredient[],steps:string[]}
-const recipes:Recipe[]=[
- {id:'r1',name:'Saumon citron & riz',category:'Déjeuner',time:'25 min',kcal:680,protein:45,carbs:70,fat:18,img:'/body-os/meal-dinner-clean.webp',ingredients:[{name:'Saumon',qty:180,unit:' g'},{name:'Riz basmati cuit',qty:180,unit:' g'},{name:'Brocoli',qty:180,unit:' g'},{name:'Citron',qty:20,unit:' g'}],steps:['Cuire le riz et le brocoli.','Saisir le saumon.','Ajouter le citron et assaisonner.']},
- {id:'r2',name:'Poulet patate douce',category:'Dîner',time:'30 min',kcal:670,protein:48,carbs:62,fat:24,img:'/body-os/meal-lunch-clean.webp',ingredients:[{name:'Poulet grillé',qty:200,unit:' g'},{name:'Patate douce',qty:250,unit:' g'},{name:'Légumes verts',qty:250,unit:' g'},{name:'Huile d’olive',qty:5,unit:' g'}],steps:['Rôtir la patate douce.','Griller le poulet.','Ajouter les légumes verts et l’huile.']},
- {id:'r3',name:'Bowl Skyr myrtilles',category:'Petit déjeuner',time:'5 min',kcal:540,protein:42,carbs:64,fat:14,img:'/body-os/meal-breakfast-clean.webp',ingredients:[{name:'Skyr 0%',qty:250,unit:' g'},{name:'Flocons d’avoine',qty:50,unit:' g'},{name:'Myrtilles',qty:100,unit:' g'},{name:'Beurre de cacahuète',qty:24,unit:' g'}],steps:['Verser le Skyr.','Ajouter avoine et myrtilles.','Terminer par le beurre de cacahuète.']},
- {id:'r4',name:'Skyr fruits rouges',category:'Goûter',time:'4 min',kcal:280,protein:25,carbs:36,fat:5,img:'/body-os/meal-preworkout-clean.webp',ingredients:[{name:'Skyr 0%',qty:200,unit:' g'},{name:'Fruits rouges',qty:100,unit:' g'},{name:'Miel',qty:10,unit:' g'},{name:'Amandes',qty:14,unit:' g'}],steps:['Mélanger le Skyr et les fruits.','Ajouter miel et amandes.']},
- {id:'r5',name:'Poulet riz légumes',category:'Déjeuner',time:'20 min',kcal:610,protein:52,carbs:67,fat:13,img:'/body-os/meal-lunch-clean.webp',ingredients:[{name:'Poulet',qty:190,unit:' g'},{name:'Riz cuit',qty:180,unit:' g'},{name:'Légumes',qty:200,unit:' g'}],steps:['Cuire le poulet.','Réchauffer le riz.','Assembler avec les légumes.']},
- {id:'r6',name:'Omelette protéinée',category:'Petit déjeuner',time:'12 min',kcal:495,protein:44,carbs:38,fat:18,img:'/body-os/meal-breakfast-clean.webp',ingredients:[{name:'Œufs',qty:3,unit:''},{name:'Blancs d’œufs',qty:150,unit:' g'},{name:'Pain complet',qty:70,unit:' g'},{name:'Tomates',qty:120,unit:' g'}],steps:['Cuire les œufs et blancs.','Griller le pain.','Servir avec les tomates.']}
-]
-
-type MuscleGroup='Pectoraux'|'Dos'|'Épaules'|'Jambes'|'Bras'
-type SessionGroup=MuscleGroup|'L5-S1'
-type ExerciseItem={name:string,equipment:string,sets:string,img:string,video:string,target:string,secondary:string,reps:string,rir:string,rest:string}
-const muscleGroups:MuscleGroup[]=['Pectoraux','Dos','Épaules','Jambes','Bras']
-const sessionGroups:SessionGroup[]=[...muscleGroups,'L5-S1']
-type DayPlan=SessionGroup|'Repos'|'Cardio'
-const WEEKDAYS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
-const DEFAULT_SCHEDULE:DayPlan[]=['Pectoraux','Dos','Jambes','Épaules','Bras','Bras','Repos']
-const readSchedule=():DayPlan[]=>{const s=readJSON<DayPlan[]>(SCHEDULE_KEY,DEFAULT_SCHEDULE);return s.length===7?s:DEFAULT_SCHEDULE}
-const dayIcon=(d:DayPlan)=>d==='Pectoraux'?'♜':d==='Dos'?'♙':d==='Épaules'?'✣':d==='Jambes'?'♧':d==='Bras'?'◉':d==='L5-S1'?'⚕':d==='Cardio'?'◌':'☾'
-const isRappelDay=(schedule:DayPlan[],idx:number)=>{
- const g=schedule[idx]
- if(g==='Repos'||g==='Cardio') return false
- return schedule.indexOf(g)!==idx
-}
-const DEFAULT_NUTRITION_SETTINGS={goal:'SÈCHE',calories:2600,protein:200,carbs:280,fat:75,water:3,weeklyRate:-0.55}
-const sessionData:Record<SessionGroup,ExerciseItem[]>={
- Pectoraux:[
-  {name:'Développé incliné',equipment:'Haltères',sets:'4 séries',img:'https://img.youtube.com/vi/5CECBjd7HLQ/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=5CECBjd7HLQ',target:'Haut des pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'6–10',rir:'1–2',rest:'2:30–3:00'},
-  {name:'Écarté poulie bas→haut',equipment:'Poulie',sets:'4 séries',img:'https://img.youtube.com/vi/aoP0s_MjN-g/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=aoP0s_MjN-g',target:'Haut des pectoraux',secondary:'Deltoïdes ant.',reps:'12–15',rir:'1–2',rest:'1:30'},
-  {name:'Développé couché',equipment:'Barre',sets:'3 séries',img:'https://img.youtube.com/vi/RsobeWfbBcY/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=RsobeWfbBcY',target:'Pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'5–8',rir:'1–2',rest:'2:30–3:30'},
-  {name:'Dips',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/4la6BkUBLgo/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=4la6BkUBLgo',target:'Pectoraux · Triceps',secondary:'Deltoïdes ant.',reps:'6–12',rir:'1–2',rest:'2:00–3:00'},
-  {name:'Écartés couchés',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/QwuUZ5wgQOk/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=QwuUZ5wgQOk',target:'Pectoraux',secondary:'Deltoïdes ant.',reps:'10–15',rir:'1–2',rest:'1:30–2:00'},
- ],
- Dos:[
-  {name:'Tirage vertical',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/VXKfH6ciEBI/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=VXKfH6ciEBI',target:'Grand dorsal',secondary:'Biceps',reps:'6–10',rir:'1–2',rest:'2:00–3:00'},
-  {name:'Rowing machine',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/TeFo51Q_Nsc/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=TeFo51Q_Nsc',target:'Dos moyen',secondary:'Biceps · Deltoïdes post.',reps:'8–12',rir:'1–2',rest:'2:00–3:00'},
-  {name:'Rowing poitrine',equipment:'Machine',sets:'2 séries',img:'https://img.youtube.com/vi/0UBRfiO4zDs/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=0UBRfiO4zDs',target:'Rhomboïdes · Trapèzes',secondary:'Biceps',reps:'8–12',rir:'1–2',rest:'2:00'},
-  {name:'Pulldown unilatéral',equipment:'Poulie',sets:'2 séries',img:'https://img.youtube.com/vi/iVfZB4YmLRM/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=iVfZB4YmLRM',target:'Grand dorsal',secondary:'Biceps',reps:'10–15',rir:'1–2',rest:'1:30'},
-  {name:'Reverse fly',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/buuYPLVXsJg/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=buuYPLVXsJg',target:'Deltoïdes post.',secondary:'Haut du dos',reps:'12–20',rir:'1–2',rest:'1:30'},
- ],
- Épaules:[
-  {name:'Développé épaules',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/WvLMauqrnK8/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=WvLMauqrnK8',target:'Deltoïdes ant. · moyen',secondary:'Triceps',reps:'6–10',rir:'1–2',rest:'2:00–3:00'},
-  {name:'Élévations latérales',equipment:'Haltères',sets:'4 séries',img:'/body-os/demo-lat-raise-approved.jpg',video:'https://www.youtube.com/results?search_query=lateral+raise+technique+renaissance+periodization',target:'Deltoïde moyen',secondary:'—',reps:'10–20',rir:'1–2',rest:'1:15–1:45'},
-  {name:'Élévations poulie',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/zpbm-xRHB6k/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=zpbm-xRHB6k',target:'Deltoïde moyen',secondary:'—',reps:'12–20',rir:'1–2',rest:'1:15'},
-  {name:'Reverse pec deck',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/Z84HkxGCBqQ/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=Z84HkxGCBqQ',target:'Deltoïdes post.',secondary:'Haut du dos',reps:'12–20',rir:'1–2',rest:'1:30'},
-  {name:'Élévation frontale',equipment:'Poulie',sets:'2 séries',img:'https://img.youtube.com/vi/KjqHI59JizY/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=KjqHI59JizY',target:'Deltoïde ant.',secondary:'—',reps:'10–15',rir:'2',rest:'1:30'},
- ],
- Jambes:[
-  {name:'Hack squat',equipment:'Machine',sets:'4 séries',img:'https://img.youtube.com/vi/scs5XcsZuc8/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=scs5XcsZuc8',target:'Quadriceps',secondary:'Fessiers',reps:'6–10',rir:'1–2',rest:'2:30–3:30'},
-  {name:'Fentes bulgares',equipment:'Haltères',sets:'4 séries',img:'https://img.youtube.com/vi/SkNsa3eBwLA/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=SkNsa3eBwLA',target:'Quadriceps · Fessiers',secondary:'Ischios',reps:'8–12 / jambe',rir:'1–2',rest:'2:00–2:30'},
-  {name:'Leg curl',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/IOufFLwNOTU/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=IOufFLwNOTU',target:'Ischio-jambiers',secondary:'—',reps:'8–15',rir:'1–2',rest:'1:30–2:00'},
-  {name:'Leg extension',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/m0FOpMEgero/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=m0FOpMEgero',target:'Quadriceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30–2:00'},
-  {name:'Mollets',equipment:'Machine',sets:'4 séries',img:'https://img.youtube.com/vi/GAQ-oohMhog/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=GAQ-oohMhog',target:'Mollets',secondary:'—',reps:'8–15',rir:'1–2',rest:'1:30'},
- ],
- Bras:[
-  {name:'Curl incliné',equipment:'Haltères',sets:'4 séries',img:'https://img.youtube.com/vi/HhHHBj3qTJ4/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HhHHBj3qTJ4',target:'Biceps',secondary:'Brachial',reps:'8–12',rir:'1–2',rest:'1:30–2:00'},
-  {name:'Curl poulie',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/aLRv0hRiXhc/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=aLRv0hRiXhc',target:'Biceps',secondary:'Brachial',reps:'10–15',rir:'1–2',rest:'1:30'},
-  {name:'Curl assis',equipment:'Haltères',sets:'2 séries',img:'https://img.youtube.com/vi/HHq-wRiFDh0/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HHq-wRiFDh0',target:'Biceps',secondary:'Avant-bras',reps:'10–15',rir:'1–2',rest:'1:30'},
-  {name:'Extension au-dessus tête',equipment:'Poulie',sets:'4 séries',img:'https://img.youtube.com/vi/w3iAESGWK6M/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=w3iAESGWK6M',target:'Triceps long chef',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
-  {name:'Extension triceps',equipment:'Poulie corde',sets:'3 séries',img:'/body-os/demo-rope-pushdown-approved.jpg',video:'https://www.youtube.com/watch?v=ADRve8qqC1U',target:'Triceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
- ],
- 'L5-S1':[
-  {name:'Bird dog',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/dia-fydN7rE/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=dia-fydN7rE',target:'Gainage profond',secondary:'Fessiers',reps:'8–12 / côté',rir:'—',rest:'45–60 s'},
-  {name:'Planche latérale',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/iNbH7_edNI8/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=iNbH7_edNI8',target:'Obliques · Carré des lombes',secondary:'Épaules',reps:'20–30 s / côté',rir:'—',rest:'45 s'},
-  {name:'Pont fessier',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/n6JiF2jp2Ns/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=n6JiF2jp2Ns',target:'Fessiers · Chaîne postérieure',secondary:'Ischios',reps:'12–15',rir:'—',rest:'45 s'},
-  {name:'Dead bug',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/pxql0kTdmEs/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=pxql0kTdmEs',target:'Gainage profond',secondary:'Hanches',reps:'8–10 / côté',rir:'—',rest:'45 s'},
-  {name:'Gainage ventral',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/GQE8ASRA7t0/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=GQE8ASRA7t0',target:'Gainage global',secondary:'Épaules',reps:'20–40 s',rir:'—',rest:'45–60 s'},
- ]
-}
-type LibraryEntry=ExerciseItem&{group:SessionGroup}
-const exerciseLibrary:LibraryEntry[]=sessionGroups.flatMap(g=>sessionData[g].map(e=>({...e,group:g})))
-const libraryEquipments=Array.from(new Set(exerciseLibrary.map(e=>e.equipment))).sort((a,b)=>a.localeCompare(b,'fr'))
-
-type WorkoutTemplate={id:string,name:string,group:SessionGroup,exerciseNames:string[]}
-const newTemplateId=()=>`tpl_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
-const readTemplates=():WorkoutTemplate[]=>readJSON(TEMPLATES_KEY,[])
-const writeTemplates=(t:WorkoutTemplate[])=>writeJSON(TEMPLATES_KEY,t)
-const readActiveTemplates=():Record<string,string>=>readJSON(ACTIVE_TEMPLATE_KEY,{})
-const writeActiveTemplates=(a:Record<string,string>)=>writeJSON(ACTIVE_TEMPLATE_KEY,a)
-const DEFAULT_TEMPLATE_ID='default'
-// Résout la liste d'exercices de base d'un groupe pour la séance active :
-// le template par défaut (sessionData, intégré) ou un template personnalisé
-// choisi par l'utilisateur dans "Mes séances". Les remplacements ponctuels
-// par position (WORKOUT_OVERRIDES_KEY) s'appliquent ensuite par-dessus.
-const resolveBaseExercises=(group:SessionGroup):ExerciseItem[]=>{
- const activeId=readActiveTemplates()[group]
- if(!activeId||activeId===DEFAULT_TEMPLATE_ID) return sessionData[group]
- const tpl=readTemplates().find(t=>t.id===activeId&&t.group===group)
- if(!tpl) return sessionData[group]
- const resolved=tpl.exerciseNames.map(n=>exerciseLibrary.find(e=>e.group===group&&e.name===n)).filter((e):e is LibraryEntry=>!!e)
- return resolved.length>0?resolved:sessionData[group]
-}
 
 const Icon=({children}:{children:string})=><span className="v9Icon">{children}</span>
 
@@ -264,12 +50,6 @@ function BottomNav({screen,setScreen}:{screen:Screen,setScreen:(s:Screen)=>void}
  return <nav className="v9Bottom">{items.map(([id,ic,l])=><button key={id} className={screen===id?'active':''} onClick={()=>setScreen(id)}><Icon>{ic}</Icon><small>{l}</small></button>)}</nav>
 }
 
-const fmt1=(n:number)=>n.toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})
-const fmtDelta=(curr:number,prev:number|undefined,unit:string,decimals=1)=>{
- if(prev==null||prev===curr) return null
- const diff=Math.round((curr-prev)*Math.pow(10,decimals))/Math.pow(10,decimals)
- return `${diff>0?'+':''}${diff.toLocaleString('fr-FR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals})} ${unit}`
-}
 
 function QuickLogSheet({latest,close,onSave}:{latest:DailyEntry|undefined,close:()=>void,onSave:(patch:Partial<DailyEntry>)=>void}){
  const [weight,setWeight]=useState(latest?.weight!=null?String(latest.weight):'')
@@ -387,28 +167,6 @@ function Today({setScreen}:{setScreen:(s:Screen)=>void}){
  </main>
 }
 
-const thumbFallback=(ev:React.SyntheticEvent<HTMLImageElement>)=>{
- const img=ev.currentTarget
- if(img.src.includes('maxresdefault')) img.src=img.src.replace('maxresdefault','sddefault')
- else if(img.src.includes('sddefault')) img.src=img.src.replace('sddefault','hqdefault')
- else img.src='/body-os/demo-chest-press-approved.jpg'
-}
-
-const padDone=(arr:boolean[]|undefined,len:number)=>Array.from({length:len},(_,i)=>arr?.[i]??false)
-// Estimation du temps de séance dérivée des vraies séries/repos de chaque
-// exercice, plutôt qu'un "~32 min" figé identique quel que soit le nombre
-// d'exercices (visible notamment sur un template personnalisé à 2 exercices
-// affichant la même estimation qu'une séance standard à 5).
-const parseRestSeconds=(rest:string):number=>{
- const toSeconds=(p:string)=>p.includes(':')?(([m,s])=>m*60+(s||0))(p.split(':').map(Number)):Number(p.replace(/[^\d.]/g,''))||0
- const vals=rest.split('–').map(p=>toSeconds(p.trim())).filter(v=>v>0)
- return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:60
-}
-const estimateExerciseSeconds=(item:ExerciseItem):number=>{
- const setsCount=Number(item.sets.match(/\d+/)?.[0] ?? 3)
- return setsCount*(35+parseRestSeconds(item.rest))
-}
-const estimateSessionMinutes=(items:ExerciseItem[]):number=>items.length===0?0:Math.max(1,Math.round(items.reduce((s,e)=>s+estimateExerciseSeconds(e),0)/60))
 function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void,initialGroup:SessionGroup}){
  const [group,setGroup]=useState<SessionGroup>(initialGroup); const [selected,setSelected]=useState(0)
  const [doneRaw,setDoneRawState]=useState<Record<string,boolean[]>>(()=>readJSON(WORKOUT_DONE_KEY,{}))
@@ -443,7 +201,6 @@ function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView
  </main>
 }
 
-type SetDraft={weight:number,reps:number,rir:number}
 function Exercise({item,index,total,group,setView,onDone,onSwipe,isReplaced,onReplace,onRestore}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void,onSwipe:(delta:number)=>void,isReplaced:boolean,onReplace:(name:string)=>void,onRestore:()=>void}){
  const [optionsOpen,setOptionsOpen]=useState(false)
  const [pickerOpen,setPickerOpen]=useState(false)
@@ -564,9 +321,6 @@ function RestOverlay({onLeave,onHistory}:{onLeave:()=>void,onHistory:()=>void}){
  return <div className="v9SheetBack"><div className="v9RestSheet v9Rest"><header className="v9TitleBar"><button onClick={leave}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={leave}>Passer</button></header><section className="v9Timer"><div><b>{fmtTimer(sec)}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>adjust(-15000)}>−15 s</button><button onClick={()=>adjust(15000)}>+15 s</button></div><button className="v9NextSet" onClick={leave}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={goHistory}>VOIR HISTORIQUE</button></div></div>
 }
 
-const fmtHistoryDate=(iso:string)=>new Date(iso+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})
-
-const estimate1RM=(weight:number,reps:number)=>Math.round(weight*(1+reps/30))
 
 function History({setView,item,group}:{setView:(v:WorkoutView)=>void,item:ExerciseItem,group:SessionGroup}){
  const [tab,setTab]=useState<'charge'|'volume'|'1rm'>('charge')
@@ -823,18 +577,6 @@ function RecipeSheet({recipe,close,add,isFavorite,onToggleFavorite}:{recipe:Reci
 }
 
 
-type EvolutionPhoto={
- id:string
- src:string
- date:string
- label:string
-}
-
-const DEFAULT_EVOLUTION_PHOTOS:EvolutionPhoto[]=[
- {id:'p1',src:'/body-os/v9-progress-athlete.png',date:'2026-05-08',label:'08/05'},
- {id:'p2',src:'/body-os/v9-progress-athlete.png',date:'2026-06-05',label:'05/06'},
- {id:'p3',src:'/body-os/v9-progress-athlete.png',date:'2026-07-02',label:'02/07'},
-]
 
 function compressEvolutionPhoto(file:File):Promise<string>{
  return new Promise((resolve,reject)=>{
@@ -953,21 +695,6 @@ function EvolutionPhotosSheet({
  </div>
 }
 
-const exportProgressData=()=>{
- const payload={
-  exportedAt:new Date().toISOString(),
-  dailyLog:readDailyLog(),
-  workoutHistory:readWorkoutHistory(),
-  nutritionMeals:readJSON(NUTRITION_MEALS_KEY,meals),
-  nutritionSettings:readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS),
- }
- const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'})
- const url=URL.createObjectURL(blob)
- const a=document.createElement('a')
- a.href=url; a.download=`body-os-export-${todayISO()}.json`
- document.body.appendChild(a); a.click(); document.body.removeChild(a)
- URL.revokeObjectURL(url)
-}
 function Progress({setScreen}:{setScreen:(s:Screen)=>void}){
  const [tab,setTab]=useState<'cut'|'physique'|'perf'>('cut'); const [muscle,setMuscle]=useState<MuscleGroup>('Pectoraux'); const [photos,setPhotos]=useState(false)
  const [optionsOpen,setOptionsOpen]=useState(false)
