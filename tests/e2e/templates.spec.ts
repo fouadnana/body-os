@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { collectRealErrors } from './helpers'
 
 const openTemplates = async (page: import('@playwright/test').Page) => {
   await page.goto('/')
@@ -18,6 +19,16 @@ const createTemplate = async (page: import('@playwright/test').Page, group: stri
 }
 
 test.describe('Mes séances (Phase 3 — templates de séance)', () => {
+  test('no uncaught JS errors across browsing, creating, activating, and deleting a template', async ({ page }) => {
+    const errors = collectRealErrors(page)
+    await createTemplate(page, 'Pectoraux', 'Push léger', ['Dips'])
+    await openTemplates(page)
+    await page.locator('.v9TemplateGroupList button', { hasText: 'Pectoraux' }).click()
+    await page.locator('.v9TemplateSelect', { hasText: 'Séance standard' }).click()
+    await page.locator('.v9TemplateDelete').click()
+    expect(errors).toEqual([])
+  })
+
   test('reachable from Plus, lists every muscle group with "Séance standard" as the default active template', async ({ page }) => {
     await openTemplates(page)
     await expect(page.locator('.v9TitleBar b')).toHaveText('MES SÉANCES')

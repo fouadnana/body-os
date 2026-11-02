@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { collectRealErrors } from './helpers'
 
 const openPlan = async (page: import('@playwright/test').Page) => {
   await page.goto('/')
@@ -7,6 +8,16 @@ const openPlan = async (page: import('@playwright/test').Page) => {
 }
 
 test.describe('Plan — Semaine', () => {
+  test('no uncaught JS errors across selecting a day and editing the schedule', async ({ page }) => {
+    const errors = collectRealErrors(page)
+    await openPlan(page)
+    await page.locator('.v9Week article').nth(2).click()
+    await page.locator('.v93Dots').click()
+    await page.locator('.v96SettingsBody label', { hasText: 'Mardi' }).locator('select').selectOption('Cardio')
+    await page.locator('button', { hasText: 'ENREGISTRER' }).click()
+    expect(errors).toEqual([])
+  })
+
   test('back caret returns to Plus, not Coach (its entry point via Plus)', async ({ page }) => {
     await openPlan(page)
     await page.locator('.v9TitleBar button', { hasText: '‹' }).click()
