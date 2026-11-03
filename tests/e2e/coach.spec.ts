@@ -55,6 +55,42 @@ test.describe('Adaptive Sèche', () => {
     await expect(page.locator('.v103Trend header b')).toHaveText('99,4 kg')
   })
 
+  test('sleep/energy/hunger/recovery check-in answers are saved, not silently discarded', async ({ page }) => {
+    // Regression: the four scale sliders (sommeil/énergie/faim/récupération)
+    // were captured in component state but never included in the saved
+    // patch — only weight/waist were persisted, the rest vanished on close.
+    await page.goto('/')
+    await goNav(page, 'Coach')
+    await page.locator('button', { hasText: 'Analyse de ma progression' }).click()
+    await page.locator('.v103Checkin button', { hasText: 'COMPLÉTER' }).click()
+    const pickScale = async (label: string, value: number) => {
+      await page.locator('.v103Scale', { hasText: label }).locator('button', { hasText: String(value) }).click()
+    }
+    await pickScale('SOMMEIL', 2)
+    await pickScale('ÉNERGIE', 5)
+    await pickScale('FAIM', 1)
+    await pickScale('RÉCUPÉRATION', 3)
+    await page.locator('.v103Sheet .v9Primary').click()
+
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('bodyos.daily.log.v1') || '[]'))
+    const today = saved.at(-1)
+    expect(today.sleep).toBe(2)
+    expect(today.energy).toBe(5)
+    expect(today.hunger).toBe(1)
+    expect(today.recovery).toBe(3)
+
+    // Reopening the sheet later the same day should show what was actually
+    // saved, not reset to the hardcoded 7/4/3/4 defaults.
+    await page.reload()
+    await goNav(page, 'Coach')
+    await page.locator('button', { hasText: 'Analyse de ma progression' }).click()
+    await page.locator('.v103Checkin button', { hasText: 'COMPLÉTER' }).click()
+    await expect(page.locator('.v103Scale', { hasText: 'SOMMEIL' }).locator('button.active')).toHaveText('2')
+    await expect(page.locator('.v103Scale', { hasText: 'ÉNERGIE' }).locator('button.active')).toHaveText('5')
+    await expect(page.locator('.v103Scale', { hasText: 'FAIM' }).locator('button.active')).toHaveText('1')
+    await expect(page.locator('.v103Scale', { hasText: 'RÉCUPÉRATION' }).locator('button.active')).toHaveText('3')
+  })
+
   test('back caret returns to Today when entered via the Today trajectory/adaptive card (its primary entry points)', async ({ page }) => {
     // Regression: the back caret used to be hardcoded to 'coach', stranding
     // users on the demo AI Coach screen when they came from Today instead.

@@ -13,9 +13,19 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const [decisionOpen,setDecisionOpen]=useState(false)
  const [dailyLog,setDailyLog]=useState(readDailyLog())
  const latestDaily=dailyLog.at(-1)
- const [checkin,setCheckin]=useState({weight:latestDaily?.weight!=null?String(latestDaily.weight):'',waist:latestDaily?.waist!=null?String(latestDaily.waist):'',sleep:7,energy:4,hunger:3,recovery:4})
+ const [checkin,setCheckin]=useState({
+  weight:latestDaily?.weight!=null?String(latestDaily.weight):'',
+  waist:latestDaily?.waist!=null?String(latestDaily.waist):'',
+  sleep:latestDaily?.sleep??7,
+  energy:latestDaily?.energy??4,
+  hunger:latestDaily?.hunger??3,
+  recovery:latestDaily?.recovery??4,
+ })
  const saveCheckin=()=>{
-  const patch:Partial<DailyEntry>={}
+  // Sommeil/énergie/faim/récupération étaient saisis mais jamais sauvegardés
+  // (seuls poids/taille étaient persistés) — perdus à la fermeture de la
+  // sheet sans que rien ne le signale.
+  const patch:Partial<DailyEntry>={sleep:checkin.sleep,energy:checkin.energy,hunger:checkin.hunger,recovery:checkin.recovery}
   if(checkin.weight.trim()) patch.weight=Math.round(parseFloat(checkin.weight.replace(',','.'))*10)/10
   if(checkin.waist.trim()) patch.waist=Math.round(parseFloat(checkin.waist.replace(',','.'))*10)/10
   upsertDailyEntry(patch); setDailyLog(readDailyLog()); setCheckinOpen(false)
@@ -138,7 +148,7 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
    <header><button onClick={()=>setCheckinOpen(false)}>×</button><div><b>CHECK-IN DU JOUR</b><small>Les données restent modifiables</small></div><span></span></header>
    <label>POIDS (KG)<input value={checkin.weight} onChange={e=>setCheckin({...checkin,weight:e.target.value})}/></label>
    <label>TOUR DE TAILLE (CM)<input value={checkin.waist} onChange={e=>setCheckin({...checkin,waist:e.target.value})}/></label>
-   {[['SOMMEIL','sleep'],['ÉNERGIE','energy'],['FAIM','hunger'],['RÉCUPÉRATION','recovery']].map(([label,key])=><div className="v103Scale" key={key}><small>{label}</small><span>{[1,2,3,4,5].map(n=><button className={(checkin as any)[key]===n?'active':''} onClick={()=>setCheckin({...checkin,[key]:n})} key={n}>{n}</button>)}</span></div>)}
+   {([['SOMMEIL','sleep'],['ÉNERGIE','energy'],['FAIM','hunger'],['RÉCUPÉRATION','recovery']] as const).map(([label,key])=><div className="v103Scale" key={key}><small>{label}</small><span>{[1,2,3,4,5].map(n=><button className={checkin[key]===n?'active':''} onClick={()=>setCheckin({...checkin,[key]:n})} key={n}>{n}</button>)}</span></div>)}
    <button className="v9Primary" onClick={saveCheckin}>ENREGISTRER LE CHECK-IN</button>
   </section></div>}
 

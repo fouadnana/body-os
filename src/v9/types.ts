@@ -13,7 +13,7 @@ export type Meal={name:string,time:string,kcal:number,img:string,details:string,
 export type Recipe={id:string,name:string,category:string,time:string,kcal:number,protein:number,carbs:number,fat:number,img:string,ingredients:Ingredient[],steps:string[]}
 
 export type NutritionDaily={kcal:number,protein:number,carbs:number,fat:number}
-export type DailyEntry={date:string,weight?:number,waist?:number,steps?:number,bodyFat?:number,measurements?:Partial<Record<MuscleGroup,number>>}
+export type DailyEntry={date:string,weight?:number,waist?:number,steps?:number,bodyFat?:number,measurements?:Partial<Record<MuscleGroup,number>>,sleep?:number,energy?:number,hunger?:number,recovery?:number}
 export type WorkoutHistoryEntry={id?:string,date:string,group:string,exercise:string,weight:number,reps:number,rir?:number}
 export type ProgressionSuggestion={weight:number,reps:number,rir:number,reason:string}
 export type LibraryEntry=ExerciseItem&{group:SessionGroup}
