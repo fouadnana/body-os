@@ -214,4 +214,65 @@ test.describe('Adaptive Sèche', () => {
     await page.locator('.v104Trajectory').click()
     await expect(page.locator('.v9TitleBar small')).toContainText('SEMAINE 3')
   })
+
+  test('MUSCLE PRESERVATION and SIGNAUX DU MOTEUR show honest empty-state placeholders, not hardcoded demo values', async ({ page }) => {
+    // Regression: these used to be fixed at 94/100 "EXCELLENT" and a canned
+    // 92/90/96/88/91 signal array always showing "5/5 FAVORABLES", identical
+    // for every user regardless of their actual data.
+    await page.goto('/')
+    await page.locator('.v104Trajectory').click()
+    const scoreCard = page.locator('.v103ScoreGrid section').first()
+    await expect(scoreCard.locator('b')).toHaveText('—')
+    await expect(scoreCard.locator('strong')).toHaveText('EN ATTENTE')
+    await expect(page.locator('.v103Signals header span')).toHaveText('0/5 FAVORABLES')
+    const signalValues = await page.locator('.v103Signals > div > b').allTextContents()
+    expect(signalValues).toEqual(['—', '—', '—', '—', '—'])
+  })
+
+  test('the engine signals and MUSCLE PRESERVATION score reflect real tracked data, not canned numbers', async ({ page }) => {
+    await page.goto('/')
+    const today = new Date()
+    const dateNDaysAgo = (n: number) => { const d = new Date(today); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10) }
+    await page.evaluate(({ weekAgo, now, recentSet, priorSet }) => {
+      localStorage.setItem('bodyos.daily.log.v1', JSON.stringify([
+        { date: weekAgo, weight: 90 },
+        { date: now, weight: 89.45, recovery: 4 },
+      ]))
+      localStorage.setItem('bodyos.workout.history.v1', JSON.stringify([
+        { id: 'h0', date: priorSet, group: 'Pectoraux', exercise: 'Développé couché', weight: 80, reps: 8, rir: 2 },
+        { id: 'h1', date: recentSet, group: 'Pectoraux', exercise: 'Développé couché', weight: 84, reps: 8, rir: 2 },
+      ]))
+    }, { weekAgo: dateNDaysAgo(7), now: dateNDaysAgo(0), recentSet: dateNDaysAgo(1), priorSet: dateNDaysAgo(8) })
+    await page.reload()
+    await page.locator('.v104Trajectory').click()
+
+    const perfRow = page.locator('.v103Signals > div', { hasText: 'PERFORMANCES' })
+    await expect(perfRow.locator('b')).toHaveText('+5%')
+    await expect(perfRow.locator('em')).toContainText('(+5%)')
+
+    const volumeRow = page.locator('.v103Signals > div', { hasText: 'VOLUME' })
+    await expect(volumeRow.locator('b')).toHaveText('1 série')
+    await expect(volumeRow.locator('em')).toContainText('contre 1 la semaine précédente')
+
+    const proteinRow = page.locator('.v103Signals > div', { hasText: 'PROTÉINES' })
+    await expect(proteinRow.locator('b')).toHaveText('—')
+    await expect(proteinRow.locator('em')).toContainText('Pas encore de repas enregistrés')
+
+    const rateRow = page.locator('.v103Signals > div', { hasText: 'VITESSE DE PERTE' })
+    await expect(rateRow.locator('b')).toHaveText('-0,55 kg/sem')
+    await expect(rateRow.locator('em')).toContainText('conforme à l\'objectif')
+
+    const recoveryRow = page.locator('.v103Signals > div', { hasText: 'RÉCUPÉRATION' })
+    await expect(recoveryRow.locator('b')).toHaveText('4,0/5')
+    await expect(recoveryRow.locator('em')).toContainText('élevée')
+
+    // PERFORMANCES (favorable), VITESSE DE PERTE (favorable, MAINTENIR) and
+    // RÉCUPÉRATION (favorable) ; VOLUME and PROTÉINES are not.
+    await expect(page.locator('.v103Signals header span')).toHaveText('3/5 FAVORABLES')
+
+    const scoreCard = page.locator('.v103ScoreGrid section').first()
+    await expect(scoreCard.locator('b')).toHaveText('90')
+    await expect(scoreCard.locator('strong')).toHaveText('EXCELLENT')
+    await expect(scoreCard.locator('p')).toHaveText('Force stable · protéines à ajuster · rythme maîtrisé.')
+  })
 })

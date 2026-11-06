@@ -37,7 +37,6 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const trendStatus=latestWeight!=null&&previousWeight!=null?(latestWeight<=previousWeight?'OPTIMALE':'À SURVEILLER'):'EN ATTENTE'
  const realWeeklyRate=estimateWeeklyRate(dailyLog)
  const nutritionSettings=readJSON(NUTRITION_SETTINGS_KEY,DEFAULT_NUTRITION_SETTINGS)
- const preservation=94
  // Adhérence nutrition réelle sur les 7 derniers jours calendaires, à partir
  // du même journal quotidien que l'onglet SEMAINE/MOIS de Nutrition : un
  // jour est "dans la cible" si kcal/protéines sont à ±10% de l'objectif
@@ -115,6 +114,80 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  const confidenceSignals=[realWeeklyRate!=null,waist7dText!=='—',perfChangePct!=null,loggedDays>0].filter(Boolean).length
  const confidencePct=Math.round(confidenceSignals/4*100)
  const confidenceLabel=confidencePct>=75?'ÉLEVÉE':confidencePct>=50?'MODÉRÉE':confidencePct>0?'LIMITÉE':'INSUFFISANTE'
+
+ // Signaux du moteur : chaque signal vient d'une donnée déjà suivie par
+ // l'app, pas d'un pourcentage choisi au hasard. `bar` (0–100) normalise
+ // la valeur réelle pour la barre visuelle ; `value` est le chiffre réel
+ // affiché, pas une version arrondie du score. Sans donnée suffisante, le
+ // signal reste honnêtement vide ("—") plutôt que de garder un chiffre
+ // par défaut flatteur.
+ const perfBar=perfChangePct==null?null:Math.max(0,Math.min(100,80+perfChangePct*3))
+ const perfValue=perfChangePct==null?'—':`${perfChangePct>0?'+':''}${Math.round(perfChangePct)}%`
+ const perfDesc=perfChangePct==null
+  ?"Pas encore assez de séries sur 7 jours glissants pour mesurer une tendance."
+  :perfChangePct>=0
+  ?`Charge moyenne stable ou en hausse (${perfValue}) sur les séries des 7 derniers jours.`
+  :`Charge moyenne en baisse de ${Math.abs(Math.round(perfChangePct))}% sur 7 jours.`
+
+ const hasVolumeData=recentSets.length>0||priorSets.length>0
+ const volumeBar=hasVolumeData?Math.max(0,Math.min(100,recentSets.length/20*100)):null
+ const volumeValue=hasVolumeData?`${recentSets.length} série${recentSets.length>1?'s':''}`:'—'
+ const volumeDesc=!hasVolumeData
+  ?"Aucune série enregistrée ces 14 derniers jours."
+  :priorSets.length>0
+  ?`${recentSets.length} série${recentSets.length>1?'s':''} cette semaine, contre ${priorSets.length} la semaine précédente.`
+  :`${recentSets.length} série${recentSets.length>1?'s':''} enregistrée${recentSets.length>1?'s':''} cette semaine.`
+
+ const proteinBar=loggedDays===0?null:proteinAdherencePct
+ const proteinValue=loggedDays===0?'—':`${proteinAdherencePct}%`
+ const proteinDesc=loggedDays===0
+  ?"Pas encore de repas enregistrés cette semaine."
+  :`Objectif protéines atteint ${proteinAdherencePct}% des ${loggedDays} jour${loggedDays>1?'s':''} suivi${loggedDays>1?'s':''}.`
+
+ const rateCloseness=realWeeklyRate==null||nutritionSettings.weeklyRate===0?null:Math.max(0,100-Math.abs(realWeeklyRate/nutritionSettings.weeklyRate-1)*100)
+ const rateValue=realWeeklyRate==null?'—':`${realWeeklyRate>0?'+':''}${realWeeklyRate.toFixed(2).replace('.',',')} kg/sem`
+ const rateDesc=realWeeklyRate==null
+  ?"Pas encore assez de pesées pour calculer un rythme fiable."
+  :verdict==='MAINTENIR'
+  ?"Rythme réel conforme à l'objectif configuré."
+  :verdict==='RÉDUIRE'
+  ?"Rythme plus lent que l'objectif."
+  :"Rythme plus rapide que l'objectif — risque pour le muscle."
+
+ const recoveryEntries=dailyLog.filter(e=>e.recovery!=null&&Date.now()-new Date(e.date).getTime()<7*dayMs)
+ const recoveryAvg=recoveryEntries.length?recoveryEntries.reduce((s,e)=>s+e.recovery!,0)/recoveryEntries.length:null
+ const recoveryBar=recoveryAvg==null?null:(recoveryAvg-1)/4*100
+ const recoveryValue=recoveryAvg==null?'—':`${recoveryAvg.toFixed(1).replace('.',',')}/5`
+ const recoveryDesc=recoveryAvg==null
+  ?"Pas encore de check-in récupération cette semaine."
+  :recoveryAvg>=4
+  ?"Récupération perçue élevée, aucun signal de fatigue excessive."
+  :recoveryAvg>=2.5
+  ?"Récupération correcte, à surveiller."
+  :"Récupération perçue faible — priorise repos et gestion du stress."
+
+ const engineSignals=[
+  {label:'PERFORMANCES',value:perfValue,bar:perfBar,desc:perfDesc,favorable:perfBar!=null&&perfBar>=60},
+  {label:'VOLUME',value:volumeValue,bar:volumeBar,desc:volumeDesc,favorable:volumeBar!=null&&volumeBar>=50},
+  {label:'PROTÉINES',value:proteinValue,bar:proteinBar,desc:proteinDesc,favorable:proteinBar!=null&&proteinBar>=60},
+  {label:'VITESSE DE PERTE',value:rateValue,bar:rateCloseness,desc:rateDesc,favorable:verdict==='MAINTENIR'&&realWeeklyRate!=null},
+  {label:'RÉCUPÉRATION',value:recoveryValue,bar:recoveryBar,desc:recoveryDesc,favorable:recoveryBar!=null&&recoveryBar>=60},
+ ]
+ const favorableCount=engineSignals.filter(s=>s.favorable).length
+
+ // Score composite : moyenne des signaux directement liés à la préservation
+ // musculaire pendant un déficit (force maintenue, protéines suffisantes,
+ // rythme de perte pas trop agressif, récupération perçue) — pas le volume,
+ // qui mesure l'activité plutôt que la préservation. Sans aucun de ces
+ // signaux disponible, le score reste en attente plutôt que de garder une
+ // valeur par défaut.
+ const preservationInputs=[perfBar,proteinBar,rateCloseness,recoveryBar].filter((v):v is number=>v!=null)
+ const preservation=preservationInputs.length?Math.round(preservationInputs.reduce((a,b)=>a+b,0)/preservationInputs.length):null
+ const preservationLabel=preservation==null?'EN ATTENTE':preservation>=85?'EXCELLENT':preservation>=65?'BON':preservation>=40?'MOYEN':'À SURVEILLER'
+ const preservationDesc=preservation==null
+  ?"Complète ton check-in et enregistre quelques séries pour activer ce score."
+  :`Force ${perfBar!=null&&perfBar>=60?'stable':'à surveiller'} · protéines ${proteinBar!=null&&proteinBar>=60?'hautes':'à ajuster'} · rythme ${rateCloseness!=null&&rateCloseness>=60?'maîtrisé':'à ajuster'}.`
+
  return <main className="v9Page v103Adaptive">
   <header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>ADAPTIVE SÈCHE</b><small>INTELLIGENCE · SEMAINE {weekNumber}</small></div><span className="v103Live">● ACTIF</span></header>
 
@@ -132,12 +205,12 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
   </section>
 
   <div className="v103ScoreGrid">
-   <section><small>MUSCLE PRESERVATION</small><div className="v103Ring"><b>{preservation}</b><em>/100</em></div><strong>EXCELLENT</strong><p>Force stable · protéines hautes · rythme de perte maîtrisé.</p></section>
+   <section><small>MUSCLE PRESERVATION</small><div className="v103Ring"><b>{preservation??'—'}</b><em>/100</em></div><strong>{preservationLabel}</strong><p>{preservationDesc}</p></section>
    <section><small>ADHÉRENCE NUTRITION</small><div className="v103Ring"><b>{adherence}</b><em>%</em></div><strong>{adherenceLabel}</strong><p>{loggedDays?`Calories ${caloriesAdherencePct}% · protéines ${proteinAdherencePct}% · repas enregistrés ${loggedDays}/7.`:'Pas encore de repas enregistrés cette semaine.'}</p></section>
   </div>
 
-  <section className="v103Signals"><header><b>SIGNAUX DU MOTEUR</b><span>5/5 FAVORABLES</span></header>
-   {[['PERFORMANCES','92','Stable sur les mouvements repères'],['VOLUME','90','Volume hebdomadaire maintenu'],['PROTÉINES','96','Objectif presque toujours atteint'],['VITESSE DE PERTE','88','Dans la zone cible'],['RÉCUPÉRATION','91','Aucun signal de fatigue excessive']].map(x=><div key={x[0]}><span><small>{x[0]}</small><em>{x[2]}</em></span><b>{x[1]}</b><i><strong style={{width:x[1]+'%'}}></strong></i></div>)}
+  <section className="v103Signals"><header><b>SIGNAUX DU MOTEUR</b><span>{favorableCount}/5 FAVORABLES</span></header>
+   {engineSignals.map(s=><div key={s.label}><span><small>{s.label}</small><em>{s.desc}</em></span><b>{s.value}</b><i><strong style={{width:(s.bar??0)+'%'}}></strong></i></div>)}
   </section>
 
   <section className="v103Checkin"><div><small>CHECK-IN DU JOUR</small><b>2 minutes pour fiabiliser la décision</b><p>Poids · taille · sommeil · énergie · faim · récupération</p></div><button onClick={()=>setCheckinOpen(true)}>COMPLÉTER</button></section>
