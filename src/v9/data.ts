@@ -99,11 +99,10 @@ export const resolveBaseExercises=(group:SessionGroup):ExerciseItem[]=>{
  return resolved.length>0?resolved:sessionData[group]
 }
 
-export const DEFAULT_EVOLUTION_PHOTOS:EvolutionPhoto[]=[
- {id:'p1',src:'/body-os/v9-progress-athlete.png',date:'2026-05-08',label:'08/05'},
- {id:'p2',src:'/body-os/v9-progress-athlete.png',date:'2026-06-05',label:'05/06'},
- {id:'p3',src:'/body-os/v9-progress-athlete.png',date:'2026-07-02',label:'02/07'},
-]
+// Avant la première photo réelle, la sheet et l'onglet PHYSIQUE affichent
+// un état vide honnête plutôt que 3 "photos" figées (même image placeholder,
+// dates inventées) qui donnaient l'illusion d'une évolution déjà suivie.
+export const DEFAULT_EVOLUTION_PHOTOS:EvolutionPhoto[]=[]
 
 export const exportProgressData=()=>{
  const payload={
