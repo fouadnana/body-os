@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
+import { seedTodayGroup } from './helpers'
 
 const seedHistory = async (page: import('@playwright/test').Page, entries: unknown[]) => {
+  await seedTodayGroup(page, 'Pectoraux')
   await page.goto('/')
   await page.evaluate((h) => localStorage.setItem('bodyos.workout.history.v1', JSON.stringify(h)), entries)
   await page.reload()
@@ -35,6 +37,7 @@ test.describe('Progression automatique (Phase 4)', () => {
   })
 
   test('no past session for this exercise means no suggestion note (first-time defaults apply)', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await openFirstExercise(page)
     await expect(page.locator('.v9ProgressionNote')).toHaveCount(0)

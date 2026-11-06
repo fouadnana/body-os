@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { seedTodayGroup } from './helpers'
 
 test.describe('Workout — remplacement d\'exercice (Phase 3)', () => {
   test('the options menu (•••) on the exercise screen offers "Remplacer l\'exercice"', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -11,6 +13,7 @@ test.describe('Workout — remplacement d\'exercice (Phase 3)', () => {
   })
 
   test('the picker lists only exercises from the same muscle group, excluding the current one', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -23,6 +26,7 @@ test.describe('Workout — remplacement d\'exercice (Phase 3)', () => {
   })
 
   test('picking a replacement swaps the exercise in place, at the same position, with a fresh set draft', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -35,6 +39,7 @@ test.describe('Workout — remplacement d\'exercice (Phase 3)', () => {
   })
 
   test('the replacement persists across a reload and shows in the session exercise list', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -47,6 +52,7 @@ test.describe('Workout — remplacement d\'exercice (Phase 3)', () => {
   })
 
   test('"Revenir à l\'exercice original" restores the default exercise at that position', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -59,6 +65,7 @@ test.describe('Workout — remplacement d\'exercice (Phase 3)', () => {
   })
 
   test('logging sets on a replacement exercise does not affect the original exercise\'s history', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()

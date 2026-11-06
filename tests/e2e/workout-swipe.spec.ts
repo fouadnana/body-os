@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedTodayGroup } from './helpers'
 
 const swipe = async (page: import('@playwright/test').Page, selector: string, dx: number) => {
   const box = await page.locator(selector).boundingBox()
@@ -13,6 +14,7 @@ const swipe = async (page: import('@playwright/test').Page, selector: string, dx
 
 test.describe('Workout — glisser entre exercices (Phase 2)', () => {
   test('swiping left on the exercise header goes to the next exercise', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -22,6 +24,7 @@ test.describe('Workout — glisser entre exercices (Phase 2)', () => {
   })
 
   test('swiping right from the first exercise does nothing (no previous exercise)', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -31,6 +34,7 @@ test.describe('Workout — glisser entre exercices (Phase 2)', () => {
   })
 
   test('swiping left then right returns to the original exercise', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -41,6 +45,7 @@ test.describe('Workout — glisser entre exercices (Phase 2)', () => {
   })
 
   test('a short tap on the media (not a swipe) still opens the video, not a navigation', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
@@ -53,6 +58,7 @@ test.describe('Workout — glisser entre exercices (Phase 2)', () => {
   })
 
   test('swiping between exercises resets the set-entry draft (no stale weight carried over)', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()

@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { collectRealErrors } from './helpers'
+import { collectRealErrors, seedTodayGroup } from './helpers'
 
 const openTemplates = async (page: import('@playwright/test').Page) => {
+  // Every test here works against the Pectoraux group (createTemplate is
+  // always called with 'Pectoraux'), and several then open Séance expecting
+  // that custom template to be active — which only happens if "today"
+  // resolves to Pectoraux in the schedule.
+  await seedTodayGroup(page, 'Pectoraux')
   await page.goto('/')
   await page.locator('.v9Bottom button', { hasText: 'Plus' }).click()
   await page.locator('button', { hasText: 'Mes séances' }).click()

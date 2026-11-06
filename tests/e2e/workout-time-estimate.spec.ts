@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test'
+import { seedTodayGroup } from './helpers'
 
 test.describe('Workout — estimation réelle du temps de séance', () => {
   test('the estimated total time varies with the number of exercises, not a fixed 32 min', async ({ page }) => {
     // Regression: "~ 32 min" was a literal hardcoded string, identical for
     // every muscle group and every custom template regardless of how many
     // exercises or how much rest they actually prescribe.
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     const pecText = await page.locator('.v982SessionHeading em').textContent()
@@ -19,6 +21,7 @@ test.describe('Workout — estimation réelle du temps de séance', () => {
   })
 
   test('a shorter custom template shows a shorter estimate than the standard session', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.evaluate(() => {
       localStorage.setItem('bodyos.templates.v1', JSON.stringify([
@@ -35,6 +38,7 @@ test.describe('Workout — estimation réelle du temps de séance', () => {
   })
 
   test('the remaining-time bar and minutes update as exercises are completed', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     const before = await page.locator('.v9Remaining b').textContent()
@@ -54,6 +58,7 @@ test.describe('Workout — estimation réelle du temps de séance', () => {
   })
 
   test('finishing every exercise brings the remaining estimate to 0 min and the bar to 100%', async ({ page }) => {
+    await seedTodayGroup(page, 'Pectoraux')
     await page.goto('/')
     await page.evaluate(() => {
       localStorage.setItem('bodyos.templates.v1', JSON.stringify([

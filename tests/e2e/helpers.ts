@@ -19,6 +19,23 @@ export const goNav = async (page: Page, label: NavLabel) => {
   if (label === 'Coach') await page.locator('button', { hasText: 'AI Coach' }).click()
 }
 
+/** Forces "today" to resolve to the given muscle group in the weekly
+ * schedule, regardless of the real calendar day the suite happens to run on.
+ *
+ * Several tests open Séance straight from Today without picking a group
+ * explicitly, relying on it defaulting to Pectoraux — true only when the
+ * default schedule's slot for the real current day *is* Pectoraux (Monday).
+ * Call this before the test's first `page.goto` so the seeded schedule is
+ * already in localStorage when the app's first read of it happens. */
+export const seedTodayGroup = async (page: Page, group: string) => {
+  await page.addInitScript((g) => {
+    const schedule = ['Pectoraux', 'Dos', 'Jambes', 'Épaules', 'Bras', 'Bras', 'Repos']
+    const todayIdx = (new Date().getDay() + 6) % 7
+    schedule[todayIdx] = g
+    window.localStorage.setItem('bodyos.schedule.v1', JSON.stringify(schedule))
+  }, group)
+}
+
 /** Logs every page.on('console','error') and page.on('pageerror'), ignoring
  * network/resource failures (thumbnails etc. may be unreachable depending on
  * the environment's outbound network policy — not a regression signal). */
