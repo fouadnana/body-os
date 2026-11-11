@@ -60,7 +60,7 @@ test.describe('Layout', () => {
 
     await page.goto('/')
     await goNav(page, 'Workout')
-    await expect(page.locator('.v94MuscleTabs')).toBeVisible()
+    await expect(page.locator('.v9ExerciseList')).toBeVisible()
 
     await page.goto('/')
     await goNav(page, 'Nutrition')

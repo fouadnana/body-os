@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedTodayTemplate } from './helpers'
 
 test.describe('Workout — minuteur de repos (Phase 2, bandeau inline, échéance persistée)', () => {
   test('counts down on its own (deadline-based), not just via the +/-15s buttons, and overlays the exercise screen', async ({ page }) => {
@@ -79,9 +80,9 @@ test.describe('Workout — minuteur de repos (Phase 2, bandeau inline, échéanc
 
 test.describe('Workout — garde anti-double-validation (Phase 2)', () => {
   test('rapid double-tap on the validate button only logs one history entry', async ({ page }) => {
+    await seedTodayTemplate(page)
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
-    await page.locator('.v94MuscleTabs button', { hasText: 'Pectoraux' }).click()
     await page.locator('.v9ExerciseList button').first().click()
     const pulse = page.locator('.v9ExerciseActions .pulse')
     await pulse.click({ force: true })

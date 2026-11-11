@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import type { DayPlan, Screen } from '../types'
 import { DEFAULT_NUTRITION_SETTINGS, readSchedule, WEEKDAYS } from '../data'
-import { NUTRITION_SETTINGS_KEY, readDailyLog, readJSON, readNutritionDaily, SCHEDULE_KEY, writeJSON } from '../storage'
+import { NUTRITION_SETTINGS_KEY, readDailyLog, readJSON, readNutritionDaily, readTemplates, SCHEDULE_KEY, writeJSON } from '../storage'
 import { computeNutritionAdherence, decideWeeklyVerdict, estimateWeeklyRate, isRappelDay, mondayIndex } from '../utils'
 import { ProgramSheet } from '../components/Shared'
 
@@ -17,12 +17,20 @@ export function Plan({setScreen}:{setScreen:(s:Screen)=>void}){
  const saveSchedule=(s:DayPlan[])=>{writeJSON(SCHEDULE_KEY,s);setSchedule(s)}
  const dailyLog=readDailyLog()
  const stepsByDate=Object.fromEntries(dailyLog.filter(e=>e.steps!=null).map(e=>[e.date,e.steps!]))
+ const templates=readTemplates()
+ // Une entrée du planning référence désormais un template transversal (plus
+ // un groupe musculaire isolé) : "Renforcement" marque un template composé
+ // uniquement d'exercices L5-S1, "Rappel" un template déjà programmé un
+ // autre jour de la semaine.
  const days=WEEKDAYS.map((w,i)=>{
   const d=new Date(monday); d.setDate(monday.getDate()+i)
   const iso=d.toISOString().slice(0,10)
   const plan=schedule[i]
-  const kind=plan==='Repos'?'Repos':plan==='Cardio'?'Cardio':plan==='L5-S1'?'Renforcement':isRappelDay(schedule,i)?'Rappel':'Musculation'
-  return {abbr:w.slice(0,3).toUpperCase(),date:d.getDate(),plan,kind,steps:stepsByDate[iso]}
+  const tpl=templates.find(t=>t.id===plan)
+  const isL5S1Only=!!tpl&&tpl.exercises.length>0&&tpl.exercises.every(e=>e.group==='L5-S1')
+  const kind=plan==='Repos'?'Repos':plan==='Cardio'?'Cardio':isL5S1Only?'Renforcement':isRappelDay(schedule,i)?'Rappel':'Musculation'
+  const label=plan==='Repos'||plan==='Cardio'?plan:tpl?.name??'Séance'
+  return {abbr:w.slice(0,3).toUpperCase(),date:d.getDate(),plan:label,kind,steps:stepsByDate[iso]}
  })
 
  // Bloc latéral : même logique de décision que Adaptive Sèche (verdict +

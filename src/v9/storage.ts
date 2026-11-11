@@ -14,7 +14,7 @@ export const ACTIVE_TEMPLATE_KEY='bodyos.templates.active.v1'
 export const DAILY_LOG_KEY='bodyos.daily.log.v1'
 export const SCHEDULE_KEY='bodyos.schedule.v1'
 
-export const SCHEMA_VERSION=1
+export const SCHEMA_VERSION=2
 export const SCHEMA_VERSION_KEY='bodyos.schema.version'
 export const readJSON=<T,>(key:string,fallback:T):T=>{
  try{
@@ -34,7 +34,28 @@ export function runMigrations(){
   const stored=Number(localStorage.getItem(SCHEMA_VERSION_KEY)||'0')
   if(stored>=SCHEMA_VERSION) return
   // v0→v1 : aucune transformation de données n'est nécessaire — c'est le
-  // premier point de version. Les migrations suivantes s'ajoutent ici.
+  // premier point de version.
+  if(stored<2){
+   // v1→v2 : les templates passaient d'un groupe musculaire unique
+   // ({group,exerciseNames}) à une liste d'exercices transversale
+   // ({exercises:[{group,name}]}) — une séance s'ouvre maintenant par un
+   // template ("Haut du corps"), plus par un groupe musculaire. On convertit
+   // les templates personnalisés existants plutôt que de les perdre.
+   // Le planning hebdo (schedule) n'est pas touché : une ancienne valeur
+   // (nom de groupe) ne correspond à aucun id de template, donc chaque
+   // écran qui lit le planning retombe déjà sur un repli honnête (premier
+   // template disponible / libellé générique "Séance") sans qu'il soit
+   // nécessaire — ni souhaitable — d'effacer la donnée existante.
+   try{
+    const raw=localStorage.getItem(TEMPLATES_KEY)
+    if(raw){
+     const old=JSON.parse(raw) as Array<{id:string,name:string,group?:string,exerciseNames?:string[],exercises?:unknown}>
+     const migrated=old.map(t=>t.exercises?t:{id:t.id,name:t.name,exercises:(t.exerciseNames??[]).map(name=>({group:t.group,name}))})
+     localStorage.setItem(TEMPLATES_KEY,JSON.stringify(migrated))
+    }
+   }catch{}
+   localStorage.removeItem(ACTIVE_TEMPLATE_KEY)
+  }
   localStorage.setItem(SCHEMA_VERSION_KEY,String(SCHEMA_VERSION))
  }catch{}
 }
@@ -69,8 +90,5 @@ export const readNutritionDaily=()=>readJSON<Record<string,NutritionDaily>>(NUTR
 
 export const readTemplates=():WorkoutTemplate[]=>readJSON(TEMPLATES_KEY,[])
 export const writeTemplates=(t:WorkoutTemplate[])=>writeJSON(TEMPLATES_KEY,t)
-export const readActiveTemplates=():Record<string,string>=>readJSON(ACTIVE_TEMPLATE_KEY,{})
-export const writeActiveTemplates=(a:Record<string,string>)=>writeJSON(ACTIVE_TEMPLATE_KEY,a)
 
 export const newTemplateId=()=>`tpl_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
-export const DEFAULT_TEMPLATE_ID='default'

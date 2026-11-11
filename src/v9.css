@@ -1659,6 +1659,16 @@ body{
 .v9TemplatePickRow em{font-style:normal;font-size:9px;color:var(--c-8da8ae)}
 .v9TemplatePickRow input{accent-color:var(--c-9ff3f3);width:17px;height:17px}
 
+/* ---------- V3 : Mes séances — templates transversaux + glisser-déposer ---------- */
+.v106EditorList{display:grid;gap:8px;margin:12px 0 18px}
+.v106ExerciseRow{display:flex;align-items:center;gap:8px;min-height:56px;border-radius:13px;border:1px solid var(--line);background:rgba(21,55,65,.72);padding:0 10px;touch-action:none}
+.v106ExerciseRow.dragging{border-color:rgba(126,240,238,.55);box-shadow:inset 0 0 22px rgba(92,221,228,.08)}
+.v106Handle{flex:0 0 auto;width:30px;height:30px;border:0;background:none;color:var(--c-8da8ae);font-size:16px;cursor:grab}
+.v106ExerciseRow span{flex:1;display:grid;gap:3px;text-align:left}
+.v106ExerciseRow b{font-size:12px;color:var(--c-eef8f8)}
+.v106ExerciseRow em{font-style:normal;font-size:9px;color:var(--c-98b1b7)}
+.v106RemoveExercise{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:rgba(21,55,65,.5);color:#d98a8a;font-size:15px}
+
 /* ---------- Phase 4 : progression automatique ---------- */
 .v9ProgressionNote{margin:10px 0 0;padding:9px 11px;border-radius:10px;background:rgba(182,239,73,.1);border:1px solid rgba(182,239,73,.25);color:#d8f3a8;font-size:9px;line-height:1.5}
 .v9Impact strong{display:block;margin-top:4px;color:var(--lime);font-size:11px}

@@ -5,7 +5,7 @@ import type { DailyEntry, DayPlan, Meal, MuscleGroup, Screen } from '../types'
 import { DEFAULT_NUTRITION_SETTINGS, meals, muscleGroups, readSchedule } from '../data'
 import {
  NUTRITION_MEALS_KEY, NUTRITION_SETTINGS_KEY, SCHEDULE_KEY,
- readDailyLog, readJSON, upsertDailyEntry, writeJSON,
+ readDailyLog, readJSON, readTemplates, upsertDailyEntry, writeJSON,
 } from '../storage'
 import { fmt1, fmtDelta, isRappelDay, mondayIndex } from '../utils'
 import { BottomNav, InfoSheet, ProgramSheet } from '../components/Shared'
@@ -68,6 +68,7 @@ export function Today({setScreen}:{setScreen:(s:Screen)=>void}){
  const waistDelta=latest?.waist!=null?fmtDelta(latest.waist,previous?.waist,'cm'):null
  const plan=schedule[mondayIndex()]
  const planIsRappel=isRappelDay(schedule,mondayIndex())
+ const planLabel=plan==='Repos'||plan==='Cardio'?plan:readTemplates().find(t=>t.id===plan)?.name??'Séance'
  const saveLog=(patch:Partial<DailyEntry>)=>setLog(upsertDailyEntry(patch))
  const saveSchedule=(s:DayPlan[])=>{writeJSON(SCHEDULE_KEY,s);setSchedule(s)}
  return <main className="v104Today" aria-label="BODY OS Today">
@@ -89,7 +90,7 @@ export function Today({setScreen}:{setScreen:(s:Screen)=>void}){
     <div className="v104Kpis">
      <button onClick={()=>setScreen('nutrition')}><i className="fire">♨</i><small>CALORIES</small><b>{consumedKcal}</b><span>sur {nutrition.settings.calories} kcal</span></button>
      <button onClick={()=>setScreen('nutrition')}><i className="protein">◯</i><small>PROTÉINES</small><b>{consumedProtein}</b><span>g sur {nutrition.settings.protein} g</span></button>
-     <button className="v104Train" onClick={()=>plan==='Cardio'?setCardioOpen(true):setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>{plan}</b>{planIsRappel&&<span className="v104Rappel">RAPPEL</span>}</button>
+     <button className="v104Train" onClick={()=>plan==='Cardio'?setCardioOpen(true):setScreen('workout')}><i className="train">✣</i><small>ENTRAÎNEMENT</small><b>{planLabel}</b>{planIsRappel&&<span className="v104Rappel">RAPPEL</span>}</button>
      <button onClick={()=>setLogOpen(true)}><i className="steps">♧</i><small>ACTIVITÉ</small><b>{latest?.steps!=null?latest.steps.toLocaleString('fr-FR'):'—'}</b><span>pas</span></button>
     </div>
    </section>

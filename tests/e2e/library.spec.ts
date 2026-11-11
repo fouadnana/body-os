@@ -8,6 +8,26 @@ const openLibrary = async (page: import('@playwright/test').Page) => {
 }
 
 test.describe('Bibliothèque d\'exercices (Phase 3)', () => {
+  test('all muscle-group tabs render at distinct, non-overlapping positions', async ({ page }) => {
+    // Regression: this tab bar's grid used to lay out one column short of its
+    // real button count, so the last tab wrapped onto an earlier tab's exact
+    // position.
+    await openLibrary(page)
+    const rects = await page.locator('.v9LibTabs button').evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect()
+        return { left: Math.round(r.left), right: Math.round(r.right), text: el.textContent }
+      }),
+    )
+    expect(rects.length).toBeGreaterThan(1)
+    const seen = new Set<string>()
+    for (const r of rects) {
+      const key = `${r.left}-${r.right}`
+      expect(seen.has(key), `tab ${r.text} overlaps another tab at ${key}`).toBe(false)
+      seen.add(key)
+    }
+  })
+
   test('no uncaught JS errors across search, filters, and opening a detail sheet', async ({ page }) => {
     const errors = collectRealErrors(page)
     await openLibrary(page)

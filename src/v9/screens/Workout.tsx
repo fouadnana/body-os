@@ -1,9 +1,11 @@
 // Écran "Séance" (liste d'exercices, détail d'un exercice, repos,
-// historique d'un exercice). Extrait de V9App.tsx (Phase 6).
+// historique d'un exercice). V3 : une séance s'ouvre par un template
+// transversal aux groupes musculaires (ex. "Haut du corps"), plus par un
+// groupe musculaire isolé — voir src/v9/data.ts (resolveTemplateExercises).
 import { useEffect, useRef, useState } from 'react'
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
-import type { ExerciseItem, Screen, SessionGroup, SetDraft, WorkoutView } from '../types'
-import { exerciseLibrary, resolveBaseExercises, sessionGroups } from '../data'
+import type { LibraryEntry, Screen, SessionGroup, SetDraft, WorkoutView } from '../types'
+import { exerciseLibrary, findTemplate, resolveTemplateExercises } from '../data'
 import {
  WORKOUT_DONE_KEY, WORKOUT_LOG_KEY, WORKOUT_OVERRIDES_KEY,
  deleteWorkoutSet, logWorkoutSet, readJSON, readWorkoutHistory, todayISO, writeJSON,
@@ -11,41 +13,54 @@ import {
 import { estimate1RM, estimateSessionMinutes, fmtHistoryDate, padDone, suggestProgression, thumbFallback } from '../utils'
 import { OptionsSheet, Toast } from '../components/Shared'
 
-export function Workout({view,setView,setScreen,initialGroup}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void,initialGroup:SessionGroup}){
- const [group,setGroup]=useState<SessionGroup>(initialGroup); const [selected,setSelected]=useState(0)
+export function Workout({view,setView,setScreen,templateId}:{view:WorkoutView,setView:(v:WorkoutView)=>void,setScreen:(s:Screen)=>void,templateId:string|undefined}){
+ const [selected,setSelected]=useState(0)
+ const tpl=templateId?findTemplate(templateId):undefined
  const [doneRaw,setDoneRawState]=useState<Record<string,boolean[]>>(()=>readJSON(WORKOUT_DONE_KEY,{}))
  const setDoneRaw=(next:Record<string,boolean[]>)=>{setDoneRawState(next);writeJSON(WORKOUT_DONE_KEY,next)}
  const [overrides,setOverridesState]=useState<Record<string,Record<number,string>>>(()=>readJSON(WORKOUT_OVERRIDES_KEY,{}))
  const setOverrides=(next:Record<string,Record<number,string>>)=>{setOverridesState(next);writeJSON(WORKOUT_OVERRIDES_KEY,next)}
  const [toast,setToast]=useState('')
- const exercises=resolveBaseExercises(group).map((e,i)=>{
-  const replName=overrides[group]?.[i]
-  if(!replName) return e
-  return exerciseLibrary.find(x=>x.group===group&&x.name===replName)??e
- })
- const done=padDone(doneRaw[group],exercises.length)
- const setDone=(next:boolean[])=>setDoneRaw({...doneRaw,[group]:next})
- const replaceExercise=(i:number,name:string)=>setOverrides({...overrides,[group]:{...overrides[group],[i]:name}})
- const restoreExercise=(i:number)=>{const g={...overrides[group]};delete g[i];setOverrides({...overrides,[group]:g})}
  const [optionsOpen,setOptionsOpen]=useState(false)
- if(view==='exercise') return <Exercise key={`${group}-${selected}-${exercises[selected].name}`} item={exercises[selected]} index={selected} total={exercises.length} group={group} setView={setView} onDone={()=>setDone(done.map((x,i)=>i===selected?true:x))} onSwipe={delta=>setSelected(s=>Math.max(0,Math.min(exercises.length-1,s+delta)))} isReplaced={!!overrides[group]?.[selected]} onReplace={name=>replaceExercise(selected,name)} onRestore={()=>restoreExercise(selected)}/>
- if(view==='history') return <History setView={setView} item={exercises[selected]} group={group}/>
- const changeGroup=(g:SessionGroup)=>{setGroup(g);setSelected(0)}
+
+ if(!tpl) return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>SÉANCE</b></div><span></span></header>
+  <p className="v9LibEmpty">Aucune séance prévue aujourd'hui. Crée ou choisis un template dans Mes séances.</p>
+  <button className="v9Primary" onClick={()=>setScreen('templates')}>MES SÉANCES</button>
+ </main>
+
+ const baseExercises=resolveTemplateExercises(tpl)
+ const exercises=baseExercises.map((e,i)=>{
+  const replName=overrides[tpl.id]?.[i]
+  if(!replName) return e
+  return exerciseLibrary.find(x=>x.group===e.group&&x.name===replName)??e
+ })
+ const done=padDone(doneRaw[tpl.id],exercises.length)
+ const setDone=(next:boolean[])=>setDoneRaw({...doneRaw,[tpl.id]:next})
+ const replaceExercise=(i:number,name:string)=>setOverrides({...overrides,[tpl.id]:{...overrides[tpl.id],[i]:name}})
+ const restoreExercise=(i:number)=>{const g={...overrides[tpl.id]};delete g[i];setOverrides({...overrides,[tpl.id]:g})}
+
+ if(exercises.length===0) return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div><b>{tpl.name.toUpperCase()}</b></div><span></span></header>
+  <p className="v9LibEmpty">Ce template n'a pas encore d'exercice. Ajoute-en depuis Mes séances.</p>
+  <button className="v9Primary" onClick={()=>setScreen('templates')}>MES SÉANCES</button>
+ </main>
+
+ if(view==='exercise') return <Exercise key={`${tpl.id}-${selected}-${exercises[selected].name}`} item={exercises[selected]} index={selected} total={exercises.length} templateName={tpl.name} setView={setView} onDone={()=>setDone(done.map((x,i)=>i===selected?true:x))} onSwipe={delta=>setSelected(s=>Math.max(0,Math.min(exercises.length-1,s+delta)))} isReplaced={!!overrides[tpl.id]?.[selected]} onReplace={name=>replaceExercise(selected,name)} onRestore={()=>restoreExercise(selected)}/>
+ if(view==='history') return <History setView={setView} item={exercises[selected]}/>
  const finish=()=>{const count=done.filter(Boolean).length;setToast(count===exercises.length?'Séance enregistrée ✓':`${count}/${exercises.length} exercices validés — progression conservée`);setTimeout(()=>setToast(''),2300)}
  const resetProgress=()=>{setDone(Array(exercises.length).fill(false));setToast('Progression réinitialisée')}
  const totalEstimateMin=estimateSessionMinutes(exercises)
  const remainingEstimateMin=estimateSessionMinutes(exercises.filter((_,i)=>!done[i]))
  const doneCount=done.filter(Boolean).length
  const remainingPct=exercises.length?Math.round((doneCount/exercises.length)*100):0
- return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{group==='Pectoraux'?'Pectoraux · Triceps':group}</small><em>{exercises.length} exercices · ~ {totalEstimateMin} min</em></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
-  <div className="v94MuscleTabs">{sessionGroups.map(g=><button key={g} className={g===group?'active':''} onClick={()=>changeGroup(g)}><span>{g==='Pectoraux'?'♜':g==='Dos'?'♙':g==='Épaules'?'✣':g==='Jambes'?'♧':g==='Bras'?'◉':'⚕'}</span><small>{g}</small></button>)}</div>
+ return <main className="v9Page"><header className="v9TitleBar"><button onClick={()=>setScreen('today')}>‹</button><div className="v982SessionHeading"><b>SÉANCE</b><small>{tpl.name}</small><em>{exercises.length} exercices · ~ {totalEstimateMin} min</em></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
   <section className="v9ExerciseList">{exercises.map((e,i)=><button key={e.name} onClick={()=>{setSelected(i);setView('exercise')}} className={done[i]?'done':''}><div className="v93Thumb"><img src={e.img} onError={thumbFallback}/><i>▶</i></div><span><small>{i+1}</small><b>{e.name}</b><em>{e.equipment} · {e.reps} · RIR {e.rir}</em></span><strong>{e.sets}</strong><i>{done[i]?'✓':'○'}</i></button>)}</section>
   <button className="v9Primary" onClick={finish}>TERMINER LA SÉANCE</button><div className="v9Remaining"><small>Temps estimé restant</small><i><span style={{width:`${remainingPct}%`}}></span></i><b>{remainingEstimateMin} min</b></div>{toast&&<Toast text={toast}/>}
   {optionsOpen&&<OptionsSheet title="OPTIONS DE SÉANCE" close={()=>setOptionsOpen(false)} options={[{label:'Réinitialiser la progression',onClick:resetProgress,danger:true}]}/>}
  </main>
 }
 
-function Exercise({item,index,total,group,setView,onDone,onSwipe,isReplaced,onReplace,onRestore}:{item:ExerciseItem,index:number,total:number,group:SessionGroup,setView:(v:WorkoutView)=>void,onDone:()=>void,onSwipe:(delta:number)=>void,isReplaced:boolean,onReplace:(name:string)=>void,onRestore:()=>void}){
+function Exercise({item,index,total,templateName,setView,onDone,onSwipe,isReplaced,onReplace,onRestore}:{item:LibraryEntry,index:number,total:number,templateName:string,setView:(v:WorkoutView)=>void,onDone:()=>void,onSwipe:(delta:number)=>void,isReplaced:boolean,onReplace:(name:string)=>void,onRestore:()=>void}){
+ const group=item.group
  const [optionsOpen,setOptionsOpen]=useState(false)
  const [pickerOpen,setPickerOpen]=useState(false)
  const logKey=`${group}::${item.name}`
@@ -98,7 +113,7 @@ function Exercise({item,index,total,group,setView,onDone,onSwipe,isReplaced,onRe
   deleteWorkoutSet(id)
   setTodaysSets(readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name&&h.date===todayISO()))
  }
- return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{group.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
+ return <main className="v9Page v9Exercise"><header className="v9TitleBar"><button onClick={()=>setView('session')}>‹</button><div><b>{templateName.toUpperCase()}</b><small>SÉANCE EN COURS</small></div><button className="v93Dots" onClick={()=>setOptionsOpen(true)}>•••</button></header>
   <div className="v9SwipeZone" onPointerDown={onSwipeStart} onPointerUp={onSwipeEnd} onDragStart={e=>e.preventDefault()}>
   <div className="v9ExerciseHead"><span><small>EXERCICE {index+1}/{total}</small><b>{item.name}</b><em>{item.equipment.toUpperCase()} · {group.toUpperCase()}</em></span></div>
   <section className="v9Media v93VideoMedia v98Media" onClick={openVideo} role="button" tabIndex={0} onKeyDown={e=>e.key==='Enter'&&openVideo()}><img src={item.img} onError={thumbFallback} draggable={false}/><button onClick={e=>{e.stopPropagation();openVideo()}}>▶</button><div><span>CIBLE&nbsp; {item.target}</span><span>SECONDAIRE&nbsp; {item.secondary}</span></div></section>
@@ -165,9 +180,9 @@ function RestOverlay({onLeave,onHistory}:{onLeave:()=>void,onHistory:()=>void}){
  return <div className="v9SheetBack"><div className="v9RestSheet v9Rest"><header className="v9TitleBar"><button onClick={leave}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={leave}>Passer</button></header><section className="v9Timer"><div><b>{fmtTimer(sec)}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>adjust(-15000)}>−15 s</button><button onClick={()=>adjust(15000)}>+15 s</button></div><button className="v9NextSet" onClick={leave}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={goHistory}>VOIR HISTORIQUE</button></div></div>
 }
 
-function History({setView,item,group}:{setView:(v:WorkoutView)=>void,item:ExerciseItem,group:SessionGroup}){
+function History({setView,item}:{setView:(v:WorkoutView)=>void,item:LibraryEntry}){
  const [tab,setTab]=useState<'charge'|'volume'|'1rm'>('charge')
- const entries=readWorkoutHistory().filter(h=>h.group===group&&h.exercise===item.name).slice(-20)
+ const entries=readWorkoutHistory().filter(h=>h.group===item.group&&h.exercise===item.name).slice(-20)
  const metricFor=(e:{weight:number,reps:number})=>tab==='charge'?e.weight:tab==='volume'?e.weight*e.reps:estimate1RM(e.weight,e.reps)
  const chartData=entries.map((e,i)=>({i,v:metricFor(e)}))
  const rows=entries.slice().reverse()

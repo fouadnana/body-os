@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { goNav, collectRealErrors } from './helpers'
+import { goNav, collectRealErrors, seedTodayTemplate } from './helpers'
 
 test.describe('Progress', () => {
   test('SÈCHE/PHYSIQUE/PERF tabs all render without errors', async ({ page }) => {
@@ -21,6 +21,7 @@ test.describe('Progress', () => {
     // Regression: this tab used to show a fully hardcoded bar chart and fake
     // stats (RIR MOYEN, ADHÉRENCE) regardless of the selected muscle or any
     // real logged set.
+    await seedTodayTemplate(page)
     await page.goto('/')
     await goNav(page, 'Progress')
     await page.locator('.v94MainSegments button', { hasText: 'PERF.' }).click()
@@ -28,10 +29,8 @@ test.describe('Progress', () => {
     await expect(page.locator('.v94NoData')).toContainText('Pas encore de série enregistrée sur Pectoraux')
     await expect(page.locator('.v94PerfStats span').nth(2).locator('b')).toHaveText('0')
 
-    // log a real set on Pectoraux (Workout may open on a different muscle
-    // group depending on today's schedule, so select it explicitly)
+    // log a real set on Pectoraux (today's seeded template)
     await goNav(page, 'Workout')
-    await page.locator('.v94MuscleTabs button', { hasText: 'Pectoraux' }).click()
     await page.locator('.v9ExerciseList button').first().click()
     await page.locator('.v9ExerciseActions .pulse').click()
     await expect(page.locator('.v93Toast')).toBeVisible()
@@ -47,9 +46,9 @@ test.describe('Progress', () => {
   })
 
   test('switching the muscle chip changes PERF data independently per muscle', async ({ page }) => {
+    await seedTodayTemplate(page)
     await page.goto('/')
     await goNav(page, 'Workout')
-    await page.locator('.v94MuscleTabs button', { hasText: 'Pectoraux' }).click()
     await page.locator('.v9ExerciseList button').first().click()
     await page.locator('.v9ExerciseActions .pulse').click()
 

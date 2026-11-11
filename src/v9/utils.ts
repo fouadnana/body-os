@@ -4,7 +4,6 @@ import type { SyntheticEvent } from 'react'
 import type { DailyEntry, DayPlan, ExerciseItem, Ingredient, NutritionDaily, ProgressionSuggestion, WorkoutHistoryEntry } from './types'
 
 export const mondayIndex=(d=new Date())=>(d.getDay()+6)%7
-export const dayIcon=(d:DayPlan)=>d==='Pectoraux'?'♜':d==='Dos'?'♙':d==='Épaules'?'✣':d==='Jambes'?'♧':d==='Bras'?'◉':d==='L5-S1'?'⚕':d==='Cardio'?'◌':'☾'
 export const isRappelDay=(schedule:DayPlan[],idx:number)=>{
  const g=schedule[idx]
  if(g==='Repos'||g==='Cardio') return false

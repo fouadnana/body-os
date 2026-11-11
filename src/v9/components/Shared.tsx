@@ -2,7 +2,8 @@
 // navigation du bas, éditeur de programme). Extrait de V9App.tsx (Phase 6).
 import { useState } from 'react'
 import type { DayPlan, Screen } from '../types'
-import { sessionGroups, WEEKDAYS } from '../data'
+import { WEEKDAYS } from '../data'
+import { readTemplates } from '../storage'
 
 export const Icon=({children}:{children:string})=><span className="v9Icon">{children}</span>
 
@@ -28,12 +29,16 @@ export function BottomNav({screen,setScreen}:{screen:Screen,setScreen:(s:Screen)
 
 export function ProgramSheet({schedule,close,onSave}:{schedule:DayPlan[],close:()=>void,onSave:(s:DayPlan[])=>void}){
  const [draft,setDraft]=useState<DayPlan[]>(schedule)
- const options:DayPlan[]=['Repos','Cardio',...sessionGroups]
+ const templates=readTemplates()
+ const options:{value:DayPlan,label:string}[]=[
+  {value:'Repos',label:'Repos'},{value:'Cardio',label:'Cardio'},
+  ...templates.map(t=>({value:t.id,label:t.name})),
+ ]
  const setDay=(i:number,v:DayPlan)=>setDraft(d=>d.map((x,j)=>j===i?v:x))
  return <div className="v9SheetBack" onClick={close}><section className="v96NutritionSettings" onClick={e=>e.stopPropagation()}>
   <header><button onClick={close}>×</button><div><small>MON PROGRAMME</small><b>Séance par jour</b></div><span></span></header>
   <div className="v96SettingsBody">
-   {WEEKDAYS.map((w,i)=><label key={w}><span>{w}</span><select value={draft[i]} onChange={e=>setDay(i,e.target.value as DayPlan)}>{options.map(o=><option key={o} value={o}>{o}</option>)}</select></label>)}
+   {WEEKDAYS.map((w,i)=><label key={w}><span>{w}</span><select value={draft[i]} onChange={e=>setDay(i,e.target.value as DayPlan)}>{options.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>)}
   </div>
   <footer><button onClick={close}>ANNULER</button><button className="primary" onClick={()=>{onSave(draft);close()}}>ENREGISTRER</button></footer>
  </section></div>

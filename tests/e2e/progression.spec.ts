@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
-import { seedTodayGroup } from './helpers'
+import { seedTodayTemplate } from './helpers'
 
 const seedHistory = async (page: import('@playwright/test').Page, entries: unknown[]) => {
-  await seedTodayGroup(page, 'Pectoraux')
+  await seedTodayTemplate(page)
   await page.goto('/')
   await page.evaluate((h) => localStorage.setItem('bodyos.workout.history.v1', JSON.stringify(h)), entries)
   await page.reload()
@@ -37,16 +37,19 @@ test.describe('Progression automatique (Phase 4)', () => {
   })
 
   test('no past session for this exercise means no suggestion note (first-time defaults apply)', async ({ page }) => {
-    await seedTodayGroup(page, 'Pectoraux')
+    await seedTodayTemplate(page)
     await page.goto('/')
     await openFirstExercise(page)
     await expect(page.locator('.v9ProgressionNote')).toHaveCount(0)
   })
 
   test('a time-based exercise (seconds, not reps) never gets a progression suggestion', async ({ page }) => {
-    await seedHistory(page, [{ id: 's1', date: '2026-10-20', group: 'L5-S1', exercise: 'Planche latérale', weight: 0, reps: 30, rir: 1 }])
+    await seedTodayTemplate(page, [{ group: 'L5-S1', name: 'Planche latérale' }])
+    await page.goto('/')
+    await page.evaluate((h) => localStorage.setItem('bodyos.workout.history.v1', JSON.stringify(h)),
+      [{ id: 's1', date: '2026-10-20', group: 'L5-S1', exercise: 'Planche latérale', weight: 0, reps: 30, rir: 1 }])
+    await page.reload()
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
-    await page.locator('.v94MuscleTabs button', { hasText: 'L5-S1' }).click()
     await page.locator('.v9ExerciseList button', { hasText: 'Planche latérale' }).click()
     await expect(page.locator('.v9ProgressionNote')).toHaveCount(0)
   })

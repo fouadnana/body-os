@@ -19,21 +19,34 @@ export const goNav = async (page: Page, label: NavLabel) => {
   if (label === 'Coach') await page.locator('button', { hasText: 'AI Coach' }).click()
 }
 
-/** Forces "today" to resolve to the given muscle group in the weekly
- * schedule, regardless of the real calendar day the suite happens to run on.
- *
- * Several tests open Séance straight from Today without picking a group
- * explicitly, relying on it defaulting to Pectoraux — true only when the
- * default schedule's slot for the real current day *is* Pectoraux (Monday).
- * Call this before the test's first `page.goto` so the seeded schedule is
- * already in localStorage when the app's first read of it happens. */
-export const seedTodayGroup = async (page: Page, group: string) => {
-  await page.addInitScript((g) => {
-    const schedule = ['Pectoraux', 'Dos', 'Jambes', 'Épaules', 'Bras', 'Bras', 'Repos']
+/** A session (V3) opens via a template spanning any muscle group, not a
+ * group picked live — see src/v9/data.ts. This is the exact exercise list
+ * the old built-in "Pectoraux" default session used, kept here as a fixed
+ * test fixture so existing assertions (exercise names/order/count) don't
+ * depend on the app's own current built-in templates. */
+export const PECTORAUX_EXERCISES: { group: string, name: string }[] = [
+  { group: 'Pectoraux', name: 'Développé incliné' },
+  { group: 'Pectoraux', name: 'Écarté poulie bas→haut' },
+  { group: 'Pectoraux', name: 'Développé couché' },
+  { group: 'Pectoraux', name: 'Dips' },
+  { group: 'Pectoraux', name: 'Écartés couchés' },
+]
+
+/** Forces "today" to resolve to a template made of exactly the given
+ * exercises (default: PECTORAUX_EXERCISES), regardless of the real calendar
+ * day the suite happens to run on and regardless of the app's own built-in
+ * templates. Call this before the test's first `page.goto` so the seeded
+ * template/schedule are already in localStorage when the app's first read
+ * of them happens. */
+export const seedTodayTemplate = async (page: Page, exercises: { group: string, name: string }[] = PECTORAUX_EXERCISES) => {
+  await page.addInitScript((exs) => {
+    const id = 'test-tpl'
+    window.localStorage.setItem('bodyos.templates.v1', JSON.stringify([{ id, name: 'Séance test', exercises: exs }]))
+    const schedule = Array(7).fill('Repos')
     const todayIdx = (new Date().getDay() + 6) % 7
-    schedule[todayIdx] = g
+    schedule[todayIdx] = id
     window.localStorage.setItem('bodyos.schedule.v1', JSON.stringify(schedule))
-  }, group)
+  }, exercises)
 }
 
 /** Logs every page.on('console','error') and page.on('pageerror'), ignoring

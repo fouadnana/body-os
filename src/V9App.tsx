@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import './v9.css'
-import type { SessionGroup } from './v9/types'
-import { sessionGroups, readSchedule } from './v9/data'
+import { readSchedule } from './v9/data'
+import { readTemplates } from './v9/storage'
 import { mondayIndex } from './v9/utils'
 import { BottomNav } from './v9/components/Shared'
 import { Today } from './v9/screens/Today'
@@ -21,8 +21,12 @@ export type WorkoutView='session'|'exercise'|'history'
 export default function V9App(){
  const [screen,setScreen]=useState<Screen>('today'); const [workoutView,setWorkoutView]=useState<WorkoutView>('session')
  const todayPlan=readSchedule()[mondayIndex()]
- const initialGroup=(sessionGroups as string[]).includes(todayPlan)?todayPlan as SessionGroup:'Pectoraux'
- const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} initialGroup={initialGroup}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:screen==='plus'?<Plus setScreen={setScreen}/>:screen==='library'?<Bibliotheque setScreen={setScreen}/>:screen==='templates'?<MesSeances setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView])
+ // Une séance s'ouvre par le template prévu au planning du jour ; si le jour
+ // est Repos/Cardio ou que le template a été supprimé depuis, on retombe sur
+ // le premier template disponible (jamais un groupe musculaire figé).
+ const templates=readTemplates()
+ const templateId=templates.some(t=>t.id===todayPlan)?todayPlan:templates[0]?.id
+ const page=useMemo(()=>screen==='today'?<Today setScreen={setScreen}/>:screen==='workout'?<Workout view={workoutView} setView={setWorkoutView} setScreen={setScreen} templateId={templateId}/>:screen==='nutrition'?<Nutrition setScreen={setScreen}/>:screen==='progress'?<Progress setScreen={setScreen}/>:screen==='coach'?<Coach setScreen={setScreen}/>:screen==='adaptive'?<AdaptiveIntelligence setScreen={setScreen}/>:screen==='plus'?<Plus setScreen={setScreen}/>:screen==='library'?<Bibliotheque setScreen={setScreen}/>:screen==='templates'?<MesSeances setScreen={setScreen}/>:<Plan setScreen={setScreen}/>,[screen,workoutView,templateId])
  const showNav=screen==='nutrition'||screen==='progress'||screen==='plus'||screen==='library'||screen==='templates'
  return <div className="v9Shell"><div className="v9Phone">{page}{showNav&&<BottomNav screen={screen} setScreen={s=>{setScreen(s);if(s==='workout')setWorkoutView('session')}}/>}</div></div>
 }

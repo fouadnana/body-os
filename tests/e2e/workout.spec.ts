@@ -1,39 +1,17 @@
 import { test, expect } from '@playwright/test'
-import { goNav, collectRealErrors } from './helpers'
+import { goNav, collectRealErrors, seedTodayTemplate } from './helpers'
 
 const MUSCLE_GROUPS = ['Pectoraux', 'Dos', 'Épaules', 'Jambes', 'Bras', 'L5-S1']
+const DOS_EXERCISES = [
+  { group: 'Dos', name: 'Tirage vertical' }, { group: 'Dos', name: 'Rowing machine' },
+  { group: 'Dos', name: 'Rowing poitrine' }, { group: 'Dos', name: 'Pulldown unilatéral' }, { group: 'Dos', name: 'Reverse fly' },
+]
+const JAMBES_EXERCISES = [
+  { group: 'Jambes', name: 'Hack squat' }, { group: 'Jambes', name: 'Fentes bulgares' },
+  { group: 'Jambes', name: 'Leg curl' }, { group: 'Jambes', name: 'Leg extension' }, { group: 'Jambes', name: 'Mollets' },
+]
 
 test.describe('Workout — séance', () => {
-  test('all 6 muscle tabs render at distinct, non-overlapping positions', async ({ page }) => {
-    // Regression: .v94MuscleTabs used to be a 5-column grid for 6 tabs, so
-    // the 6th (L5-S1) wrapped onto the 1st (Pectoraux)'s exact position.
-    await page.goto('/')
-    await goNav(page, 'Workout')
-    await expect(page.locator('.v94MuscleTabs button')).toHaveCount(6)
-    const rects = await page.locator('.v94MuscleTabs button').evaluateAll((els) =>
-      els.map((el) => {
-        const r = el.getBoundingClientRect()
-        return { left: Math.round(r.left), right: Math.round(r.right), text: el.textContent }
-      }),
-    )
-    const seen = new Set<string>()
-    for (const r of rects) {
-      const key = `${r.left}-${r.right}`
-      expect(seen.has(key), `tab ${r.text} overlaps another tab at ${key}`).toBe(false)
-      seen.add(key)
-    }
-  })
-
-  test('switching muscle groups shows the right exercise list', async ({ page }) => {
-    await page.goto('/')
-    await goNav(page, 'Workout')
-    for (const group of MUSCLE_GROUPS) {
-      await page.locator('.v94MuscleTabs button', { hasText: group }).click()
-      await expect(page.locator('.v982SessionHeading small')).toContainText(group === 'Pectoraux' ? 'Pectoraux' : group)
-      await expect(page.locator('.v9ExerciseList button').first()).toBeVisible()
-    }
-  })
-
   test('session options (•••) open a real menu that resets progress', async ({ page }) => {
     // Regression: the "•••" button only fired a decorative toast reading
     // "Options de séance" — no menu ever opened, so the button did nothing.
@@ -70,10 +48,10 @@ test.describe('Workout — séance', () => {
 
   test('no uncaught JS errors across every muscle group and its first exercise', async ({ page }) => {
     const errors = collectRealErrors(page)
-    await page.goto('/')
-    await goNav(page, 'Workout')
     for (const group of MUSCLE_GROUPS) {
-      await page.locator('.v94MuscleTabs button', { hasText: group }).click()
+      await seedTodayTemplate(page, [{ group, name: group === 'Pectoraux' ? 'Développé incliné' : group === 'Dos' ? 'Tirage vertical' : group === 'Épaules' ? 'Développé épaules' : group === 'Jambes' ? 'Hack squat' : group === 'Bras' ? 'Curl incliné' : 'Bird dog' }])
+      await page.goto('/')
+      await goNav(page, 'Workout')
       await page.locator('.v9ExerciseList button').first().click()
       await expect(page.locator('.v9SetPanel')).toBeVisible()
       await page.locator('.v9ExerciseActions button', { hasText: 'ANNULER' }).click()
@@ -105,9 +83,9 @@ test.describe('Workout — exercise detail', () => {
   })
 
   test('weight never goes below 0', async ({ page }) => {
+    await seedTodayTemplate(page, JAMBES_EXERCISES)
     await page.goto('/')
     await goNav(page, 'Workout')
-    await page.locator('.v94MuscleTabs button', { hasText: 'Jambes' }).click()
     // "index===3" exercise in the group starts at weight 0 — hit minus a lot and confirm it floors at 0
     await page.locator('.v9ExerciseList button').nth(3).click()
     const minus = page.locator('.v9Load button').nth(0)
@@ -215,9 +193,9 @@ test.describe('Workout — history', () => {
   })
 
   test('empty state is shown before any set is logged for an exercise', async ({ page }) => {
+    await seedTodayTemplate(page, DOS_EXERCISES)
     await page.goto('/')
     await goNav(page, 'Workout')
-    await page.locator('.v94MuscleTabs button', { hasText: 'Dos' }).click()
     await page.locator('.v9ExerciseList button').nth(2).click()
     await page.locator('.v9LastSet').click()
     await expect(page.locator('.v9HistoryEmpty')).toContainText('Aucune série enregistrée')

@@ -1,12 +1,12 @@
 // Données statiques (repas, recettes, bibliothèque d'exercices, planning par
 // défaut) et helpers qui en dépendent. Extrait de V9App.tsx (Phase 6).
-import { mealDetails } from './utils'
+import { estimateSessionMinutes, mealDetails } from './utils'
 import {
- DEFAULT_TEMPLATE_ID, NUTRITION_MEALS_KEY, NUTRITION_SETTINGS_KEY, SCHEDULE_KEY,
- readActiveTemplates, readDailyLog, readJSON, readTemplates, readWorkoutHistory, todayISO,
+ NUTRITION_MEALS_KEY, NUTRITION_SETTINGS_KEY, SCHEDULE_KEY,
+ readDailyLog, readJSON, readTemplates, readWorkoutHistory, todayISO, writeTemplates,
 } from './storage'
 import type {
- DayPlan, EvolutionPhoto, ExerciseItem, LibraryEntry, Meal, MuscleGroup, Recipe, SessionGroup,
+ DayPlan, EvolutionPhoto, ExerciseItem, LibraryEntry, Meal, MuscleGroup, Recipe, SessionGroup, WorkoutTemplate,
 } from './types'
 
 export const meals:Meal[]=[
@@ -36,8 +36,6 @@ export const recipes:Recipe[]=[
 export const muscleGroups:MuscleGroup[]=['Pectoraux','Dos','Épaules','Jambes','Bras']
 export const sessionGroups:SessionGroup[]=[...muscleGroups,'L5-S1']
 export const WEEKDAYS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
-export const DEFAULT_SCHEDULE:DayPlan[]=['Pectoraux','Dos','Jambes','Épaules','Bras','Bras','Repos']
-export const readSchedule=():DayPlan[]=>{const s=readJSON<DayPlan[]>(SCHEDULE_KEY,DEFAULT_SCHEDULE);return s.length===7?s:DEFAULT_SCHEDULE}
 export const DEFAULT_NUTRITION_SETTINGS={goal:'SÈCHE',calories:2600,protein:200,carbs:280,fat:75,water:3,weeklyRate:-0.55}
 export const sessionData:Record<SessionGroup,ExerciseItem[]>={
  Pectoraux:[
@@ -85,19 +83,60 @@ export const sessionData:Record<SessionGroup,ExerciseItem[]>={
 }
 export const exerciseLibrary:LibraryEntry[]=sessionGroups.flatMap(g=>sessionData[g].map(e=>({...e,group:g})))
 export const libraryEquipments=Array.from(new Set(exerciseLibrary.map(e=>e.equipment))).sort((a,b)=>a.localeCompare(b,'fr'))
+const ref=(group:SessionGroup,name:string)=>({group,name})
 
-// Résout la liste d'exercices de base d'un groupe pour la séance active :
-// le template par défaut (sessionData, intégré) ou un template personnalisé
-// choisi par l'utilisateur dans "Mes séances". Les remplacements ponctuels
-// par position (WORKOUT_OVERRIDES_KEY) s'appliquent ensuite par-dessus.
-export const resolveBaseExercises=(group:SessionGroup):ExerciseItem[]=>{
- const activeId=readActiveTemplates()[group]
- if(!activeId||activeId===DEFAULT_TEMPLATE_ID) return sessionData[group]
- const tpl=readTemplates().find(t=>t.id===activeId&&t.group===group)
- if(!tpl) return sessionData[group]
- const resolved=tpl.exerciseNames.map(n=>exerciseLibrary.find(e=>e.group===group&&e.name===n)).filter((e):e is LibraryEntry=>!!e)
- return resolved.length>0?resolved:sessionData[group]
+// Templates intégrés : une séance (V3) est transversale aux groupes
+// musculaires ("Haut du corps" mélange Pectoraux/Dos/Épaules/Bras), plus
+// verrouillée sur un seul groupe comme l'ancien "Séance standard". Ce sont
+// des templates ordinaires (éditables/supprimables depuis Mes séances), pas
+// une catégorie à part — seedés une fois dans TEMPLATES_KEY au premier
+// chargement pour donner un point de départ à un nouvel utilisateur.
+export const BUILTIN_TEMPLATES:WorkoutTemplate[]=[
+ {id:'tpl_upper',name:'Haut du corps',exercises:[
+  ref('Pectoraux','Développé couché'),ref('Dos','Tirage vertical'),ref('Épaules','Développé épaules'),
+  ref('Dos','Rowing machine'),ref('Bras','Curl incliné'),ref('Bras','Extension triceps'),
+ ]},
+ {id:'tpl_lower',name:'Bas du corps',exercises:[
+  ref('Jambes','Hack squat'),ref('Jambes','Fentes bulgares'),ref('Jambes','Leg curl'),
+  ref('Jambes','Leg extension'),ref('Jambes','Mollets'),ref('L5-S1','Pont fessier'),
+ ]},
+ {id:'tpl_push',name:'Push (Pecs/Épaules/Triceps)',exercises:[
+  ref('Pectoraux','Développé couché'),ref('Pectoraux','Écarté poulie bas→haut'),ref('Épaules','Développé épaules'),
+  ref('Épaules','Élévations latérales'),ref('Bras','Extension triceps'),
+ ]},
+ {id:'tpl_pull',name:'Pull (Dos/Biceps)',exercises:[
+  ref('Dos','Tirage vertical'),ref('Dos','Rowing machine'),ref('Dos','Rowing poitrine'),
+  ref('Dos','Reverse fly'),ref('Bras','Curl incliné'),
+ ]},
+ {id:'tpl_full',name:'Full Body',exercises:[
+  ref('Pectoraux','Développé couché'),ref('Dos','Tirage vertical'),ref('Jambes','Hack squat'),
+  ref('Épaules','Développé épaules'),ref('Bras','Curl incliné'),ref('Bras','Extension triceps'),
+  ref('L5-S1','Dead bug'),ref('Jambes','Fentes bulgares'),
+ ]},
+ {id:'tpl_l5s1',name:'L5-S1 (renforcement)',exercises:sessionData['L5-S1'].map(e=>ref('L5-S1',e.name))},
+]
+
+export const DEFAULT_SCHEDULE:DayPlan[]=['tpl_upper','tpl_lower','tpl_push','tpl_pull','tpl_full','tpl_l5s1','Repos']
+export const readSchedule=():DayPlan[]=>{const s=readJSON<DayPlan[]>(SCHEDULE_KEY,DEFAULT_SCHEDULE);return s.length===7?s:DEFAULT_SCHEDULE}
+
+// Garantit qu'un nouvel utilisateur (TEMPLATES_KEY vide) démarre avec les
+// templates intégrés plutôt qu'une bibliothèque "Mes séances" vide — appelé
+// une fois au chargement de l'app (voir V9App.tsx).
+export const ensureBuiltinTemplates=()=>{
+ const existing=readTemplates()
+ if(existing.length===0) writeTemplates(BUILTIN_TEMPLATES)
 }
+ensureBuiltinTemplates()
+
+export const findTemplate=(id:string):WorkoutTemplate|undefined=>readTemplates().find(t=>t.id===id)
+
+// Résout la liste d'exercices d'un template (dans l'ordre), en tolérant un
+// exercice renommé/supprimé de la bibliothèque (ignoré plutôt que de casser
+// toute la séance).
+export const resolveTemplateExercises=(tpl:WorkoutTemplate):LibraryEntry[]=>
+ tpl.exercises.map(r=>exerciseLibrary.find(e=>e.group===r.group&&e.name===r.name)).filter((e):e is LibraryEntry=>!!e)
+
+export const estimateTemplateMinutes=(tpl:WorkoutTemplate):number=>estimateSessionMinutes(resolveTemplateExercises(tpl))
 
 // Avant la première photo réelle, la sheet et l'onglet PHYSIQUE affichent
 // un état vide honnête plutôt que 3 "photos" figées (même image placeholder,

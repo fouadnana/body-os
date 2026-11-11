@@ -5,7 +5,7 @@ test.describe('Persistance versionnée (Phase 1 — fondations)', () => {
     await page.goto('/')
     await page.waitForTimeout(200)
     const version = await page.evaluate(() => localStorage.getItem('bodyos.schema.version'))
-    expect(version).toBe('1')
+    expect(version).toBe('2')
   })
 
   test('corrupted JSON in localStorage does not crash the app, and is backed up instead of being silently destroyed', async ({ page }) => {

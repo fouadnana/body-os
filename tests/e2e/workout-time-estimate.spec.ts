@@ -1,35 +1,30 @@
 import { test, expect } from '@playwright/test'
-import { seedTodayGroup } from './helpers'
+import { PECTORAUX_EXERCISES, seedTodayTemplate } from './helpers'
 
 test.describe('Workout — estimation réelle du temps de séance', () => {
   test('the estimated total time varies with the number of exercises, not a fixed 32 min', async ({ page }) => {
     // Regression: "~ 32 min" was a literal hardcoded string, identical for
     // every muscle group and every custom template regardless of how many
     // exercises or how much rest they actually prescribe.
-    await seedTodayGroup(page, 'Pectoraux')
+    await seedTodayTemplate(page)
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     const pecText = await page.locator('.v982SessionHeading em').textContent()
     expect(pecText).toMatch(/5 exercices · ~ \d+ min/)
     expect(pecText).not.toContain('32 min')
 
-    await page.locator('.v94MuscleTabs button', { hasText: 'L5-S1' }).click()
+    // L5-S1 exercises use much shorter (bodyweight) rest periods, so a
+    // template made of those must show a different estimate than Pectoraux's.
+    await seedTodayTemplate(page, [{ group: 'L5-S1', name: 'Planche latérale' }])
+    await page.goto('/')
+    await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     const coreText = await page.locator('.v982SessionHeading em').textContent()
-    // L5-S1 exercises use much shorter (bodyweight) rest periods, so the
-    // estimate must differ from Pectoraux's
     expect(coreText).not.toBe(pecText)
   })
 
   test('a shorter custom template shows a shorter estimate than the standard session', async ({ page }) => {
-    await seedTodayGroup(page, 'Pectoraux')
+    await seedTodayTemplate(page, [PECTORAUX_EXERCISES[3]]) // Dips only
     await page.goto('/')
-    await page.evaluate(() => {
-      localStorage.setItem('bodyos.templates.v1', JSON.stringify([
-        { id: 't1', name: 'Push léger', group: 'Pectoraux', exerciseNames: ['Dips'] },
-      ]))
-      localStorage.setItem('bodyos.templates.active.v1', JSON.stringify({ Pectoraux: 't1' }))
-    })
-    await page.reload()
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     const text = await page.locator('.v982SessionHeading em').textContent()
     expect(text).toMatch(/1 exercices · ~ \d+ min/)
@@ -38,7 +33,7 @@ test.describe('Workout — estimation réelle du temps de séance', () => {
   })
 
   test('the remaining-time bar and minutes update as exercises are completed', async ({ page }) => {
-    await seedTodayGroup(page, 'Pectoraux')
+    await seedTodayTemplate(page)
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     const before = await page.locator('.v9Remaining b').textContent()
@@ -58,15 +53,8 @@ test.describe('Workout — estimation réelle du temps de séance', () => {
   })
 
   test('finishing every exercise brings the remaining estimate to 0 min and the bar to 100%', async ({ page }) => {
-    await seedTodayGroup(page, 'Pectoraux')
+    await seedTodayTemplate(page, [PECTORAUX_EXERCISES[3]]) // Dips only
     await page.goto('/')
-    await page.evaluate(() => {
-      localStorage.setItem('bodyos.templates.v1', JSON.stringify([
-        { id: 't1', name: 'Solo', group: 'Pectoraux', exerciseNames: ['Dips'] },
-      ]))
-      localStorage.setItem('bodyos.templates.active.v1', JSON.stringify({ Pectoraux: 't1' }))
-    })
-    await page.reload()
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
     await page.locator('.v9ExerciseActions .pulse').click()

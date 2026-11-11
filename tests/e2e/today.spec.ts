@@ -28,7 +28,7 @@ test.describe('Today', () => {
   test('Entraînement card opens the workout screen for today\'s plan', async ({ page }) => {
     await page.goto('/')
     await page.locator('.v104Train').click()
-    await expect(page.locator('.v94MuscleTabs')).toBeVisible()
+    await expect(page.locator('.v982SessionHeading')).toBeVisible()
   })
 })
 
