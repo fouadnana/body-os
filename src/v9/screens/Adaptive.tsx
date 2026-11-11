@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import type { DailyEntry, Screen } from '../types'
 import { DEFAULT_NUTRITION_SETTINGS } from '../data'
-import { NUTRITION_SETTINGS_KEY, readDailyLog, readJSON, readNutritionDaily, readWorkoutHistory, todayISO, upsertDailyEntry } from '../storage'
-import { computeNutritionAdherence, decideWeeklyVerdict, estimateWeeklyRate, fmt1, fmtDelta, fmtHistoryDate } from '../utils'
+import { NUTRITION_SETTINGS_KEY, readDailyLog, readJSON, readNutritionDaily, readWorkoutHistory, upsertDailyEntry } from '../storage'
+import { computeNutritionAdherence, computeWeekNumber, decideWeeklyVerdict, estimateWeeklyRate, fmt1, fmtDelta, fmtHistoryDate } from '../utils'
 import { InfoSheet } from '../components/Shared'
 
 export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
@@ -46,10 +46,7 @@ export function AdaptiveIntelligence({setScreen}:{setScreen:(s:Screen)=>void}){
  // Numéro de semaine réel depuis la toute première donnée suivie (poids/taille
  // ou séance), plutôt qu'un "SEMAINE 7" figé sans rapport avec l'usage réel.
  const workoutHistory=readWorkoutHistory()
- const allTrackedDates=[...dailyLog.map(e=>e.date),...workoutHistory.map(h=>h.date)]
- const earliestTrackedDate=allTrackedDates.length?allTrackedDates.slice().sort()[0]:todayISO()
- const daysSinceStart=Math.max(0,Math.floor((Date.now()-new Date(earliestTrackedDate+'T00:00:00').getTime())/86400000))
- const weekNumber=Math.floor(daysSinceStart/7)+1
+ const weekNumber=computeWeekNumber(dailyLog,workoutHistory)
 
  // Décision de la semaine : calculée à partir des vraies données plutôt que
  // figée sur "MAINTENIR". Par défaut (données insuffisantes), le moteur ne

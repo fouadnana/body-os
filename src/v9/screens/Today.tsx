@@ -2,12 +2,12 @@
 // corporelles). Extrait de V9App.tsx (Phase 6).
 import { useMemo, useState } from 'react'
 import type { DailyEntry, DayPlan, Meal, MuscleGroup, Screen } from '../types'
-import { DEFAULT_NUTRITION_SETTINGS, meals, muscleGroups, readSchedule } from '../data'
+import { DEFAULT_NUTRITION_SETTINGS, estimateTemplateMinutes, meals, muscleGroups, readSchedule } from '../data'
 import {
  NUTRITION_MEALS_KEY, NUTRITION_SETTINGS_KEY, SCHEDULE_KEY,
- readDailyLog, readJSON, readTemplates, upsertDailyEntry, writeJSON,
+ readDailyLog, readJSON, readTemplates, readWorkoutHistory, upsertDailyEntry, writeJSON,
 } from '../storage'
-import { fmt1, fmtDelta, isRappelDay, mondayIndex } from '../utils'
+import { computeWeekNumber, fmt1, fmtDelta, isRappelDay, mondayIndex } from '../utils'
 import { BottomNav, InfoSheet, ProgramSheet } from '../components/Shared'
 
 export function QuickLogSheet({latest,close,onSave}:{latest:DailyEntry|undefined,close:()=>void,onSave:(patch:Partial<DailyEntry>)=>void}){
@@ -68,9 +68,17 @@ export function Today({setScreen}:{setScreen:(s:Screen)=>void}){
  const waistDelta=latest?.waist!=null?fmtDelta(latest.waist,previous?.waist,'cm'):null
  const plan=schedule[mondayIndex()]
  const planIsRappel=isRappelDay(schedule,mondayIndex())
- const planLabel=plan==='Repos'||plan==='Cardio'?plan:readTemplates().find(t=>t.id===plan)?.name??'Séance'
+ const planTemplate=plan==='Repos'||plan==='Cardio'?undefined:readTemplates().find(t=>t.id===plan)
+ const planLabel=plan==='Repos'||plan==='Cardio'?plan:planTemplate?.name??'Séance'
+ const planMinutes=planTemplate?estimateTemplateMinutes(planTemplate):null
  const saveLog=(patch:Partial<DailyEntry>)=>setLog(upsertDailyEntry(patch))
  const saveSchedule=(s:DayPlan[])=>{writeJSON(SCHEDULE_KEY,s);setSchedule(s)}
+ const weekNumber=computeWeekNumber(log,readWorkoutHistory())
+ const recoveryPct=latest?.recovery!=null?Math.round((latest.recovery-1)/4*100):null
+ const rateMagnitude=Math.abs(nutrition.settings.weeklyRate)
+ const rateDirection=nutrition.settings.weeklyRate<0?'Déficit':nutrition.settings.weeklyRate>0?'Surplus':'Maintenance'
+ const rateIntensity=rateMagnitude<.3?'léger':rateMagnitude<.7?'modéré':'marqué'
+ const planGoalLabel=nutrition.settings.weeklyRate===0?rateDirection:`${rateDirection} ${rateIntensity}`
  return <main className="v104Today" aria-label="BODY OS Today">
    <header className="v104Top">
     <div className="v104Brand"><i></i><span><b>BODY OS</b><small>TON CORPS. TON SYSTÈME.</small></span></div>
@@ -84,6 +92,19 @@ export function Today({setScreen}:{setScreen:(s:Screen)=>void}){
     <button className="v104Metric v104Waist" onClick={()=>setLogOpen(true)}><small>TOUR DE TAILLE</small><b>{latest?.waist!=null?latest.waist:'—'} <em>cm</em></b>{waistDelta&&<strong>{waistDelta}</strong>}<span>{latest?.waist!=null?'toucher pour mettre à jour':'ajouter une mesure'}</span></button>
     <button className="v104Trajectory" onClick={()=>setScreen('adaptive')}><span>TRAJECTOIRE</span><i></i><b>{previous&&latest&&latest.weight!=null&&previous.weight!=null?(latest.weight<=previous.weight?'OPTIMALE':'À SURVEILLER'):'EN ATTENTE'}</b><strong>›</strong></button>
    </section>
+
+   <section className="v104StatsRow">
+    <button onClick={()=>setLogOpen(true)}><small>PAS</small><b>{latest?.steps!=null?latest.steps.toLocaleString('fr-FR'):'—'}</b></button>
+    <button onClick={()=>setScreen('adaptive')}><small>SOMMEIL</small><b>{latest?.sleep!=null?`${latest.sleep}/5`:'—'}</b></button>
+    <button onClick={()=>setScreen('adaptive')}><small>RÉCUP</small><b>{recoveryPct!=null?`${recoveryPct}%`:'—'}</b></button>
+   </section>
+
+   <button className="v104PlanCard" onClick={()=>setScreen('adaptive')}>
+    <div><small>PLAN ACTUEL</small><b>Adaptive Sèche</b><span>Semaine {weekNumber} · {planGoalLabel}</span></div>
+   </button>
+   <button className="v104NextSession" onClick={()=>plan==='Cardio'?setCardioOpen(true):setScreen('workout')}>
+    <span><small>PROCHAINE SÉANCE</small><b>{planLabel}{planMinutes!=null&&<em> · ~{planMinutes} min</em>}</b></span><strong>▶</strong>
+   </button>
 
    <section className="v104TodayBlock">
     <h2>AUJOURD'HUI</h2>

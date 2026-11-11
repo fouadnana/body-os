@@ -30,6 +30,51 @@ test.describe('Today', () => {
     await page.locator('.v104Train').click()
     await expect(page.locator('.v982SessionHeading')).toBeVisible()
   })
+
+  test('PAS/SOMMEIL/RÉCUP row shows an honest empty state with no data, then the real values once logged', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('.v104StatsRow button').nth(0).locator('b')).toHaveText('—')
+    await expect(page.locator('.v104StatsRow button').nth(1).locator('b')).toHaveText('—')
+    await expect(page.locator('.v104StatsRow button').nth(2).locator('b')).toHaveText('—')
+
+    const today = new Date().toISOString().slice(0, 10)
+    await page.evaluate((date) => localStorage.setItem('bodyos.daily.log.v1', JSON.stringify([
+      { date, steps: 8420, sleep: 4, recovery: 4 },
+    ])), today)
+    await page.reload()
+    await expect(page.locator('.v104StatsRow button').nth(0).locator('b')).toHaveText('8 420')
+    await expect(page.locator('.v104StatsRow button').nth(1).locator('b')).toHaveText('4/5')
+    // recovery 4/5 → (4-1)/4*100 = 75%, same formula as Adaptive Sèche's signal
+    await expect(page.locator('.v104StatsRow button').nth(2).locator('b')).toHaveText('75%')
+  })
+
+  test('the Plan actuel card shows the real week number and the configured goal direction/intensity', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('.v104PlanCard')).toContainText('Semaine 1')
+    await expect(page.locator('.v104PlanCard')).toContainText('Déficit modéré') // default weeklyRate is -0.55
+
+    const seventeenDaysAgo = new Date()
+    seventeenDaysAgo.setDate(seventeenDaysAgo.getDate() - 17)
+    await page.evaluate((iso) => localStorage.setItem('bodyos.daily.log.v1', JSON.stringify([{ date: iso, weight: 90 }])), seventeenDaysAgo.toISOString().slice(0, 10))
+    await page.reload()
+    await expect(page.locator('.v104PlanCard')).toContainText('Semaine 3')
+  })
+
+  test('the Prochaine séance card shows the real scheduled template name and a non-fixed duration', async ({ page }) => {
+    await page.goto('/')
+    const planText = await page.locator('.v104NextSession b').textContent()
+    test.skip(planText === 'Repos' || planText === 'Cardio', 'today is Repos/Cardio in the default schedule — nothing to assert here')
+
+    const expectedName = await page.evaluate(() => {
+      const DEFAULT_SCHEDULE = ['tpl_upper', 'tpl_lower', 'tpl_push', 'tpl_pull', 'tpl_full', 'tpl_l5s1', 'Repos']
+      const schedule = JSON.parse(localStorage.getItem('bodyos.schedule.v1') || 'null') ?? DEFAULT_SCHEDULE
+      const templates = JSON.parse(localStorage.getItem('bodyos.templates.v1') || '[]')
+      const todayIdx = (new Date().getDay() + 6) % 7
+      return templates.find((t: { id: string }) => t.id === schedule[todayIdx])?.name
+    })
+    await expect(page.locator('.v104NextSession b')).toContainText(expectedName!)
+    await expect(page.locator('.v104NextSession b')).toContainText('min')
+  })
 })
 
 test.describe('Plus (Phase 1 — remplace l\'onglet Coach)', () => {

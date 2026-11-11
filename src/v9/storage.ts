@@ -5,6 +5,7 @@ import type { DailyEntry, MuscleGroup, NutritionDaily, WorkoutHistoryEntry, Work
 export const NUTRITION_SETTINGS_KEY='bodyos.nutrition.settings.v1'
 export const NUTRITION_MEALS_KEY='bodyos.nutrition.meals.v1'
 export const RECIPE_FAVORITES_KEY='bodyos.recipes.favorites.v1'
+export const EXERCISE_FAVORITES_KEY='bodyos.exercises.favorites.v1'
 export const NUTRITION_DAILY_KEY='bodyos.nutrition.daily.v1'
 export const WORKOUT_DONE_KEY='bodyos.workout.done.v1'
 export const WORKOUT_LOG_KEY='bodyos.workout.log.v1'

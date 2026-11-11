@@ -1570,6 +1570,30 @@ body{
 .v104Rappel{margin-top:4px;font-size:6px;letter-spacing:.06em;color:var(--c-b8ef4f);background:rgba(184,239,79,.14);border-radius:5px;padding:2px 6px}
 .v104Kpis button{font:inherit;cursor:pointer}
 .v104Kpis span{font-size:8px;color:#b5c5c8;margin-top:auto}
+.v104StatsRow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 14px 0}
+.v104StatsRow button{height:52px;border-radius:14px;border:1px solid rgba(203,244,245,.18);background:rgba(21,55,65,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:inherit;color:inherit;cursor:pointer}
+.v104StatsRow small{font-size:7px;color:#a9bdc2;letter-spacing:.04em}
+.v104StatsRow b{font-size:13px;font-weight:650;color:#edfafa}
+.v104PlanCard{
+  width:calc(100% - 28px);margin:12px 14px 0;padding:12px 15px;
+  border:1px solid rgba(126,240,238,.4);border-radius:18px;
+  background:linear-gradient(90deg,rgba(8,39,47,.95),rgba(13,58,65,.85));
+  color:#edfafa;display:block;text-align:left;font:inherit;cursor:pointer;
+}
+.v104PlanCard small{display:block;font-size:7px;color:#9fbac0;letter-spacing:.04em}
+.v104PlanCard b{display:block;font-size:14px;margin-top:3px}
+.v104PlanCard span{display:block;font-size:9px;color:#9fbac0;margin-top:3px}
+.v104NextSession{
+  width:calc(100% - 28px);height:54px;margin:8px 14px 0;padding:0 15px;
+  border:1px solid rgba(203,244,245,.18);border-radius:16px;
+  background:rgba(21,55,65,.55);color:#edfafa;display:flex;align-items:center;
+  text-align:left;font:inherit;cursor:pointer;
+}
+.v104NextSession span{flex:1;display:block}
+.v104NextSession small{display:block;font-size:7px;color:#9fbac0;letter-spacing:.04em}
+.v104NextSession b{display:block;font-size:11px;margin-top:2px}
+.v104NextSession b em{font-style:normal;color:#9fbac0;font-size:9px}
+.v104NextSession strong{font-size:14px;color:#58eff0}
 .v104AdaptiveCard{
   width:calc(100% - 28px);height:58px;margin:12px 14px 8px;padding:0 15px;
   border:1px solid #4ee7e7;border-radius:22px;
@@ -1631,6 +1655,47 @@ body{
 .v9LibEmpty{text-align:center;color:var(--c-8fa9b0);font-size:11px;margin-top:30px}
 .v9LibDetailImg{width:100%;height:170px;object-fit:cover;border-radius:12px;cursor:pointer;margin-bottom:6px}
 .v9PickerList{padding:0 14px 14px;max-height:60vh;overflow:auto}
+
+/* ---------- V3 : Bibliothèque — favoris + vue grille ---------- */
+.v9LibToolbar{display:flex;align-items:center;gap:8px;margin:2px 0 10px}
+.v9LibFavFilter{flex:0 0 auto;height:30px;padding:0 10px;border-radius:15px;border:1px solid var(--line);background:rgba(21,55,65,.6);color:var(--c-98b1b7);font-size:9px;letter-spacing:.03em}
+.v9LibFavFilter.active{border-color:rgba(255,210,100,.55);color:#ffd467;background:rgba(255,210,100,.1)}
+.v9LibCount{flex:1;font-size:9px;color:var(--c-8fa9b0);text-align:center}
+.v9LibViewToggle{flex:0 0 auto;display:flex;gap:4px}
+.v9LibViewToggle button{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:rgba(21,55,65,.6);color:var(--c-98b1b7);font-size:13px}
+.v9LibViewToggle button.active{color:var(--cyan);border-color:rgba(126,240,238,.55)}
+.v9LibStar{position:absolute;inset:5px 5px auto auto;font-style:normal;color:var(--c-8fa9b0);font-size:15px;z-index:1;line-height:1}
+.v9LibStar.active{color:#ffd467}
+.v9LibList button{position:relative}
+.v9LibGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.v9LibGrid button{display:flex;flex-direction:column;gap:4px;border-radius:11px;padding:8px;background:rgba(31,66,77,.48);text-align:left}
+.v9LibGrid .v93Thumb{position:relative;width:100%}
+.v9LibGrid .v93Thumb img{width:100%;height:84px;object-fit:cover;border-radius:8px}
+.v9LibGrid small{font-size:8px;color:var(--cyan);text-transform:uppercase;letter-spacing:.04em}
+.v9LibGrid b{font-size:11px;color:var(--c-eef8f8)}
+
+/* ---------- V3 : Fiche exercice (écran plein écran) ---------- */
+.v106Prescription{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.v106Prescription span{display:grid;gap:4px;padding:8px;border:1px solid rgba(203,244,245,.18);background:rgba(34,70,80,.48);border-radius:9px}
+.v106Prescription small{font-size:7px;color:#9bb4ba}
+.v106Prescription b{font-size:11px;color:var(--c-ecffff)}
+.v106FicheTags{display:flex;gap:8px;margin:10px 0}
+.v106FicheTags span{font-size:9px;color:var(--c-98b1b7);text-transform:uppercase;letter-spacing:.04em;padding:4px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(21,55,65,.5)}
+.v106FicheTab{padding-top:10px}
+.v106Progression{margin-top:14px;padding:12px 14px;border-radius:13px;border:1px solid var(--line);background:rgba(21,55,65,.55)}
+.v106Progression header{margin-bottom:6px}
+.v106Progression header b{font-size:10px;letter-spacing:.04em;color:var(--cyan)}
+.v106Progression p{font-size:11px;line-height:1.6;color:var(--c-dff)}
+.v106Progression .v9Load{margin-top:8px}
+.v106FicheActions{display:flex;gap:8px;margin-top:10px}
+.v106FicheActions button{flex:1;height:40px;border-radius:10px}
+.v106FicheActions .v9Outline{border:1px solid var(--line);background:none;color:var(--c-dff)}
+.v106Execution{margin-top:14px}
+.v106Execution header b{font-size:10px;letter-spacing:.04em;color:var(--cyan)}
+.v106Execution ol{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.v106Execution li{display:flex;gap:10px;font-size:11px;line-height:1.5;color:var(--c-dff)}
+.v106Execution li span{flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:rgba(126,240,238,.15);color:var(--cyan);display:grid;place-items:center;font-size:10px}
+.v106FicheMuscles p{font-size:12px;margin:10px 0;color:var(--c-dff)}
 
 /* ---------- Phase 3 : Mes séances (templates) ---------- */
 .v9TemplateGroupList{display:grid;gap:8px;margin:12px 0 18px}

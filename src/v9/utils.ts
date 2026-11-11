@@ -4,6 +4,17 @@ import type { SyntheticEvent } from 'react'
 import type { DailyEntry, DayPlan, ExerciseItem, Ingredient, NutritionDaily, ProgressionSuggestion, WorkoutHistoryEntry } from './types'
 
 export const mondayIndex=(d=new Date())=>(d.getDay()+6)%7
+
+// Numéro de semaine réel depuis la toute première donnée suivie (poids/taille
+// ou séance), plutôt qu'un numéro figé sans rapport avec l'usage réel.
+// Partagé entre Adaptive Sèche et Today.
+export const computeWeekNumber=(dailyLog:DailyEntry[],workoutHistory:WorkoutHistoryEntry[]):number=>{
+ const allTrackedDates=[...dailyLog.map(e=>e.date),...workoutHistory.map(h=>h.date)]
+ if(!allTrackedDates.length) return 1
+ const earliestTrackedDate=allTrackedDates.slice().sort()[0]
+ const daysSinceStart=Math.max(0,Math.floor((Date.now()-new Date(earliestTrackedDate+'T00:00:00').getTime())/86400000))
+ return Math.floor(daysSinceStart/7)+1
+}
 export const isRappelDay=(schedule:DayPlan[],idx:number)=>{
  const g=schedule[idx]
  if(g==='Repos'||g==='Cardio') return false
