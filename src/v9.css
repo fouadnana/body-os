@@ -483,7 +483,7 @@ body{
   box-shadow:0 10px 28px rgba(0,0,0,.24);
   pointer-events:none;
 }
-.v93TimerControls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px}.v93TimerControls button{height:38px;border-radius:9px;border:1px solid rgba(180,245,245,.25);background:rgba(42,58,81,.56);color:var(--c-dff)}
+.v93TimerControls{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 0 14px}.v93TimerControls button{height:38px;border-radius:9px;border:1px solid rgba(180,245,245,.25);background:rgba(42,58,81,.56);color:var(--c-dff)}
 .v9Segments button{border:0;background:transparent;color:#9eb5bb;font-size:7px;padding:9px 7px;border-radius:8px}.v9Segments button.active{background:rgba(138,245,244,.13);color:var(--c-a9ffff);box-shadow:inset 0 -1px 0 var(--c-83efef)}
 .v93MealEdit{display:grid;grid-template-columns:1fr auto 1fr;gap:7px;align-items:center;margin:8px 0}.v93MealEdit button{height:36px;border:1px solid rgba(183,241,242,.2);background:rgba(37,54,77,.65);border-radius:8px;color:#def}
 .v9Alternatives button{border:1px solid transparent;background:transparent;padding:0;border-radius:9px;overflow:hidden;color:inherit}.v9Alternatives button.active{border-color:var(--c-83efef)}
@@ -576,7 +576,7 @@ body{
 .v95MealText b{-webkit-line-clamp:3!important;font-size:5.8px!important}
 .v9MealList button{min-height:80px!important}
 
-.v97ModeTabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 8px;padding:3px;border:1px solid rgba(188,239,240,.16);border-radius:11px;background:rgba(20,35,59,.42)}
+.v97ModeTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:2px 0 8px;padding:3px;border:1px solid rgba(188,239,240,.16);border-radius:11px;background:rgba(20,35,59,.42)}
 .v97ModeTabs button{height:34px;border:0;border-radius:8px;background:transparent;color:#8faab1;font-size:7px;font-weight:800}
 .v97ModeTabs button.active{background:linear-gradient(90deg,rgba(100,225,229,.22),rgba(120,244,239,.12));color:#aaffff;box-shadow:inset 0 -1px 0 var(--c-7cecef)}
 
@@ -1031,6 +1031,7 @@ body{
 }
 
 /* ---------- HISTORY: Golden right-middle screen ---------- */
+.v97Segments2{grid-template-columns:repeat(2,1fr)!important}
 .v9Segments{
   height:34px!important;
   margin:4px 0 10px!important;

@@ -177,7 +177,7 @@ function RestOverlay({onLeave,onHistory}:{onLeave:()=>void,onHistory:()=>void}){
  }
  const leave=()=>{localStorage.removeItem(REST_DEADLINE_KEY);onLeave()}
  const goHistory=()=>{localStorage.removeItem(REST_DEADLINE_KEY);onHistory()}
- return <div className="v9SheetBack"><div className="v9RestSheet v9Rest"><header className="v9TitleBar"><button onClick={leave}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={leave}>Passer</button></header><section className="v9Timer"><div><b>{fmtTimer(sec)}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>adjust(-15000)}>−15 s</button><button onClick={()=>adjust(15000)}>+15 s</button></div><button className="v9NextSet" onClick={leave}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={goHistory}>VOIR HISTORIQUE</button></div></div>
+ return <div className="v9SheetBack"><div className="v9RestSheet v9Rest"><header className="v9TitleBar"><button onClick={leave}>‹</button><div><b>REPOS</b><small>&nbsp;</small></div><button onClick={leave}>Passer</button></header><section className="v9Timer"><div><b>{fmtTimer(sec)}</b><small>Reprends pour ta prochaine<br/>série</small></div></section><div className="v93TimerControls"><button onClick={()=>adjust(30000)}>+30 s</button></div><button className="v9NextSet" onClick={leave}><span><small>SÉRIE SUIVANTE</small><b>Reprendre l'exercice</b></span><em>RIR 1–2</em><strong>›</strong></button><button className="v9Outline" onClick={goHistory}>VOIR HISTORIQUE</button></div></div>
 }
 
 function History({setView,item}:{setView:(v:WorkoutView)=>void,item:LibraryEntry}){

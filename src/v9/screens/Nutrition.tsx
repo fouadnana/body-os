@@ -48,8 +48,12 @@ function QuickAddMealSheet({close,onAdd}:{close:()=>void,onAdd:(meal:Meal)=>void
 
 export function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
  const [open,setOpen]=useState<Meal|null>(null)
- const [tab,setTab]=useState<'day'|'week'|'month'>('day')
- const [mode,setMode]=useState<'programme'|'recipes'>('programme')
+ // V3 : REPAS/ALIMENTS/MACROS (remplace PROGRAMME/RECETTES + le segment
+ // AUJOURD'HUI/SEMAINE/MOIS) — l'anneau calories/macros devient un en-tête
+ // permanent (plus seulement visible sous REPAS), et SEMAINE/MOIS devient
+ // un sous-réglage de l'onglet MACROS plutôt qu'un 3e onglet de même niveau.
+ const [tab,setTab]=useState<'meals'|'foods'|'macros'>('meals')
+ const [trendRange,setTrendRange]=useState<'week'|'month'>('week')
  const [recipeOpen,setRecipeOpen]=useState<Recipe|null>(null)
  const [toast,setToast]=useState('')
  const [settingsOpen,setSettingsOpen]=useState(false)
@@ -84,7 +88,7 @@ export function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
  const trendPoints=(n:number)=>dailyDates.slice(-n).map(d=>({d:fmtHistoryDate(d).slice(0,5),kcal:dailyNutrition[d].kcal,protein:dailyNutrition[d].protein}))
  const weekPoints=trendPoints(7)
  const monthPoints=trendPoints(30)
- const trendForTab=tab==='week'?weekPoints:monthPoints
+ const trendForTab=trendRange==='week'?weekPoints:monthPoints
  const avgKcal=trendForTab.length?Math.round(trendForTab.reduce((s,p)=>s+p.kcal,0)/trendForTab.length):null
  const avgDeltaVsTarget=avgKcal!=null?avgKcal-settings.calories:null
 
@@ -101,7 +105,7 @@ export function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
    const target=mealState.find(m=>m.name===r.category)||mealState[1]
    const updated:Meal={...target,kcal:r.kcal,img:r.img,protein:r.protein,carbs:r.carbs,fat:r.fat,ingredients:r.ingredients,details:mealDetails(r.ingredients)}
    setMealState(prev=>prev.map(m=>m.name===target.name?updated:m))
-   setRecipeOpen(null); setMode('programme'); setToast(`${r.name} ajouté au programme`)
+   setRecipeOpen(null); setTab('meals'); setToast(`${r.name} ajouté au programme`)
    window.setTimeout(()=>setToast(''),1800)
  }
  const addVisionToMeal=({target,result}:FoodVisionPayload)=>{
@@ -126,53 +130,51 @@ export function Nutrition({setScreen}:{setScreen:(s:Screen)=>void}){
    <button className="v93Dots" onClick={()=>{setDraft(settings);setSettingsOpen(true)}}>•••</button>
   </header>
 
+  <section className="v9NutritionHero">
+   <div className="v9MacroRing"><b>{settings.calories.toLocaleString('fr-FR')}</b><small>kcal cibles</small></div>
+   <div className="v9MacroLegend">
+    <p><i></i><span>PROTÉINES</span><b>{settings.protein} g</b></p>
+    <p><i></i><span>GLUCIDES</span><b>{settings.carbs} g</b></p>
+    <p><i></i><span>LIPIDES</span><b>{settings.fat} g</b></p>
+   </div>
+  </section>
+
   <div className="v97ModeTabs">
-   <button className={mode==='programme'?'active':''} onClick={()=>setMode('programme')}>PROGRAMME</button>
-   <button className={mode==='recipes'?'active':''} onClick={()=>setMode('recipes')}>RECETTES</button>
+   <button className={tab==='meals'?'active':''} onClick={()=>setTab('meals')}>REPAS</button>
+   <button className={tab==='foods'?'active':''} onClick={()=>setTab('foods')}>ALIMENTS</button>
+   <button className={tab==='macros'?'active':''} onClick={()=>setTab('macros')}>MACROS</button>
   </div>
 
-  <button className="v99VisionCTA" onClick={()=>setVisionOpen(true)}><span>✦</span><div><small>AI FOOD VISION</small><b>ANALYSER MON REPAS</b></div><em>PHOTO → MACROS</em></button>
-
-  {mode==='programme'?<>
-   <div className="v9Segments">
-    <button className={tab==='day'?'active':''} onClick={()=>setTab('day')}>AUJOURD'HUI</button>
-    <button className={tab==='week'?'active':''} onClick={()=>setTab('week')}>SEMAINE</button>
-    <button className={tab==='month'?'active':''} onClick={()=>setTab('month')}>MOIS</button>
-   </div>
-
-   <section className="v9NutritionHero">
-    <div className="v9MacroRing"><b>{settings.calories.toLocaleString('fr-FR')}</b><small>kcal cibles</small></div>
-    <div className="v9MacroLegend">
-     <p><i></i><span>PROTÉINES</span><b>{settings.protein} g</b></p>
-     <p><i></i><span>GLUCIDES</span><b>{settings.carbs} g</b></p>
-     <p><i></i><span>LIPIDES</span><b>{settings.fat} g</b></p>
-    </div>
-   </section>
-
-   {tab==='day'?<section className="v9MealList">
+  {tab==='meals'?<>
+   <button className="v99VisionCTA" onClick={()=>setVisionOpen(true)}><span>✦</span><div><small>AI FOOD VISION</small><b>ANALYSER MON REPAS</b></div><em>PHOTO → MACROS</em></button>
+   <section className="v9MealList">
     <h3>REPAS DU JOUR</h3>
     {mealState.map(m=><button key={m.name} onClick={()=>setOpen(m)}>
      <span className="v95MealText"><small>{m.name}</small><b>{mealDetails(m.ingredients)}</b><em>{m.time}</em></span>
      <img src={m.img}/><strong>{m.kcal} kcal</strong>
     </button>)}
-   </section>:<section className="v9HistoryChart v9NutritionTrend">
-    <h3>{tab==='week'?'APERÇU SEMAINE':'TENDANCE DU MOIS'}</h3>
-    {trendForTab.length?<>
-     <ResponsiveContainer width="100%" height={180}><LineChart data={trendForTab}>
-      <Line dataKey="kcal" stroke="#75eef0" strokeWidth={3} dot={{r:3,fill:'#d8fcff'}}/>
-      <ReferenceLine y={settings.calories} stroke="#b6ef49" strokeDasharray="4 4"/>
-      <XAxis dataKey="d" tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/>
-      <YAxis hide domain={['dataMin - 100','dataMax + 100']}/>
-     </LineChart></ResponsiveContainer>
-     <div className="v94PerfStats">
-      <span><small>MOYENNE</small><b>{avgKcal} kcal/j</b></span>
-      <span><small>JOURS SUIVIS</small><b>{trendForTab.length}</b></span>
-      <span><small>ÉCART VS OBJECTIF</small><b>{avgDeltaVsTarget!=null?`${avgDeltaVsTarget>0?'+':''}${avgDeltaVsTarget} kcal`:'—'}</b></span>
-     </div>
-    </>:<p className="v94NoData">Pas encore assez de jours suivis. Reviens demain pour voir ta tendance {tab==='week'?'hebdomadaire':'mensuelle'}.</p>}
-   </section>}
-   {tab==='day'&&<button className="v9Fab" onClick={()=>setQuickAddOpen(true)}>＋</button>}
-  </>:<>
+   </section>
+   <button className="v9Fab" onClick={()=>setQuickAddOpen(true)}>＋</button>
+  </>:tab==='macros'?<section className="v9HistoryChart v9NutritionTrend">
+   <div className="v9Segments v97Segments2">
+    <button className={trendRange==='week'?'active':''} onClick={()=>setTrendRange('week')}>SEMAINE</button>
+    <button className={trendRange==='month'?'active':''} onClick={()=>setTrendRange('month')}>MOIS</button>
+   </div>
+   <h3>{trendRange==='week'?'APERÇU SEMAINE':'TENDANCE DU MOIS'}</h3>
+   {trendForTab.length?<>
+    <ResponsiveContainer width="100%" height={180}><LineChart data={trendForTab}>
+     <Line dataKey="kcal" stroke="#75eef0" strokeWidth={3} dot={{r:3,fill:'#d8fcff'}}/>
+     <ReferenceLine y={settings.calories} stroke="#b6ef49" strokeDasharray="4 4"/>
+     <XAxis dataKey="d" tick={{fill:'#90a8b2',fontSize:9}} axisLine={false}/>
+     <YAxis hide domain={['dataMin - 100','dataMax + 100']}/>
+    </LineChart></ResponsiveContainer>
+    <div className="v94PerfStats">
+     <span><small>MOYENNE</small><b>{avgKcal} kcal/j</b></span>
+     <span><small>JOURS SUIVIS</small><b>{trendForTab.length}</b></span>
+     <span><small>ÉCART VS OBJECTIF</small><b>{avgDeltaVsTarget!=null?`${avgDeltaVsTarget>0?'+':''}${avgDeltaVsTarget} kcal`:'—'}</b></span>
+    </div>
+   </>:<p className="v94NoData">Pas encore assez de jours suivis. Reviens demain pour voir ta tendance {trendRange==='week'?'hebdomadaire':'mensuelle'}.</p>}
+  </section>:<>
    <section className="v97Recipes">
     <div className="v97RecipeHead"><div><small>RECETTES INTELLIGENTES</small><b>Compatibles avec ta sèche</b></div><span>{filteredRecipes.length} recette{filteredRecipes.length>1?'s':''}</span></div>
     <div className="v97RecipeFilters">

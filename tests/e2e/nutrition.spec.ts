@@ -2,26 +2,37 @@ import { test, expect } from '@playwright/test'
 import { goNav, collectRealErrors } from './helpers'
 
 test.describe('Nutrition', () => {
-  test('loads with day/week/month tabs and no console errors', async ({ page }) => {
+  test('loads on REPAS, MACROS has SEMAINE/MOIS sub-tabs, no console errors', async ({ page }) => {
     const errors = collectRealErrors(page)
     await page.goto('/')
     await goNav(page, 'Nutrition')
-    await expect(page.locator('.v9Segments button')).toHaveCount(3)
-    await expect(page.locator('.v9Segments button.active')).toHaveText("AUJOURD'HUI")
-    await page.locator('.v9Segments button', { hasText: 'SEMAINE' }).click()
+    await expect(page.locator('.v97ModeTabs button.active')).toHaveText('REPAS')
+    await expect(page.locator('.v9MealList')).toBeVisible()
+
+    await page.locator('.v97ModeTabs button', { hasText: 'MACROS' }).click()
+    await expect(page.locator('.v9Segments button')).toHaveCount(2)
+    await expect(page.locator('.v9Segments button.active')).toHaveText('SEMAINE')
     await expect(page.locator('.v9NutritionTrend h3')).toContainText('APERÇU SEMAINE')
     await page.locator('.v9Segments button', { hasText: 'MOIS' }).click()
     await expect(page.locator('.v9NutritionTrend h3')).toContainText('TENDANCE DU MOIS')
     expect(errors).toEqual([])
   })
 
-  test('programme/recettes mode toggle switches content', async ({ page }) => {
+  test('REPAS/ALIMENTS/MACROS tabs switch content, the calorie ring stays visible throughout', async ({ page }) => {
     await page.goto('/')
     await goNav(page, 'Nutrition')
     await expect(page.locator('.v9MealList')).toBeVisible()
-    await page.locator('.v97ModeTabs button', { hasText: 'RECETTES' }).click()
+    await expect(page.locator('.v9MacroRing')).toBeVisible()
+
+    await page.locator('.v97ModeTabs button', { hasText: 'ALIMENTS' }).click()
     await expect(page.locator('.v97Recipes')).toBeVisible()
-    await page.locator('.v97ModeTabs button', { hasText: 'PROGRAMME' }).click()
+    await expect(page.locator('.v9MacroRing')).toBeVisible()
+
+    await page.locator('.v97ModeTabs button', { hasText: 'MACROS' }).click()
+    await expect(page.locator('.v9NutritionTrend')).toBeVisible()
+    await expect(page.locator('.v9MacroRing')).toBeVisible()
+
+    await page.locator('.v97ModeTabs button', { hasText: 'REPAS' }).click()
     await expect(page.locator('.v9MealList')).toBeVisible()
   })
 

@@ -11,6 +11,7 @@ test.describe('Nutrition — tendance SEMAINE/MOIS (plus un simple changement de
   test('without history, SEMAINE/MOIS show a real empty state, not an identical meal list', async ({ page }) => {
     await page.goto('/')
     await goNav(page, 'Nutrition')
+    await page.locator('.v97ModeTabs button', { hasText: 'MACROS' }).click()
     await page.locator('.v9Segments button', { hasText: 'SEMAINE' }).click()
     // today's own live total still counts as 1 day tracked, so seed nothing and expect either
     // the empty state or a 1-point chart — but crucially, never the day's meal list
@@ -24,6 +25,7 @@ test.describe('Nutrition — tendance SEMAINE/MOIS (plus un simple changement de
       '2026-10-29': { kcal: 2400, protein: 180, carbs: 250, fat: 65 },
     })
     await goNav(page, 'Nutrition')
+    await page.locator('.v97ModeTabs button', { hasText: 'MACROS' }).click()
     await page.locator('.v9Segments button', { hasText: 'SEMAINE' }).click()
     await expect(page.locator('.v9NutritionTrend .recharts-line')).toBeVisible()
     await expect(page.locator('.v94PerfStats')).toContainText('JOURS SUIVIS')
@@ -35,6 +37,7 @@ test.describe('Nutrition — tendance SEMAINE/MOIS (plus un simple changement de
       '2026-10-28': { kcal: 2600, protein: 200, carbs: 280, fat: 80 },
     })
     await goNav(page, 'Nutrition')
+    await page.locator('.v97ModeTabs button', { hasText: 'MACROS' }).click()
     await page.locator('.v9Segments button', { hasText: 'SEMAINE' }).click()
     // today's own snapshot (default meals) is also included, so just assert the visible shape
     await expect(page.locator('.v94PerfStats span').first()).toContainText('kcal/j')
@@ -48,6 +51,7 @@ test.describe('Nutrition — tendance SEMAINE/MOIS (plus un simple changement de
     }
     await seedDailyNutrition(page, daily)
     await goNav(page, 'Nutrition')
+    await page.locator('.v97ModeTabs button', { hasText: 'MACROS' }).click()
     await page.locator('.v9Segments button', { hasText: 'SEMAINE' }).click()
     const weekDays = await page.locator('.v94PerfStats span').nth(1).locator('b').textContent()
     await page.locator('.v9Segments button', { hasText: 'MOIS' }).click()
@@ -55,7 +59,7 @@ test.describe('Nutrition — tendance SEMAINE/MOIS (plus un simple changement de
     expect(Number(monthDays)).toBeGreaterThan(Number(weekDays))
   })
 
-  test('the AUJOURD\'HUI tab still shows the real meal list, unaffected by the trend view', async ({ page }) => {
+  test('the REPAS tab still shows the real meal list, unaffected by the trend view', async ({ page }) => {
     await page.goto('/')
     await goNav(page, 'Nutrition')
     await expect(page.locator('.v9MealList')).toBeVisible()
@@ -63,10 +67,10 @@ test.describe('Nutrition — tendance SEMAINE/MOIS (plus un simple changement de
     await expect(page.locator('.v9Fab')).toBeVisible()
   })
 
-  test('the quick-add FAB is hidden on SEMAINE/MOIS (it only adds to today)', async ({ page }) => {
+  test('the quick-add FAB is hidden on MACROS (it only adds to today)', async ({ page }) => {
     await page.goto('/')
     await goNav(page, 'Nutrition')
-    await page.locator('.v9Segments button', { hasText: 'SEMAINE' }).click()
+    await page.locator('.v97ModeTabs button', { hasText: 'MACROS' }).click()
     await expect(page.locator('.v9Fab')).toHaveCount(0)
   })
 })

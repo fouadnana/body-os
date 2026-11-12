@@ -4,7 +4,7 @@ import { goNav } from './helpers'
 const openRecipes = async (page: import('@playwright/test').Page) => {
   await page.goto('/')
   await goNav(page, 'Nutrition')
-  await page.locator('.v97ModeTabs button', { hasText: 'RECETTES' }).click()
+  await page.locator('.v97ModeTabs button', { hasText: 'ALIMENTS' }).click()
 }
 
 test.describe('Nutrition — filtres de recettes et favoris', () => {
@@ -52,7 +52,7 @@ test.describe('Nutrition — filtres de recettes et favoris', () => {
 
     await page.reload()
     await page.locator('.v9Bottom button', { hasText: 'Nutrition' }).click()
-    await page.locator('.v97ModeTabs button', { hasText: 'RECETTES' }).click()
+    await page.locator('.v97ModeTabs button', { hasText: 'ALIMENTS' }).click()
     await page.locator('.v97RecipeFilters button', { hasText: 'FAVORIS' }).click()
     await expect(page.locator('.v97RecipeGrid button')).toHaveCount(1)
   })

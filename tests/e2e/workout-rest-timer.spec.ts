@@ -52,17 +52,18 @@ test.describe('Workout — minuteur de repos (Phase 2, bandeau inline, échéanc
     expect(stored).toBeNull()
   })
 
-  test('+15s / -15s adjust the real deadline, confirmed after a further fast-forward', async ({ page }) => {
+  test('+30 s adjusts the real deadline, confirmed after a further fast-forward', async ({ page }) => {
     await page.clock.install({ time: new Date('2026-01-01T10:00:00Z') })
     await page.goto('/')
     await page.locator('.v9Bottom button', { hasText: 'Séance' }).click()
     await page.locator('.v9ExerciseList button').first().click()
     await page.locator('.v9ExerciseActions .pulse').click()
     await expect(page.locator('.v9SheetBack .v9Rest')).toBeVisible({ timeout: 2000 })
-    await page.locator('.v93TimerControls button', { hasText: '+15' }).click()
-    await expect(page.locator('.v9Timer b')).toHaveText('01:00')
+    await expect(page.locator('.v93TimerControls button')).toHaveCount(1)
+    await page.locator('.v93TimerControls button', { hasText: '+30' }).click()
+    await expect(page.locator('.v9Timer b')).toHaveText('01:15')
     await page.clock.fastForward('00:15')
-    await expect(page.locator('.v9Timer b')).toHaveText('00:45')
+    await expect(page.locator('.v9Timer b')).toHaveText('01:00')
   })
 
   test('"Reprendre l\'exercice" closes the overlay and leaves the exercise screen untouched', async ({ page }) => {
