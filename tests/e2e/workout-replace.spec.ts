@@ -20,7 +20,7 @@ test.describe('Workout — remplacement d\'exercice (Phase 3)', () => {
     await page.locator('.v93Dots').click()
     await page.locator('button', { hasText: "Remplacer l'exercice" }).click()
     const names = await page.locator('.v9PickerList button b').allTextContents()
-    expect(names).toHaveLength(4) // Pectoraux has 5, minus the current one
+    expect(names).toHaveLength(6) // Pectoraux has 7, minus the current one
     expect(names).not.toContain('Développé incliné')
     expect(names).toContain('Dips')
   })

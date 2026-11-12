@@ -44,6 +44,8 @@ export const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Développé couché',equipment:'Barre',sets:'3 séries',img:'https://img.youtube.com/vi/RsobeWfbBcY/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=RsobeWfbBcY',target:'Pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'5–8',rir:'1–2',rest:'2:30–3:30'},
   {name:'Dips',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/4la6BkUBLgo/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=4la6BkUBLgo',target:'Pectoraux · Triceps',secondary:'Deltoïdes ant.',reps:'6–12',rir:'1–2',rest:'2:00–3:00'},
   {name:'Écartés couchés',equipment:'Haltères',sets:'3 séries',img:'https://img.youtube.com/vi/QwuUZ5wgQOk/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=QwuUZ5wgQOk',target:'Pectoraux',secondary:'Deltoïdes ant.',reps:'10–15',rir:'1–2',rest:'1:30–2:00'},
+  {name:'Développé poitrine (machine)',equipment:'Machine',sets:'3 séries',img:'/body-os/demo-chest-press-approved.jpg',video:'https://www.youtube.com/results?search_query=chest+press+machine+technique',target:'Pectoraux',secondary:'Triceps · Deltoïdes ant.',reps:'8–12',rir:'1–2',rest:'2:00'},
+  {name:'Pompes',equipment:'Poids du corps',sets:'3 séries',img:'/body-os/anatomy-chest-press.svg',video:'https://www.youtube.com/results?search_query=pompes+technique+pectoraux',target:'Pectoraux',secondary:'Triceps · Deltoïdes ant. · Gainage',reps:'10–20',rir:'1–2',rest:'1:30–2:00'},
  ],
  Dos:[
   {name:'Tirage vertical',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/VXKfH6ciEBI/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=VXKfH6ciEBI',target:'Grand dorsal',secondary:'Biceps',reps:'6–10',rir:'1–2',rest:'2:00–3:00'},
@@ -51,6 +53,8 @@ export const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Rowing poitrine',equipment:'Machine',sets:'2 séries',img:'https://img.youtube.com/vi/0UBRfiO4zDs/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=0UBRfiO4zDs',target:'Rhomboïdes · Trapèzes',secondary:'Biceps',reps:'8–12',rir:'1–2',rest:'2:00'},
   {name:'Pulldown unilatéral',equipment:'Poulie',sets:'2 séries',img:'https://img.youtube.com/vi/iVfZB4YmLRM/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=iVfZB4YmLRM',target:'Grand dorsal',secondary:'Biceps',reps:'10–15',rir:'1–2',rest:'1:30'},
   {name:'Reverse fly',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/buuYPLVXsJg/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=buuYPLVXsJg',target:'Deltoïdes post.',secondary:'Haut du dos',reps:'12–20',rir:'1–2',rest:'1:30'},
+  {name:'Tractions',equipment:'Poids du corps',sets:'3 séries',img:'/body-os/demo-lat-pulldown.svg',video:'https://www.youtube.com/results?search_query=tractions+pull+up+technique',target:'Grand dorsal',secondary:'Biceps · Avant-bras',reps:'5–10',rir:'1–2',rest:'2:00–2:30'},
+  {name:'Rowing unilatéral poulie basse',equipment:'Poulie',sets:'3 séries',img:'/body-os/demo-one-arm-cable.svg',video:'https://www.youtube.com/results?search_query=one+arm+cable+row+technique',target:'Dos moyen',secondary:'Biceps · Deltoïdes post.',reps:'10–12 / bras',rir:'1–2',rest:'1:30–2:00'},
  ],
  Épaules:[
   {name:'Développé épaules',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/WvLMauqrnK8/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=WvLMauqrnK8',target:'Deltoïdes ant. · moyen',secondary:'Triceps',reps:'6–10',rir:'1–2',rest:'2:00–3:00'},
@@ -58,6 +62,8 @@ export const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Élévations poulie',equipment:'Poulie',sets:'3 séries',img:'https://img.youtube.com/vi/zpbm-xRHB6k/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=zpbm-xRHB6k',target:'Deltoïde moyen',secondary:'—',reps:'12–20',rir:'1–2',rest:'1:15'},
   {name:'Reverse pec deck',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/Z84HkxGCBqQ/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=Z84HkxGCBqQ',target:'Deltoïdes post.',secondary:'Haut du dos',reps:'12–20',rir:'1–2',rest:'1:30'},
   {name:'Élévation frontale',equipment:'Poulie',sets:'2 séries',img:'https://img.youtube.com/vi/KjqHI59JizY/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=KjqHI59JizY',target:'Deltoïde ant.',secondary:'—',reps:'10–15',rir:'2',rest:'1:30'},
+  {name:'Développé militaire',equipment:'Barre',sets:'4 séries',img:'/body-os/anatomy-shoulder-press.svg',video:'https://www.youtube.com/results?search_query=overhead+press+barbell+technique',target:'Deltoïdes ant.',secondary:'Triceps · Trapèzes',reps:'5–8',rir:'1–2',rest:'2:30–3:00'},
+  {name:'Face pull',equipment:'Poulie',sets:'3 séries',img:'/body-os/anatomy-reverse-pec.svg',video:'https://www.youtube.com/results?search_query=face+pull+technique',target:'Deltoïdes post. · Rotateurs externes',secondary:'Trapèzes moyens',reps:'12–20',rir:'1–2',rest:'1:30'},
  ],
  Jambes:[
   {name:'Hack squat',equipment:'Machine',sets:'4 séries',img:'https://img.youtube.com/vi/scs5XcsZuc8/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=scs5XcsZuc8',target:'Quadriceps',secondary:'Fessiers',reps:'6–10',rir:'1–2',rest:'2:30–3:30'},
@@ -65,6 +71,10 @@ export const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Leg curl',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/IOufFLwNOTU/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=IOufFLwNOTU',target:'Ischio-jambiers',secondary:'—',reps:'8–15',rir:'1–2',rest:'1:30–2:00'},
   {name:'Leg extension',equipment:'Machine',sets:'3 séries',img:'https://img.youtube.com/vi/m0FOpMEgero/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=m0FOpMEgero',target:'Quadriceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30–2:00'},
   {name:'Mollets',equipment:'Machine',sets:'4 séries',img:'https://img.youtube.com/vi/GAQ-oohMhog/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=GAQ-oohMhog',target:'Mollets',secondary:'—',reps:'8–15',rir:'1–2',rest:'1:30'},
+  {name:'Presse à cuisses',equipment:'Machine',sets:'4 séries',img:'/body-os/demo-leg-press.svg',video:'https://www.youtube.com/results?search_query=leg+press+technique',target:'Quadriceps',secondary:'Fessiers · Ischios',reps:'8–12',rir:'1–2',rest:'2:00–2:30'},
+  {name:'Presse à cuisses unilatérale',equipment:'Machine',sets:'3 séries',img:'/body-os/demo-single-press.svg',video:'https://www.youtube.com/results?search_query=single+leg+press+technique',target:'Quadriceps',secondary:'Fessiers',reps:'8–12 / jambe',rir:'1–2',rest:'2:00'},
+  {name:'Step-up',equipment:'Haltères',sets:'3 séries',img:'/body-os/demo-step-up.svg',video:'https://www.youtube.com/results?search_query=step+up+exercise+technique',target:'Quadriceps · Fessiers',secondary:'Ischios',reps:'8–12 / jambe',rir:'1–2',rest:'1:30–2:00'},
+  {name:'Leg curl assis',equipment:'Machine',sets:'3 séries',img:'/body-os/demo-seated-curl.svg',video:'https://www.youtube.com/results?search_query=seated+leg+curl+technique',target:'Ischio-jambiers',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
  ],
  Bras:[
   {name:'Curl incliné',equipment:'Haltères',sets:'4 séries',img:'https://img.youtube.com/vi/HhHHBj3qTJ4/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HhHHBj3qTJ4',target:'Biceps',secondary:'Brachial',reps:'8–12',rir:'1–2',rest:'1:30–2:00'},
@@ -72,6 +82,8 @@ export const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Curl assis',equipment:'Haltères',sets:'2 séries',img:'https://img.youtube.com/vi/HHq-wRiFDh0/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=HHq-wRiFDh0',target:'Biceps',secondary:'Avant-bras',reps:'10–15',rir:'1–2',rest:'1:30'},
   {name:'Extension au-dessus tête',equipment:'Poulie',sets:'4 séries',img:'https://img.youtube.com/vi/w3iAESGWK6M/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=w3iAESGWK6M',target:'Triceps long chef',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
   {name:'Extension triceps',equipment:'Poulie corde',sets:'3 séries',img:'/body-os/demo-rope-pushdown-approved.jpg',video:'https://www.youtube.com/watch?v=ADRve8qqC1U',target:'Triceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
+  {name:'Extension triceps haltère',equipment:'Haltères',sets:'3 séries',img:'/body-os/demo-triceps.svg',video:'https://www.youtube.com/results?search_query=dumbbell+overhead+triceps+extension+technique',target:'Triceps',secondary:'—',reps:'10–15',rir:'1–2',rest:'1:30'},
+  {name:'Curl marteau',equipment:'Haltères',sets:'3 séries',img:'/body-os/anatomy-curl.svg',video:'https://www.youtube.com/results?search_query=hammer+curl+technique',target:'Biceps · Brachial',secondary:'Avant-bras',reps:'8–12',rir:'1–2',rest:'1:30'},
  ],
  'L5-S1':[
   {name:'Bird dog',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/dia-fydN7rE/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=dia-fydN7rE',target:'Gainage profond',secondary:'Fessiers',reps:'8–12 / côté',rir:'—',rest:'45–60 s'},
@@ -79,6 +91,8 @@ export const sessionData:Record<SessionGroup,ExerciseItem[]>={
   {name:'Pont fessier',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/n6JiF2jp2Ns/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=n6JiF2jp2Ns',target:'Fessiers · Chaîne postérieure',secondary:'Ischios',reps:'12–15',rir:'—',rest:'45 s'},
   {name:'Dead bug',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/pxql0kTdmEs/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=pxql0kTdmEs',target:'Gainage profond',secondary:'Hanches',reps:'8–10 / côté',rir:'—',rest:'45 s'},
   {name:'Gainage ventral',equipment:'Poids du corps',sets:'3 séries',img:'https://img.youtube.com/vi/GQE8ASRA7t0/maxresdefault.jpg',video:'https://www.youtube.com/watch?v=GQE8ASRA7t0',target:'Gainage global',secondary:'Épaules',reps:'20–40 s',rir:'—',rest:'45–60 s'},
+  {name:'Superman',equipment:'Poids du corps',sets:'3 séries',img:'/body-os/l5-spine.svg',video:'https://www.youtube.com/results?search_query=superman+exercise+lower+back+technique',target:'Érecteurs du rachis (lombaires)',secondary:'Fessiers',reps:'10–15',rir:'—',rest:'45 s'},
+  {name:'Clamshell',equipment:'Poids du corps',sets:'3 séries',img:'/body-os/l5-spine.svg',video:'https://www.youtube.com/results?search_query=clamshell+exercise+glute+technique',target:'Moyen fessier',secondary:'Stabilité du bassin',reps:'12–15 / côté',rir:'—',rest:'45 s'},
  ]
 }
 export const exerciseLibrary:LibraryEntry[]=sessionGroups.flatMap(g=>sessionData[g].map(e=>({...e,group:g})))

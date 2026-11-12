@@ -44,7 +44,7 @@ test.describe('Bibliothèque d\'exercices (Phase 3)', () => {
     await openLibrary(page)
     await expect(page.locator('.v9TitleBar b')).toHaveText('BIBLIOTHÈQUE')
     const count = await page.locator('.v9LibList button').count()
-    expect(count).toBe(30) // 5 groups x 5 + L5-S1 x 5
+    expect(count).toBe(44) // 30 de base + 14 exercices classiques ajoutés
   })
 
   test('searching filters the list by exercise name', async ({ page }) => {
@@ -64,7 +64,7 @@ test.describe('Bibliothèque d\'exercices (Phase 3)', () => {
   test('filtering by muscle-group tab narrows the list to that group only', async ({ page }) => {
     await openLibrary(page)
     await page.locator('.v9LibTabs button', { hasText: 'Dos' }).click()
-    await expect(page.locator('.v9LibList button')).toHaveCount(5)
+    await expect(page.locator('.v9LibList button')).toHaveCount(7)
     const texts = await page.locator('.v9LibList button small').allTextContents()
     expect(texts.every(t => t === 'Dos')).toBe(true)
   })
